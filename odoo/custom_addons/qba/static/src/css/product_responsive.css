@@ -14,22 +14,15 @@
 }
 
 /* ==========================================================================
-   BA SPEC: RESPONSIVE PRODUCT UI (DESKTOP WIDE ROW vs MOBILE CARD)
+   Tối ưu hiển thị Thẻ Sản Phẩm Responsive
    ========================================================================== */
-
-/* Trên Desktop (>= 992px): Mở rộng thẻ thành Wide Product Row trải rộng thông tin */
-@media (min-width: 992px) {
-    .o_kanban_renderer .o_kanban_record.qba-product-card {
-        min-width: 480px;
-        flex: 1 1 calc(50% - 16px);
-        max-width: 100%;
-        border-radius: 8px;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
+.o_kanban_renderer .o_kanban_record.qba-product-card {
+    border-radius: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-/* Trên Mobile (< 992px): Thẻ sản phẩm Product Card xếp tầng chuẩn di động */
-@media (max-width: 991.98px) {
+/* Trên Màn hình di động (< 768px): Thẻ sản phẩm mở rộng 100% chuẩn di động */
+@media (max-width: 767.98px) {
     .o_kanban_renderer .o_kanban_record.qba-product-card {
         width: 100% !important;
         max-width: 100% !important;
