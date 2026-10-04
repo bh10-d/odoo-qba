@@ -21,7 +21,6 @@ environment/*
 odoo/*
 !odoo/Dockerfile
 !odoo/requirements.txt
-!odoo/README.md
 !odoo/debian/
 odoo/debian/*
 !odoo/debian/odoo.conf

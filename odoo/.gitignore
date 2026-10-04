@@ -8,7 +8,6 @@
 
 # 2. WHITELIST: Chỉ cho phép các file cấu hình và code custom của dự án
 !/.gitignore
-!/README.md
 !/Dockerfile
 !/docker-compose*.yml
 !/requirements.txt
