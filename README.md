@@ -1,7 +1,7 @@
 # QBA Auto Parts - Hệ Thống Quản Lý & Tra Cứu Phụ Tùng Ô Tô (Odoo 18)
 
 [![Odoo Version](https://img.shields.io/badge/Odoo-18.0-875A7B.svg?logo=odoo&logoColor=white)](https://www.odoo.com)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
+[![Docker Image](https://img.shields.io/badge/Docker_Hub-buihieu521%2Fodoo--qba-2496ED.svg?logo=docker&logoColor=white)](https://hub.docker.com/r/buihieu521/odoo-qba)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB.svg?logo=python&logoColor=white)](https://www.python.org)
 
@@ -15,7 +15,7 @@ Hệ thống ERP chuyên sâu ngành phụ tùng ô tô phát triển trên nề
 - [Kiến Trúc Giao Diện (Responsive UI)](#kiến-trúc-giao-diện-responsive-ui)
 - [Cấu Trúc Thư Mục](#cấu-trúc-thư-mục)
 - [Hướng Dẫn Triển Khai & Khởi Chạy](#hướng-dẫn-triển-khai--khởi-chạy)
-- [Hướng Dẫn Khôi Phục Dữ Liệu (Restore Database)](#hướng-dẫn-khôi-phục-dữ-liệu-restore-database)
+- [Hướng Dẫn Khôi Phục Dữ Liệu (Database & Filestore)](#hướng-dẫn-khôi-phục-dữ-liệu-database--filestore)
 
 ---
 
@@ -121,7 +121,7 @@ odoo-qba/
 
 ### Yêu cầu hệ thống:
 - [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/)
-- Docker Image Odoo: `staging-qba-odoo-18:latest`
+- Docker Image: **`buihieu521/odoo-qba:latest`** (Được tự động pull từ Docker Hub khi chạy compose)
 
 ### Các bước khởi chạy:
 
@@ -143,47 +143,66 @@ odoo-qba/
 
 ---
 
-## Hướng Dẫn Khôi Phục Dữ Liệu (Restore Database)
+## Hướng Dẫn Khôi Phục Dữ Liệu (Database & Filestore)
+
+Khi triển khai môi trường mới hoặc chuyển dữ liệu từ bản sao lưu cũ, hệ thống Odoo cần khôi phục 2 phần: **Cơ sở dữ liệu (Database SQL)** và **Thư viện tệp đính kèm/hình ảnh (Filestore)**.
+
+### Phần 1: Khôi phục Cơ sở dữ liệu (Database)
 
 Thư mục `environment/` đã tích hợp sẵn 2 kịch bản tự động hóa giúp khôi phục database từ file sao lưu SQL một cách nhanh chóng, sạch sẽ và an toàn:
 
-### Chuẩn bị:
+#### Chuẩn bị:
 - Đặt file dump database (mặc định tên là `dump.sql`) vào thư mục `environment/`.
 
-### 1. Sử dụng trên Linux / macOS / WSL hoặc Git Bash:
-Đứng tại thư mục `environment`:
+#### Thực hiện:
+- **Trên Linux / macOS / WSL hoặc Git Bash:**
+  ```bash
+  cd environment
+  chmod +x restore.sh
+
+  # Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
+  ./restore.sh
+
+  # Cách 2: Tùy biến tên Database và đường dẫn file dump
+  ./restore.sh <tên_database> <đường_dẫn_file_dump>
+  # Ví dụ:
+  ./restore.sh qba dump.sql
+  ```
+
+- **Trên Windows PowerShell:**
+  ```powershell
+  cd environment
+
+  # Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
+  .\restore.ps1
+
+  # Cách 2: Tùy biến tham số
+  .\restore.ps1 -DbName qba -DumpFile dump.sql
+  ```
+
+---
+
+### Phần 2: Khôi phục Thư viện Hình Ảnh (Filestore)
+
+Odoo không lưu trực tiếp file ảnh lớn vào database mà lưu trữ tại thư mục `filestore/` trên ổ đĩa. Do đó, để hình ảnh sản phẩm và ảnh phụ hiển thị đầy đủ, bạn cần đưa dữ liệu ảnh vào đúng đường dẫn bind mount của Docker:
+
+#### Các bước thực hiện:
+1. Giải nén gói sao lưu Odoo cũ của bạn (Ví dụ: `qba_2026-09-26_16-59-24/` hoặc file nén zip/7z).
+2. Tìm và mở thư mục **`filestore/`** bên trong thư mục vừa giải nén xong.
+3. Sao chép (**Copy**) toàn bộ các thư mục con bên trong thư mục `filestore/` đó (bao gồm các thư mục hash 2 ký tự như: `0a`, `1b`, `70`, `71`, `d4`,...).
+4. Dán (**Paste**) toàn bộ vào đúng đường dẫn thư mục sau của dự án:
+   ```text
+   environment/odoo/data/filestore/qba
+   ```
+   *(Ghi chú: Nếu thư mục `filestore/qba` chưa tồn tại, hãy tạo mới thư mục này theo đúng đường dẫn trên).*
+
+---
+
+### Phần 3: Hoàn tất & Khởi động lại Odoo
+
+Sau khi đã nạp xong Database và dán xong thư mục Filestore, tiến hành khởi động lại container Odoo:
 ```bash
 cd environment
-chmod +x restore.sh
-
-# Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
-./restore.sh
-
-# Cách 2: Tùy biến tên Database và đường dẫn file dump
-./restore.sh <tên_database> <đường_dẫn_file_dump>
-# Ví dụ:
-./restore.sh qba_backup /path/to/backup.sql
-```
-
-### 2. Sử dụng trên Windows PowerShell:
-Mở PowerShell tại thư mục `environment`:
-```powershell
-cd environment
-
-# Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
-.estore.ps1
-
-# Cách 2: Tùy biến tham số
-.estore.ps1 -DbName qba -DumpFile dump.sql
-```
-
-### 3. Sau khi khôi phục thành công:
-Khởi động lại dịch vụ Odoo để nạp dữ liệu mới:
-```bash
 docker compose restart odoo
 ```
-
-> **Cơ chế hoạt động của script:**
-> - Tự động phát hiện và khởi động container `postgres` nếu đang dừng.
-> - Tự động ngắt tất cả các kết nối đang mở tới database đích để tránh lỗi `database is being accessed by other users`.
-> - Tự động `DROP DATABASE` cũ và `CREATE DATABASE` mới hoàn toàn sạch sẽ trước khi import.
+Mở lại trình duyệt tại `http://localhost:8089`, đăng nhập và kiểm tra toàn bộ thông tin sản phẩm cùng hình ảnh đã được khôi phục trọn vẹn!

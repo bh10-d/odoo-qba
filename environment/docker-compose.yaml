@@ -14,7 +14,7 @@ services:
       - network
 
   odoo:
-    image: staging-qba-odoo-18:latest
+    image: buihieu521/odoo-qba:latest
     ports:
       - 8089:8069
       - 8092:8072  
