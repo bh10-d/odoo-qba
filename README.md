@@ -1,4 +1,4 @@
-﻿# QBA Auto Parts - Hệ Thống Quản Lý & Tra Cứu Phụ Tùng Ô Tô (Odoo 18)
+# QBA Auto Parts - Hệ Thống Quản Lý & Tra Cứu Phụ Tùng Ô Tô (Odoo 18)
 
 [![Odoo Version](https://img.shields.io/badge/Odoo-18.0-875A7B.svg?logo=odoo&logoColor=white)](https://www.odoo.com)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
@@ -15,12 +15,13 @@ Hệ thống ERP chuyên sâu ngành phụ tùng ô tô phát triển trên nề
 - [Kiến Trúc Giao Diện (Responsive UI)](#kiến-trúc-giao-diện-responsive-ui)
 - [Cấu Trúc Thư Mục](#cấu-trúc-thư-mục)
 - [Hướng Dẫn Triển Khai & Khởi Chạy](#hướng-dẫn-triển-khai--khởi-chạy)
+- [Hướng Dẫn Khôi Phục Dữ Liệu (Restore Database)](#hướng-dẫn-khôi-phục-dữ-liệu-restore-database)
 
 ---
 
 ## Tổng Quan Ứng Dụng
 
-Đặc thù ngành phụ tùng xe tải và ô tô là một chi tiết linh kiện có thể dùng chung cho nhiều dòng xe, nhiều đời động cơ và có nhiều mã phụ tùng thay thế (Mã OE chính hãng). Phân hệ **qba** được tùy biến nhằm:
+Đặc thù ngành phụ tùng xe tải và ô tô là một chi tiết linh kiện có thể dùng chung cho nhiều dòng xe, nhiều đời động cơ và có nhiều mã phụ tùng thay thế (Mã OE chính hãng). Phân hệ **`qba`** được tùy biến nhằm:
 1. **Rút ngắn thời gian tra cứu:** Nhân viên bán hàng chỉ mất 1–2 giây để tra mã phụ tùng, kiểm tra tồn kho, giá bán và các mã OE thay thế.
 2. **Nâng cao độ chính xác:** Công cụ đối chiếu song song 2–4 sản phẩm giúp tư vấn đúng loại phụ tùng, giảm thiểu tối đa tỷ lệ trả hàng do sai quy cách.
 3. **Quản lý dữ liệu tập trung:** Đầy đủ lịch sử nhập kho, báo giá gần nhất, thương hiệu, động cơ, hộp số và thư viện ảnh phụ đa góc chụp.
@@ -30,15 +31,15 @@ Hệ thống ERP chuyên sâu ngành phụ tùng ô tô phát triển trên nề
 ## Tính Năng Cốt Lõi
 
 ### 1. Quản Lý Đa Mã Phụ Tùng Chính Hãng (Multi-OE Codes)
-- Một sản phẩm phụ tùng liên kết không giới hạn với nhiều mã OE (qba.oe.code).
+- Một sản phẩm phụ tùng liên kết không giới hạn với nhiều mã OE (`qba.oe.code`).
 - Phân loại rõ ràng mã OE theo từng hãng sản xuất (Hyundai, Kia, Ford, Isuzu, Toyota, Antek,...).
 - Bộ tìm kiếm thông minh: Tìm kiếm tức thì theo bất kỳ mã OE nào ngay trên thanh tìm kiếm chung của Odoo.
-- Bộ lọc nhanh: *Có mã OE*, *Hàng sẵn trong kho*.
+- Bộ lọc nhanh: *"Có mã OE"*, *"Hàng sẵn trong kho"*.
 
 ### 2. Thư Viện Ảnh Phụ Đa Góc Chụp (Extra Images Gallery)
-- Lưu trữ album ảnh phụ độ phân giải cao cho từng phụ tùng (qba.product.image).
-- Đánh số thứ tự và hiển thị số lượng ảnh phụ dạng badge (+X ảnh).
-- **Click-to-Zoom (Lightbox):** Bấm trực tiếp vào ảnh để phóng to toàn màn hình xem chi tiết răng bánh răng, bước ren, kích thước khắc trên thân phụ tùng.
+- Lưu trữ album ảnh phụ độ phân giải cao cho từng phụ tùng (`qba.product.image`).
+- Đánh số thứ tự và hiển thị số lượng ảnh phụ dạng badge (`+X ảnh`).
+- **Click-to-Zoom (Lightbox):** Bấm trực tiếp vào ảnh để phóng to toàn màn hình xem chi tiết răng bánh răng, bước ren, kích thước khắc trên thân phụ tùng mà không cần mở form chi tiết.
 
 ### 3. Công Cụ So Sánh Chi Tiết Song Song (Product Compare Wizard)
 - Cho phép chọn đối chiếu nhanh từ **2 đến 4 sản phẩm** cùng lúc.
@@ -57,7 +58,7 @@ Hệ thống ERP chuyên sâu ngành phụ tùng ô tô phát triển trên nề
 - Giao diện thanh tìm kiếm ghim trên đỉnh (**Sticky Header**) và thanh cuộn mượt mà duy nhất.
 
 ### 4. Quản Lý Lịch Sử Giá & Nhập Hàng Tự Động
-- Tự động quét và cập nhật ngày nhập hàng gần nhất từ các Đơn mua hàng đã xác nhận (purchase.order.line).
+- Tự động quét và cập nhật ngày nhập hàng gần nhất từ các Đơn mua hàng đã xác nhận (`purchase.order.line`).
 - Tự động lưu vết ngày nhận báo giá gần nhất từ các yêu cầu báo giá (RFQ).
 
 ### 5. In Tem & Mã Vạch Phụ Tùng (Label Printing Wizard)
@@ -69,7 +70,7 @@ Hệ thống ERP chuyên sâu ngành phụ tùng ô tô phát triển trên nề
 
 Giao diện được thiết kế chuẩn Responsive ngay từ đầu theo đề xuất BA:
 
-`	ext
+```text
                  PRODUCT UI
                      │
              ┌───────┴───────┐
@@ -81,19 +82,19 @@ Giao diện được thiết kế chuẩn Responsive ngay từ đầu theo đề
              └───────┬───────┘
                      │
                 Same Odoo Data
-`
+```
 
 - **Desktop (>= 992px) - Wide Product Row:**
   Thẻ sản phẩm trải rộng theo chiều ngang (tối thiểu 480px, chia cột thông tin mạch lạc), giúp hiển thị trọn vẹn 10 thông số kỹ thuật mà không bị co cụm dòng chữ.
 - **Mobile (< 992px) - Product Card:**
   Thẻ tự động xếp tầng gọn gàng thành thẻ dọc chuẩn di động, tối ưu diện tích và thao tác chạm cảm ứng.
-- **Same Odoo Data:** Cả hai chế độ hiển thị đồng bộ từ cùng một nguồn dữ liệu Odoo product.template.
+- **Same Odoo Data:** Cả hai chế độ hiển thị đồng bộ từ cùng một nguồn dữ liệu Odoo `product.template`.
 
 ---
 
 ## Cấu Trúc Thư Mục
 
-`	ext
+```text
 odoo-qba/
 ├── .gitignore                         # Bộ lọc Git chuẩn (chặn dữ liệu tạm, db runtime)
 ├── README.md                          # Tài liệu dự án
@@ -112,7 +113,7 @@ odoo-qba/
     │   └── odoo.conf                  # File cấu hình Odoo Server (addons-path, dev_mode, db)
     ├── Dockerfile                     # Dockerfile tối ưu đa tầng (Multi-stage build)
     └── requirements.txt               # Thư viện Python phụ thuộc
-`
+```
 
 ---
 
@@ -120,35 +121,69 @@ odoo-qba/
 
 ### Yêu cầu hệ thống:
 - [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/)
-- Docker Image Odoo: staging-qba-odoo-18:latest
+- Docker Image Odoo: `staging-qba-odoo-18:latest`
 
 ### Các bước khởi chạy:
 
 1. **Clone repository:**
-   `ash
+   ```bash
    git clone https://github.com/bh10-d/odoo-qba.git
    cd odoo-qba
-   `
+   ```
 
 2. **Khởi chạy container:**
-   `ash
+   ```bash
    cd environment
    docker compose up -d
-   `
+   ```
 
-3. **Khôi phục dữ liệu mẫu (Tùy chọn - nếu có file dump.sql):**
-   - Đặt file dump.sql vào thư mục environment/.
-   - Chạy script restore tự động:
-     - **Trên Linux / macOS / Git Bash:**
-       `ash
-       chmod +x restore.sh
-       ./restore.sh qba dump.sql
-       `
-     - **Trên Windows PowerShell:**
-       `powershell
-       .\restore.ps1 -DbName qba -DumpFile dump.sql
-       `
+3. **Truy cập ứng dụng:**
+   - Mở trình duyệt tại: `http://localhost:8089` (hoặc cổng cấu hình trong `docker-compose.yaml`).
+   - Vào menu **Ứng dụng (Apps)** -> Cập nhật danh sách ứng dụng -> Nâng cấp/Cài đặt module **Phụ tùng ô tô QBA** (`qba`).
 
-4. **Truy cập ứng dụng:**
-   - Mở trình duyệt tại: http://localhost:8089 (hoặc cổng cấu hình trong docker-compose.yaml).
-   - Vào menu **Ứng dụng (Apps)** -> Cập nhật danh sách ứng dụng -> Nâng cấp/Cài đặt module **Phụ tùng ô tô QBA** (qba).
+---
+
+## Hướng Dẫn Khôi Phục Dữ Liệu (Restore Database)
+
+Thư mục `environment/` đã tích hợp sẵn 2 kịch bản tự động hóa giúp khôi phục database từ file sao lưu SQL một cách nhanh chóng, sạch sẽ và an toàn:
+
+### Chuẩn bị:
+- Đặt file dump database (mặc định tên là `dump.sql`) vào thư mục `environment/`.
+
+### 1. Sử dụng trên Linux / macOS / WSL hoặc Git Bash:
+Đứng tại thư mục `environment`:
+```bash
+cd environment
+chmod +x restore.sh
+
+# Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
+./restore.sh
+
+# Cách 2: Tùy biến tên Database và đường dẫn file dump
+./restore.sh <tên_database> <đường_dẫn_file_dump>
+# Ví dụ:
+./restore.sh qba_backup /path/to/backup.sql
+```
+
+### 2. Sử dụng trên Windows PowerShell:
+Mở PowerShell tại thư mục `environment`:
+```powershell
+cd environment
+
+# Cách 1: Khôi phục mặc định (Database: 'qba', File: 'dump.sql')
+.estore.ps1
+
+# Cách 2: Tùy biến tham số
+.estore.ps1 -DbName qba -DumpFile dump.sql
+```
+
+### 3. Sau khi khôi phục thành công:
+Khởi động lại dịch vụ Odoo để nạp dữ liệu mới:
+```bash
+docker compose restart odoo
+```
+
+> **Cơ chế hoạt động của script:**
+> - Tự động phát hiện và khởi động container `postgres` nếu đang dừng.
+> - Tự động ngắt tất cả các kết nối đang mở tới database đích để tránh lỗi `database is being accessed by other users`.
+> - Tự động `DROP DATABASE` cũ và `CREATE DATABASE` mới hoàn toàn sạch sẽ trước khi import.
