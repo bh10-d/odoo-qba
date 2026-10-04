@@ -98,7 +98,9 @@ odoo-qba/
 ├── .gitignore                         # Bộ lọc Git chuẩn (chặn dữ liệu tạm, db runtime)
 ├── README.md                          # Tài liệu dự án
 ├── environment/
-│   └── docker-compose.yaml            # Cấu hình Docker Compose khởi chạy hệ thống
+│   ├── docker-compose.yaml            # Cấu hình Docker Compose khởi chạy hệ thống
+│   ├── restore.sh                     # Script Bash khôi phục Database từ dump.sql
+│   └── restore.ps1                    # Script PowerShell khôi phục Database (Windows)
 └── odoo/
     ├── custom_addons/
     │   └── qba/                       # Module tính năng chính QBA Auto Parts
@@ -134,6 +136,19 @@ odoo-qba/
    docker compose up -d
    `
 
-3. **Truy cập ứng dụng:**
+3. **Khôi phục dữ liệu mẫu (Tùy chọn - nếu có file dump.sql):**
+   - Đặt file dump.sql vào thư mục environment/.
+   - Chạy script restore tự động:
+     - **Trên Linux / macOS / Git Bash:**
+       `ash
+       chmod +x restore.sh
+       ./restore.sh qba dump.sql
+       `
+     - **Trên Windows PowerShell:**
+       `powershell
+       .\restore.ps1 -DbName qba -DumpFile dump.sql
+       `
+
+4. **Truy cập ứng dụng:**
    - Mở trình duyệt tại: http://localhost:8089 (hoặc cổng cấu hình trong docker-compose.yaml).
    - Vào menu **Ứng dụng (Apps)** -> Cập nhật danh sách ứng dụng -> Nâng cấp/Cài đặt module **Phụ tùng ô tô QBA** (qba).

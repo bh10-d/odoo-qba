@@ -1,6 +1,6 @@
 ﻿# ==============================================================================
 # QBA ODOO PROJECT - ROOT GITIGNORE (WHITELIST STRATEGY)
-# Chỉ theo dõi environment/docker-compose và odoo/custom_addons/qba
+# Chỉ theo dõi environment/docker-compose, restore scripts và odoo/custom_addons/qba
 # ==============================================================================
 
 # 1. Chặn toàn bộ mặc định
@@ -10,11 +10,13 @@
 !/.gitignore
 !/README.md
 
-# 3. THƯ MỤC ENVIRONMENT: Chỉ lấy docker-compose
+# 3. THƯ MỤC ENVIRONMENT: Chỉ lấy docker-compose và restore scripts
 !/environment/
 environment/*
 !environment/docker-compose*.yml
 !environment/docker-compose*.yaml
+!environment/restore*.sh
+!environment/restore*.ps1
 
 # 4. THƯ MỤC ODOO: Chỉ lấy custom_addons/qba, Dockerfile, debian/odoo.conf, requirements.txt
 !/odoo/
