@@ -1,0 +1,49 @@
+# ==============================================================================
+# QBA ODOO PROJECT - GITIGNORE
+# Chỉ cho phép theo dõi và push các thành phần code tùy biến của dự án
+# ==============================================================================
+
+# 1. Chặn toàn bộ các file và thư mục gốc mặc định (Odoo Core & thư viện gốc)
+/*
+
+# 2. WHITELIST: Chỉ cho phép các file cấu hình và code custom của dự án
+!/.gitignore
+!/README.md
+!/Dockerfile
+!/docker-compose*.yml
+!/requirements.txt
+!/debian/
+debian/*
+!/debian/odoo.conf
+!/custom_addons/
+!/custom_addons/qba/
+!/custom_addons/qba/**
+
+# 3. TẠM THỜI CHẶN module AI (chưa hoàn thiện, không push lên Git)
+custom_addons/qba_ai/
+
+# 4. Loại trừ file rác, file tạm, cache và dữ liệu runtime
+__pycache__/
+*.py[cod]
+*$py.class
+*.orig
+*.bak
+*~
+*.swp
+*.7z
+*.zip
+*.tar.gz
+*.log
+
+# Dữ liệu runtime, filestore & session của Odoo
+filestore/
+sessions/
+data/
+*.db
+*.sqlite
+
+# File hệ thống và IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+<odoo>
+    <record id="view_product_label_wizard_form" model="ir.ui.view">
+        <field name="name">qba.product.label.wizard.form</field>
+        <field name="model">qba.product.label.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tạo tem sản phẩm">
+                <group>
+                    <field name="product_id" readonly="1"/>
+                    <field name="supplier_product_code"/>
+                    <field name="custom_name"/>
+                    <field name="nhap_date"/>
+                    <field name="dinh_luong"/>
+                </group>
+                <footer>
+                    <button string="Tạo tem" type="object" name="action_generate_label" class="btn-primary"/>
+                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo> 

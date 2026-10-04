@@ -1,0 +1,52 @@
+﻿# ==============================================================================
+# QBA ODOO PROJECT - ROOT GITIGNORE (WHITELIST STRATEGY)
+# Chỉ theo dõi environment/docker-compose và odoo/custom_addons/qba
+# ==============================================================================
+
+# 1. Chặn toàn bộ mặc định
+/*
+
+# 2. WHITELIST các file và thư mục gốc
+!/.gitignore
+!/README.md
+
+# 3. THƯ MỤC ENVIRONMENT: Chỉ lấy docker-compose
+!/environment/
+environment/*
+!environment/docker-compose*.yml
+!environment/docker-compose*.yaml
+
+# 4. THƯ MỤC ODOO: Chỉ lấy custom_addons/qba, Dockerfile, debian/odoo.conf, requirements.txt
+!/odoo/
+odoo/*
+!odoo/Dockerfile
+!odoo/requirements.txt
+!odoo/README.md
+!odoo/debian/
+odoo/debian/*
+!odoo/debian/odoo.conf
+!odoo/custom_addons/
+odoo/custom_addons/*
+!odoo/custom_addons/qba/
+!odoo/custom_addons/qba/**
+
+# 5. CHẶN TUYỆT ĐỐI dữ liệu database, dump, filestore và runtime
+*.sql
+*.dump
+postgres-data/
+data/
+filestore/
+sessions/
+
+# 6. CHẶN cache, log và file tạm
+__pycache__/
+*.py[cod]
+*.class
+*.log
+*.bak
+*.7z
+*.zip
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

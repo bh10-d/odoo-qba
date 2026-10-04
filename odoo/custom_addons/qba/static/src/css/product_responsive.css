@@ -1,0 +1,94 @@
+/* ==========================================================================
+   QBA AUTO PARTS - CLEAN & RESPONSIVE STYLING
+   ========================================================================== */
+
+/* Thẻ Kanban Odoo tự nhiên */
+.o_kanban_renderer .o_kanban_record {
+    border-radius: 8px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.o_kanban_renderer .o_kanban_record:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ==========================================================================
+   BA SPEC: RESPONSIVE PRODUCT UI (DESKTOP WIDE ROW vs MOBILE CARD)
+   ========================================================================== */
+
+/* Trên Desktop (>= 992px): Mở rộng thẻ thành Wide Product Row trải rộng thông tin */
+@media (min-width: 992px) {
+    .o_kanban_renderer .o_kanban_record.qba-product-card {
+        min-width: 480px;
+        flex: 1 1 calc(50% - 16px);
+        max-width: 100%;
+        border-radius: 8px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+}
+
+/* Trên Mobile (< 992px): Thẻ sản phẩm Product Card xếp tầng chuẩn di động */
+@media (max-width: 991.98px) {
+    .o_kanban_renderer .o_kanban_record.qba-product-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+}
+
+.qba-oe-tag-mini {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.75rem;
+    background-color: #f8fafc;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Con trỏ kính lúp khi rê vào ảnh để biết có thể bấm phóng to */
+.qba-compare-wrapper img,
+.qba-lightbox-trigger,
+.o_kanban_record aside img {
+    cursor: zoom-in !important;
+}
+
+.qba-compare-wrapper img:hover,
+.o_kanban_record aside img:hover {
+    opacity: 0.92;
+}
+
+/* ==========================================================================
+   Slider Sản Phẩm Trong Modal So Sánh
+   ========================================================================== */
+.qba-slider-viewport {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+}
+
+.qba-slider-btn {
+    cursor: pointer !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.qba-slider-btn:hover {
+    background-color: #ffffff !important;
+    opacity: 1 !important;
+    transform: translateY(-50%) scale(1.1) !important;
+    color: #0d6efd !important;
+}
+
+.qba-slider-thumb {
+    cursor: pointer !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.qba-slider-thumb img {
+    cursor: pointer !important;
+}
+
+.qba-slider-thumb:hover {
+    opacity: 1 !important;
+}
+

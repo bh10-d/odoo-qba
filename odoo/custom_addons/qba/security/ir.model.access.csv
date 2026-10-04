@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qba_brand_user,qba.brand.user,model_qba_brand,base.group_user,1,1,1,1
+access_qba_vehicle_user,qba.vehicle.user,model_qba_vehicle,base.group_user,1,1,1,1
+access_qba_engine_user,qba.engine.user,model_qba_engine,base.group_user,1,1,1,1
+access_qba_gearbox_user,qba.gearbox.user,model_qba_gearbox,base.group_user,1,1,1,1
+access_qba_product_label_wizard,qba.product.label.wizard,model_qba_product_label_wizard,,1,1,1,1
+access_qba_product_oe_code_user,qba.product.oe_code.user,model_qba_product_oe_code,base.group_user,1,1,1,1
+access_qba_product_image_user,qba.product.image.user,model_qba_product_image,base.group_user,1,1,1,1
+access_qba_product_compare_wizard_user,qba.product.compare.wizard.user,model_qba_product_compare_wizard,base.group_user,1,1,1,1

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1. Form View Bảng So Sánh Sản Phẩm -->
+    <record id="view_qba_product_compare_wizard_form" model="ir.ui.view">
+        <field name="name">qba.product.compare.wizard.form</field>
+        <field name="model">qba.product.compare.wizard</field>
+        <field name="arch" type="xml">
+            <form string="So Sánh Chi Tiết Phụ Tùng QBA">
+                <sheet>
+                    <div class="d-flex align-items-center justify-content-between gap-3 mb-2 pb-2 border-bottom sticky-top bg-white pt-1" style="z-index: 5;">
+                        <div class="flex-grow-1">
+                            <field name="product_ids"
+                                   widget="many2many_tags"
+                                   placeholder="Chọn hoặc gõ tên / mã SKU phụ tùng cần so sánh (tối đa 4 sản phẩm)..."/>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-dark border px-2 py-1">
+                                <field name="product_count" readonly="1"/> / 4 sản phẩm
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Nội dung so sánh chi tiết dạng Ma trận -->
+                    <div class="mt-3">
+                        <field name="comparison_html" nolabel="1"/>
+                    </div>
+                </sheet>
+                <footer style="right: 0px">
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- 2. Action Menu So Sánh trên Danh Sách & Kanban Sản Phẩm -->
+    <record id="action_qba_product_compare" model="ir.actions.act_window">
+        <field name="name">So Sánh Sản Phẩm (2-4 SP)</field>
+        <field name="res_model">qba.product.compare.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list,kanban</field>
+    </record>
+</odoo>

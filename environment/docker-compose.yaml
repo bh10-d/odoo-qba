@@ -1,0 +1,41 @@
+name: staging-qba
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo123
+      - POSTGRES_USER=odoo
+        # ports:
+        #- 5433
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - network
+
+  odoo:
+    image: staging-qba-odoo-18:latest
+    ports:
+      - 8089:8069
+      - 8092:8072  
+    volumes:
+      - ./odoo/data:/var/lib/odoo
+      - ../odoo/addons:/app/addons
+      - ../odoo/custom_addons:/app/custom_addons
+      - ../odoo/odoo/addons:/app/odoo/addons
+      - ../odoo/debian/odoo.conf:/app/debian/odoo.conf
+    networks:
+      - network
+    depends_on:
+      - postgres
+
+  # adminer:
+  #   image: adminer
+  #   ports:
+  #     - 9091:8080
+  #   networks:
+  #     - network
+
+networks:
+  network:
+    driver: bridge

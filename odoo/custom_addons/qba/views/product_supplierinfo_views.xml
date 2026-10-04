@@ -1,0 +1,13 @@
+<odoo>
+    <record id="view_product_supplierinfo_form_inherit_chatter" model="ir.ui.view">
+        <field name="name">product.supplierinfo.form.inherit.chatter</field>
+        <field name="model">product.supplierinfo</field>
+        <field name="mode">extension</field>
+        <field name="inherit_id" ref="product.product_supplierinfo_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <chatter/>
+            </xpath>
+        </field>
+    </record>
+</odoo> 

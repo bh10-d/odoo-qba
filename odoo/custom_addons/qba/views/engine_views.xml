@@ -1,0 +1,58 @@
+<odoo>
+    <record id="view_qba_engine_list" model="ir.ui.view">
+        <field name="name">qba.engine.list</field>
+        <field name="model">qba.engine</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="brand"/>
+                <field name="capacity"/>
+                <field name="horsepower"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_qba_engine_form" model="ir.ui.view">
+        <field name="name">qba.engine.form</field>
+        <field name="model">qba.engine</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="name"/>
+                    <field name="brand"/>
+                    <field name="capacity"/>
+                    <field name="horsepower"/>
+                    <field name="torque"/>
+                    <field name="emission_standard"/>
+                    <field name="category"/>
+                    <field name="vehicle_models"/>
+                    <field name="note"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_qba_engine" model="ir.actions.act_window">
+        <field name="name">Động cơ</field>
+        <field name="res_model">qba.engine</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_qba_engine"
+              name="Động cơ"
+              parent="sale.product_menu_catalog"
+              action="action_qba_engine"
+              sequence="103"/>
+
+    <menuitem id="menu_qba_engine_purchase"
+              name="Động cơ"
+              parent="purchase.menu_purchase_products"
+              action="action_qba_engine"
+              sequence="103"/>
+
+    <menuitem id="menu_qba_engine_stock"
+              name="Động cơ"
+              parent="stock.menu_stock_inventory_control"
+              action="action_qba_engine"
+              sequence="103"/>
+</odoo>
