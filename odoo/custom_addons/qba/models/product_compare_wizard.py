@@ -307,25 +307,39 @@ class QbaProductCompareWizard(models.TransientModel):
             html += '</tr>'
 
             # =================================================================
-            # 6. Thương Hiệu
+            # 6. Thương Hiệu & Bảo Hành & Kích Thước
             # =================================================================
-            html += '<tr><th class="fw-bold">Thương Hiệu</th>'
+            html += '<tr><th class="fw-bold">Thương Hiệu &amp; Bảo Hành</th>'
             for p in products:
                 brand_name = p.brand_id.name if p.brand_id else '<span class="text-muted fst-italic">Chưa xác định</span>'
-                html += f'<td class="p-3 fw-semibold">{brand_name}</td>'
+                warranty_val = p.warranty or '<span class="text-muted fst-italic">N/A</span>'
+                html += f"""
+                <td class="p-3">
+                    <div class="fw-semibold text-dark">{brand_name}</div>
+                    <div class="mt-1"><span class="badge bg-light text-primary border">{warranty_val}</span></div>
+                </td>
+                """
+            if show_placeholder_col:
+                html += '<td class="p-3 text-muted text-center" style="background-color: #fafbfc;">---</td>'
+            html += '</tr>'
+
+            # Kích thước & Thông số đo
+            html += '<tr><th class="fw-bold">Ghi Chú / Kích Thước</th>'
+            for p in products:
+                specs = p.technical_specs or '<span class="text-muted fst-italic">Chưa cập nhật thông số</span>'
+                html += f'<td class="p-3 fw-semibold text-secondary">{specs}</td>'
             if show_placeholder_col:
                 html += '<td class="p-3 text-muted text-center" style="background-color: #fafbfc;">---</td>'
             html += '</tr>'
 
             # =================================================================
-            # 7. Ngày Nhập Gần Nhất
+            # 7. Toa Nhập Hàng Gần Nhất (kèm số lượng)
             # =================================================================
-            html += '<tr><th class="fw-bold">Ngày Nhập Gần Nhất</th>'
+            html += '<tr><th class="fw-bold">Toa Nhập Gần Nhất</th>'
             for p in products:
-                last_purchase = p.last_purchase_date or (p._origin.last_purchase_date if p._origin else False)
+                last_purchase = p.last_purchase_code or (f"VN {p.last_purchase_date.strftime('%d/%m/%Y')}" if p.last_purchase_date else False)
                 if last_purchase:
-                    date_str = last_purchase.strftime('%d/%m/%Y')
-                    val_html = f'<span class="fw-semibold text-dark">{date_str}</span>'
+                    val_html = f'<span class="fw-semibold text-dark">{last_purchase}</span>'
                 else:
                     val_html = '<span class="text-muted fst-italic">Chưa có lịch sử nhập</span>'
                 html += f'<td class="p-3">{val_html}</td>'
@@ -334,14 +348,13 @@ class QbaProductCompareWizard(models.TransientModel):
             html += '</tr>'
 
             # =================================================================
-            # 8. Ngày Báo Giá Gần Nhất
+            # 8. Toa Báo Giá Gần Nhất
             # =================================================================
-            html += '<tr><th class="fw-bold">Ngày Báo Giá Gần Nhất</th>'
+            html += '<tr><th class="fw-bold">Toa Báo Giá Gần Nhất</th>'
             for p in products:
-                last_quote = p.last_quotation_date or (p._origin.last_quotation_date if p._origin else False)
+                last_quote = p.last_quotation_code or (f"TV {p.last_quotation_date.strftime('%d/%m/%Y')}" if p.last_quotation_date else False)
                 if last_quote:
-                    date_str = last_quote.strftime('%d/%m/%Y')
-                    val_html = f'<span class="fw-semibold text-dark">{date_str}</span>'
+                    val_html = f'<span class="fw-semibold text-dark">{last_quote}</span>'
                 else:
                     val_html = '<span class="text-muted fst-italic">Chưa có báo giá</span>'
                 html += f'<td class="p-3">{val_html}</td>'
@@ -350,16 +363,18 @@ class QbaProductCompareWizard(models.TransientModel):
             html += '</tr>'
 
             # =================================================================
-            # 9. Động Cơ & Hộp Số Áp Dụng
+            # 9. Tương Thích Xe, Động Cơ, Hộp Số & Cầu
             # =================================================================
-            html += '<tr><th class="fw-bold">Động Cơ &amp; Hộp Số</th>'
+            html += '<tr><th class="fw-bold">Động Cơ, Hộp Số &amp; Cầu</th>'
             for p in products:
-                engines = ", ".join(p.engine_ids.mapped('name')) if p.engine_ids else "N/A"
-                gearboxes = ", ".join(p.gearbox_ids.mapped('name')) if p.gearbox_ids else "N/A"
+                engines = "; ".join(p.engine_ids.mapped('name')) if p.engine_ids else "N/A"
+                gearboxes = "; ".join(p.gearbox_ids.mapped('name')) if p.gearbox_ids else "N/A"
+                axle = p.axle_info or "N/A"
                 html += f"""
                 <td class="p-3 small">
                     <div><b>Động cơ:</b> {engines}</div>
                     <div><b>Hộp số:</b> {gearboxes}</div>
+                    <div><b>Cầu:</b> {axle}</div>
                 </td>
                 """
             if show_placeholder_col:
@@ -371,7 +386,7 @@ class QbaProductCompareWizard(models.TransientModel):
             # =================================================================
             html += '<tr><th class="fw-bold">Dòng Xe Áp Dụng</th>'
             for p in products:
-                vehicles = ", ".join(p.vehicle_ids.mapped('name')) if p.vehicle_ids else '<span class="text-muted fst-italic">Nhiều dòng xe</span>'
+                vehicles = "; ".join(p.vehicle_ids.mapped('name')) if p.vehicle_ids else '<span class="text-muted fst-italic">Nhiều dòng xe</span>'
                 html += f'<td class="p-3 small">{vehicles}</td>'
             if show_placeholder_col:
                 html += '<td class="p-3 text-muted text-center" style="background-color: #fafbfc;">---</td>'

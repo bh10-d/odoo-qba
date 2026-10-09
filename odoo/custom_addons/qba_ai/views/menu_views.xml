@@ -1,0 +1,68 @@
+<odoo>
+    <!-- 1. Root Menu QBA AI (Icon Ứng Dụng Màn Hình Chính) -->
+    <menuitem id="menu_qba_ai_root"
+              name="QBA AI Assistant"
+              web_icon="stock,static/description/icon.png"
+              sequence="15"/>
+
+    <!-- 2. Thanh Menu Ngang Cấp 1 (Top Bar Navigation) -->
+    <menuitem id="menu_qba_ai_main_category"
+              name="Chức Năng AI"
+              parent="menu_qba_ai_root"
+              sequence="1"/>
+
+    <menuitem id="menu_qba_ai_config_category"
+              name="Cấu Hình"
+              parent="menu_qba_ai_root"
+              sequence="10"/>
+
+    <!-- 3. Các Menu Con Cấp 2 -->
+    <menuitem id="menu_qba_ai_assistant_nav"
+              name="Trợ Lý Tra Cứu AI"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_assistant"
+              sequence="1"/>
+
+    <menuitem id="menu_qba_ai_knowledge_nav"
+              name="Thư Viện Hướng Dẫn Đo"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_knowledge"
+              sequence="2"/>
+
+    <menuitem id="menu_qba_ai_approval_queue_nav"
+              name="Hàng Chờ Admin Phê Duyệt"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_approval_queue"
+              sequence="3"/>
+
+    <menuitem id="menu_qba_ai_settings_nav"
+              name="Cấu Hình Gemini API"
+              parent="menu_qba_ai_config_category"
+              action="action_qba_ai_config_settings"
+              sequence="1"/>
+
+    <!-- Shortcut Menu phụ trong Bán Hàng & Kho -->
+    <menuitem id="menu_qba_ai_assistant_sale"
+              name="Trợ Lý AI Phụ Tùng"
+              parent="sale.sale_menu_root"
+              action="action_qba_ai_assistant"
+              sequence="90"/>
+
+    <menuitem id="menu_qba_ai_measure_help_sale"
+              name="Cách lấy thông số sản phẩm"
+              parent="sale.product_menu_catalog"
+              action="action_qba_ai_assistant"
+              sequence="50"/>
+
+    <menuitem id="menu_qba_ai_assistant_stock"
+              name="Trợ Lý AI Phụ Tùng"
+              parent="stock.menu_stock_root"
+              action="action_qba_ai_assistant"
+              sequence="90"/>
+
+    <menuitem id="menu_qba_ai_measure_help_stock"
+              name="Cách lấy thông số sản phẩm"
+              parent="stock.menu_stock_inventory_control"
+              action="action_qba_ai_assistant"
+              sequence="50"/>
+</odoo>

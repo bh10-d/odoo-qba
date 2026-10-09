@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_qba_ai_cache_user,access_qba_ai_cache_user,model_qba_ai_cache,base.group_user,1,1,1,1
+access_qba_ai_knowledge_user,access_qba_ai_knowledge_user,model_qba_ai_knowledge,base.group_user,1,1,1,1
+access_qba_ai_approval_queue_user,access_qba_ai_approval_queue_user,model_qba_ai_approval_queue,base.group_user,1,1,1,1
+access_qba_ai_assistant_user,access_qba_ai_assistant_user,model_qba_ai_assistant,base.group_user,1,1,1,1

@@ -6,4 +6,5 @@ access_qba_gearbox_user,qba.gearbox.user,model_qba_gearbox,base.group_user,1,1,1
 access_qba_product_label_wizard,qba.product.label.wizard,model_qba_product_label_wizard,,1,1,1,1
 access_qba_product_oe_code_user,qba.product.oe_code.user,model_qba_product_oe_code,base.group_user,1,1,1,1
 access_qba_product_image_user,qba.product.image.user,model_qba_product_image,base.group_user,1,1,1,1
+access_qba_product_image_wizard_user,qba.product.image.wizard.user,model_qba_product_image_wizard,base.group_user,1,1,1,1
 access_qba_product_compare_wizard_user,qba.product.compare.wizard.user,model_qba_product_compare_wizard,base.group_user,1,1,1,1

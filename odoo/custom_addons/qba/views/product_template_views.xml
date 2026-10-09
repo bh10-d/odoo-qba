@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ======================================================================
-         1. Ke Thua Form View: Bo sung Ma OE, Anh Phu, Lich Su Nhap/Bao Gia
+         1. Kế Thừa Form View: Bổ Sung Mã OE Bảng Editable, Ảnh Phụ, Mô Tả Nội Bộ, Scale x3
          ====================================================================== -->
     <record id="product_template_qba_form_view" model="ir.ui.view">
         <field name="name">product.template.qba.form</field>
@@ -9,15 +9,31 @@
         <field name="mode">extension</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
+            <!-- Ảnh đại diện: Rê chuột phóng to scale x3 -->
             <field name="image_1920" position="replace">
                 <field
                     name="image_1920"
                     widget="image"
-                    class="oe_avatar"
+                    class="oe_avatar qba-form-avatar-zoom"
                     options="{'convert_to_webp': False}"
                 />
             </field>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_extra_images"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-picture-o">
+                    <field name="extra_image_count" widget="statinfo" string="Ảnh phụ"/>
+                </button>
+            </xpath>
+
             <xpath expr="//header" position="inside">
+                <button name="action_open_ai_assistant"
+                        type="object"
+                        string="Cách Lấy Thông Số SP (AI)"
+                        class="btn-info"
+                        icon="fa-magic"/>
                 <button name="action_open_compare_wizard"
                         type="object"
                         string="So Sánh Sản Phẩm"
@@ -29,77 +45,154 @@
                         class="btn-primary"
                         icon="fa-barcode"/>
             </xpath>
+
+            <!-- Cột phải: Bảng OE. Code thay thế SKU thương hiệu + Thông số phụ -->
             <xpath expr="//field[@name='barcode']" position="after">
                 <field name="brand_id"/>
-                <field name="brand_sku"/>
-                <field name="oe_codes_display" readonly="1"/>
+                <label for="oe_code_ids" string="OE. Code"/>
+                <div class="oe_title">
+                    <field name="oe_code_ids" widget="one2many" nolabel="1">
+                        <list editable="bottom" string="Danh sách mã OE">
+                            <field name="name" string="OE. Code" placeholder="Nhập mã OE..."/>
+                            <field name="brand_id" optional="show" string="Hãng"/>
+                            <field name="note" optional="show" string="Ghi chú"/>
+                        </list>
+                    </field>
+                </div>
+                <field name="warranty" placeholder="Ví dụ: Bảo hành 3 tháng"/>
+                <field name="technical_specs" placeholder="Ví dụ: Dài 315, cao 15, ắc 25"/>
+                <field name="axle_info" placeholder="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T"/>
+                <field name="internal_notes" placeholder="Mô tả hàng hóa nội bộ..."/>
                 <field name="label_image" widget="image"/>
             </xpath>
+
             <xpath expr="//notebook" position="inside">
-                <!-- Tab Da Ma OE -->
-                <page string="Mã OE (Chính Hãng)">
-                    <field name="oe_code_ids"/>
+                <!-- Tab Hình Ảnh Phụ & Thư Viện Ảnh -->
+                <page string="Hình Ảnh Phụ" name="extra_images">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                        <div>
+                            <span class="fw-bold text-dark fs-6">
+                                <i class="fa fa-camera-retro me-2 text-primary"/>Thư Viện Ảnh Sản Phẩm
+                            </span>
+                            <span class="text-muted small ms-2">
+                                (Cho phép thêm nhiều hình ảnh góc chụp, phụ kiện, tem mác cho sản phẩm. Bấm vào ảnh để phóng to.)
+                            </span>
+                        </div>
+                        <div>
+                            <button name="action_open_multi_image_wizard"
+                                     type="object"
+                                     string="Tải Lên Nhiều Ảnh"
+                                     class="btn btn-sm btn-outline-primary fw-semibold"
+                                     icon="fa-cloud-upload"/>
+                        </div>
+                    </div>
+
+                    <field name="extra_image_ids"
+                           mode="kanban,list"
+                           context="{'default_product_tmpl_id': id, 'default_name': name}"
+                           nolabel="1">
+                        <kanban default_order="sequence">
+                            <field name="id"/>
+                            <field name="name"/>
+                            <field name="sequence" widget="handle"/>
+                            <templates>
+                                <t t-name="card" class="p-2 border rounded m-1 text-center position-relative shadow-sm bg-white" style="width: 150px;">
+                                    <div class="o_kanban_image mb-2 d-flex align-items-center justify-content-center" style="height: 110px; overflow: hidden; background: #fbfbfb; border-radius: 6px;">
+                                        <field name="image_1920"
+                                               widget="image"
+                                               class="w-100 h-100 object-fit-contain qba-lightbox-trigger"
+                                               options="{'preview_image': 'image_128'}"/>
+                                    </div>
+                                    <div class="small fw-semibold text-truncate text-dark px-1" t-att-title="record.name.value">
+                                        <field name="name"/>
+                                    </div>
+                                </t>
+                            </templates>
+                        </kanban>
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="image_1920" widget="image" options="{'size': [64, 64]}"/>
+                            <field name="name" placeholder="Mô tả ảnh..."/>
+                            <field name="product_tmpl_id" column_invisible="1"/>
+                        </list>
+                    </field>
                 </page>
 
-                <!-- Tab Thu Vien Anh Phu -->
-                <page string="Thư Viện Ảnh Phụ">
-                    <field name="extra_image_ids" mode="kanban"/>
-                </page>
-
-                <!-- Tab Thong Tin Lich Su Kho & Gia -->
+                <!-- Tab Thông Tin Lịch Sử Kho & Giá -->
                 <page string="Lịch Sử Kho &amp; Giá">
                     <group>
                         <group string="Lịch Sử Nhập Hàng">
+                            <field name="last_purchase_code" readonly="1"/>
                             <field name="last_purchase_date" readonly="1"/>
                         </group>
                         <group string="Lịch Sử Báo Giá">
+                            <field name="last_quotation_code" readonly="1"/>
                             <field name="last_quotation_date" readonly="1"/>
                         </group>
                     </group>
                 </page>
 
+                <!-- Cây phân cấp Xe / Động cơ / Hộp số (như Danh mục sản phẩm mẹ / con) -->
                 <page string="Xe">
-                    <group>
-                        <field name="vehicle_ids"/>
-                    </group>
+                    <field name="vehicle_ids">
+                        <list>
+                            <field name="complete_name" string="Dòng xe (mẹ / con)"/>
+                            <field name="brand" optional="show"/>
+                            <field name="category" optional="show"/>
+                        </list>
+                    </field>
                 </page>
                 <page string="Động cơ">
-                    <group>
-                        <field name="engine_ids"/>
-                    </group>
+                    <field name="engine_ids">
+                        <list>
+                            <field name="complete_name" string="Động cơ (mẹ / con)"/>
+                            <field name="brand" optional="show"/>
+                            <field name="category" optional="show"/>
+                        </list>
+                    </field>
                 </page>
                 <page string="Hộp số">
-                    <group>
-                        <field name="gearbox_ids"/>
-                    </group>
+                    <field name="gearbox_ids">
+                        <list>
+                            <field name="complete_name" string="Hộp số (mẹ / con)"/>
+                            <field name="brand" optional="show"/>
+                            <field name="category" optional="show"/>
+                        </list>
+                    </field>
                 </page>
             </xpath>
         </field>
     </record>
 
     <!-- ======================================================================
-         2. Ke Thua Tree / List View: Hien thi Day Du Ma OE, Ton Kho, Lich Su
+         2. Kế Thừa Tree / List View
          ====================================================================== -->
     <record id="product_template_qba_tree_view" model="ir.ui.view">
         <field name="name">product.template.qba.list</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='default_code']" position="before">
+                <field name="image_128" widget="image" class="oe_avatar qba-lightbox-trigger" string="Ảnh" optional="show" options="{'size': [36, 36]}"/>
+            </xpath>
             <xpath expr="//field[@name='default_code']" position="after">
                 <field name="oe_codes_display" optional="show" string="Mã OE"/>
                 <field name="brand_id" optional="show"/>
+                <field name="warranty" optional="hide" string="Bảo hành"/>
+                <field name="technical_specs" optional="hide" string="Kích thước"/>
             </xpath>
             <xpath expr="//field[@name='list_price']" position="after">
                 <field name="qty_available" optional="show"/>
-                <field name="last_purchase_date" optional="show"/>
-                <field name="last_quotation_date" optional="hide"/>
-                <field name="description_sale" optional="hide"/>
+                <field name="last_purchase_code" optional="show" string="Toa nhập gần nhất"/>
+                <field name="last_quotation_code" optional="hide" string="Toa báo giá gần nhất"/>
+                <field name="internal_notes" optional="hide" string="Mô tả nội bộ"/>
+                <field name="extra_image_count" optional="hide" string="Số ảnh phụ"/>
             </xpath>
         </field>
     </record>
 
     <!-- ======================================================================
-         3. Ke Thua Search View: Tim Kiem Nhanh theo Ma OE & Bo Loc Kho
+         3. Kế Thừa Search View
          ====================================================================== -->
     <record id="product_template_qba_search_view" model="ir.ui.view">
         <field name="name">product.template.qba.search</field>
@@ -109,6 +202,8 @@
             <xpath expr="//field[@name='name']" position="after">
                 <field name="oe_codes_display" string="Mã OE" filter_domain="['|', ('oe_codes_display', 'ilike', self), ('oe_code_ids.name', 'ilike', self)]"/>
                 <field name="brand_id" string="Thương hiệu"/>
+                <field name="technical_specs" string="Thông số / Kích thước"/>
+                <field name="internal_notes" string="Mô tả nội bộ"/>
             </xpath>
             <xpath expr="//filter[@name='filter_to_sell']" position="before">
                 <filter string="Có mã OE" name="filter_has_oe_code" domain="[('oe_code_ids', '!=', False)]"/>
@@ -119,104 +214,132 @@
     </record>
 
     <!-- ======================================================================
-         4. Ke Thua Kanban View: Day Du 10/10 Thong Tin & Nut So Sanh Nhanh
+         4. Kế Thừa Kanban View: Siêu Tinh Gọn, Mật Độ Hiển Thị Cao (8-9 SP/màn hình)
          ====================================================================== -->
     <record id="product_template_qba_kanban_view" model="ir.ui.view">
         <field name="name">product.template.qba.kanban</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_kanban_view"/>
         <field name="arch" type="xml">
+            <xpath expr="//kanban" position="attributes">
+                <attribute name="class" add="qba-product-kanban-view" separator=" "/>
+            </xpath>
             <xpath expr="//kanban" position="inside">
                 <field name="oe_codes_display"/>
+                <field name="warranty"/>
+                <field name="technical_specs"/>
+                <field name="axle_info"/>
+                <field name="vehicles_display"/>
+                <field name="engines_display"/>
+                <field name="gearboxes_display"/>
                 <field name="extra_image_count"/>
                 <field name="last_purchase_date"/>
+                <field name="last_purchase_code"/>
                 <field name="last_quotation_date"/>
+                <field name="last_quotation_code"/>
                 <field name="brand_id"/>
+                <field name="categ_id"/>
                 <field name="vehicle_ids"/>
                 <field name="engine_ids"/>
                 <field name="gearbox_ids"/>
                 <field name="qty_available"/>
-                <field name="description_sale"/>
+                <field name="uom_id"/>
+                <field name="internal_notes"/>
+                <field name="image_512"/>
             </xpath>
             <xpath expr="//t[@t-name='card']" position="replace">
-                <t t-name="card" class="qba-product-card flex-row">
-                    <main class="pe-2 d-flex flex-column justify-content-between">
-                        <div>
-                            <div class="mb-1">
-                                <div class="d-flex mb-0 h5">
-                                    <field class="me-1" name="is_favorite" widget="boolean_favorite" nolabel="1"/>
-                                    <field name="name"/>
-                                </div>
-                                <span t-if="record.default_code.value" class="text-muted fw-bold">
-                                    [<field name="default_code"/>]
-                                </span>
-                                <span t-if="record.brand_id.value" class="badge bg-secondary ms-1">
-                                    <field name="brand_id"/>
-                                </span>
-                            </div>
-                            <!-- Ma OE -->
-                            <div t-if="record.oe_codes_display.value" class="mb-1">
-                                <span class="badge bg-light text-dark border" style="font-family: monospace;">
-                                    OE: <field name="oe_codes_display"/>
-                                </span>
-                            </div>
-                            <!-- Gia Ban -->
-                            <div class="mt-1">
-                                <span class="fw-bold">
-                                    Giá: <field name="list_price" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
-                                </span>
-                            </div>
-                            <!-- Ton Kho -->
-                            <div class="mt-1">
-                                <span t-if="record.qty_available.value" class="text-success fw-semibold">
-                                    Hiện có: <field name="qty_available"/> <field name="uom_id"/>
-                                </span>
-                                <span t-if="!record.qty_available.value or record.qty_available.raw_value &lt;= 0" class="text-danger small">
-                                    Hết hàng
-                                </span>
-                            </div>
-                            <!-- Ngay Nhap & Ngay Bao Gia -->
-                            <div class="d-flex align-items-center flex-wrap gap-2 text-muted small mt-1">
-                                <span t-if="record.last_purchase_date.value">
-                                    <i class="fa fa-calendar me-1"/>Nhập: <field name="last_purchase_date"/>
-                                </span>
-                                <span t-if="record.last_quotation_date.value">
-                                    <i class="fa fa-clock-o me-1"/>Báo giá: <field name="last_quotation_date"/>
-                                </span>
-                            </div>
-                            <!-- Note / Mo ta ban hang -->
-                            <div t-if="record.description_sale.value" class="text-muted small text-truncate fst-italic mt-1" title="Ghi chú bán hàng">
-                                <i class="fa fa-info-circle me-1"/><field name="description_sale"/>
-                            </div>
-                        </div>
-
-                        <!-- Nut So Sanh Nhanh tren moi Card -->
-                        <div class="mt-2 pt-1 border-top d-flex justify-content-between align-items-center">
-                            <button name="action_open_compare_wizard"
-                                    type="object"
-                                    class="btn btn-sm btn-outline-primary py-0 px-2"
-                                    style="font-size: 0.78rem;"
-                                    title="So sánh nhanh sản phẩm này">
-                                <i class="fa fa-columns me-1"/>So sánh
-                            </button>
-                        </div>
-                    </main>
-
-                    <aside class="position-relative" style="min-width: 90px; max-width: 105px;">
-                        <field
-                            name="image_128"
-                            widget="image"
-                            alt="Product"
-                            options="{'img_class': 'w-100 object-fit-contain rounded'}"
-                            invisible="not image_128"
-                        />
+                <t t-name="card" class="qba-product-card d-flex flex-row align-items-center w-100" t-att-data-product-id="record.id.raw_value" t-att-data-extra-count="record.extra_image_count.raw_value">
+                    <!-- CỘT TRÁI: Ảnh sản phẩm 72x72px gọn gàng, hover zoom HD, click xem toàn bộ album ảnh -->
+                    <div class="qba-img-hover-box position-relative d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                         t-att-data-product-id="record.id.raw_value"
+                         t-att-data-extra-count="record.extra_image_count.raw_value">
+                        <field name="image_512" widget="image" class="qba-img-hover-scale rounded border object-fit-contain bg-white w-100 h-100"/>
                         <span t-if="record.extra_image_count.value &gt; 0"
-                              class="badge bg-dark bg-opacity-75 text-white position-absolute bottom-0 end-0 m-1"
-                              style="font-size: 0.65rem;"
-                              title="Số ảnh phụ">
+                              class="qba-extra-badge"
+                              t-att-data-product-id="record.id.raw_value"
+                              title="Click để xem toàn bộ ảnh của sản phẩm">
                             +<t t-esc="record.extra_image_count.value"/>
                         </span>
-                    </aside>
+                    </div>
+
+                    <!-- CỘT PHẢI: 3 dòng thông tin siêu tinh gọn -->
+                    <div class="d-flex flex-column justify-content-center flex-grow-1" style="min-width: 0; gap: 3px;">
+                        <!-- Dòng 1: [Mã SKU] Tên sản phẩm | [Thương hiệu] | SL Tồn kho vuông Odoo -->
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center text-truncate me-2" style="font-size: 0.92rem;">
+                                <field class="me-1 flex-shrink-0" name="is_favorite" widget="boolean_favorite" nolabel="1"/>
+                                <span class="fw-bold text-dark text-truncate">
+                                    <span t-if="record.default_code.value" class="text-primary me-1">[<field name="default_code"/>]</span>
+                                    <field name="name"/>
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                <span t-if="record.brand_id.value" class="badge bg-light text-dark border px-2 py-0 font-monospace" style="border-radius: 4px; font-size: 0.76rem;">
+                                    [<field name="brand_id"/>]
+                                </span>
+                                <div class="qba-stock-pill">
+                                    SL: <field name="qty_available"/> <field name="uom_id"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dòng 2: Giá bán | Mã OE | Bảo hành | Kích thước | Danh mục -->
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center flex-wrap gap-2 text-truncate me-2">
+                                <div class="fw-bold text-danger flex-shrink-0" style="font-size: 1.05rem; line-height: 1.2;">
+                                    <field name="list_price" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </div>
+                                <div t-if="record.oe_codes_display.value" class="flex-shrink-0">
+                                    <span class="qba-oe-badge">
+                                        <span class="text-secondary fw-semibold me-1">OE:</span><field name="oe_codes_display"/>
+                                    </span>
+                                </div>
+                                <div t-if="record.warranty.value" class="flex-shrink-0">
+                                    <span class="badge bg-light text-primary border px-2 py-0 fw-semibold" style="border-radius: 4px; font-size: 0.75rem;">
+                                        <i class="fa fa-shield me-1"/><field name="warranty"/>
+                                    </span>
+                                </div>
+                                <div class="small text-secondary text-truncate" t-if="record.technical_specs.value" style="font-size: 0.78rem;" title="Thông số kỹ thuật / Kích thước">
+                                    <i class="fa fa-wrench me-1 text-muted"/><field name="technical_specs"/>
+                                </div>
+                            </div>
+                            <div class="text-muted small text-truncate flex-shrink-0 ms-2" style="font-size: 0.75rem; max-width: 35%;" title="Danh mục">
+                                <i class="fa fa-folder-o me-1"/><field name="categ_id"/>
+                            </div>
+                        </div>
+
+                        <!-- Dòng 3: Áp dụng xe/động cơ/hộp số/cầu | Nhập & Báo giá gần nhất | Nút so sánh -->
+                        <div class="d-flex align-items-center justify-content-between pt-1 border-top" style="border-color: #f1f5f9 !important;">
+                            <div class="small text-dark text-truncate me-2" style="font-size: 0.76rem;">
+                                <span class="text-muted fw-semibold">Áp dụng: </span>
+                                <span class="text-secondary text-truncate">
+                                    Xe: <t t-esc="record.vehicles_display.value or 'Tất cả'"/>;
+                                    Động cơ: <t t-esc="record.engines_display.value or 'N/A'"/>;
+                                    Hộp số: <t t-esc="record.gearboxes_display.value or 'N/A'"/>;
+                                    Cầu: <t t-esc="record.axle_info.value or 'N/A'"/>
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 flex-shrink-0 ms-2">
+                                <div class="d-flex align-items-center gap-2 small" style="font-size: 0.73rem;">
+                                    <span class="text-success fw-semibold" t-if="record.last_purchase_code.value" title="Toa nhập gần nhất">
+                                        <i class="fa fa-calendar-check-o me-1"/><field name="last_purchase_code"/>
+                                    </span>
+                                    <span class="text-info fw-semibold" t-if="record.last_quotation_code.value" title="Toa báo giá gần nhất">
+                                        <i class="fa fa-clock-o me-1"/><field name="last_quotation_code"/>
+                                    </span>
+                                </div>
+                                <div>
+                                    <button name="action_open_compare_wizard"
+                                            type="object"
+                                            class="btn btn-sm btn-outline-secondary py-0 px-2 fw-normal"
+                                            style="font-size: 0.75rem; line-height: 1.3;"
+                                            title="So sánh chi tiết sản phẩm">
+                                        <i class="fa fa-columns me-1"/>So sánh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </t>
             </xpath>
         </field>

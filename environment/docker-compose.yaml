@@ -15,14 +15,16 @@ services:
 
   odoo:
     image: buihieu521/odoo-qba:latest
+    command: python odoo-bin -c /app/debian/odoo.conf --dev=all
     ports:
       - 8089:8069
       - 8092:8072  
     volumes:
       - ./odoo/data:/var/lib/odoo
-      - ../odoo/addons:/app/addons
+      # Tối ưu tốc độ: addons gốc đã có sẵn trong Docker image, không mount qua Windows NTFS để tránh nghẽn I/O (load nhanh gấp 10-20 lần)
+      # - ../odoo/addons:/app/addons
       - ../odoo/custom_addons:/app/custom_addons
-      - ../odoo/odoo/addons:/app/odoo/addons
+      # - ../odoo/odoo/addons:/app/odoo/addons
       - ../odoo/debian/odoo.conf:/app/debian/odoo.conf
     networks:
       - network

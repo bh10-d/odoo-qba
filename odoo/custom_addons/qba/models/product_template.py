@@ -37,8 +37,36 @@ class ProductTemplate(models.Model):
         store=True,
         index=True
     )
+    oe_codes_list = fields.Html(
+        string="Danh sách mã OE (đa dòng)",
+        compute="_compute_oe_codes_list",
+        store=True
+    )
 
-    # 2. Quản lý Ảnh Phụ (Extra Images)
+    # 2. Thông số kỹ thuật & Bảo hành & Cầu & Mô tả nội bộ
+    warranty = fields.Char(string="Bảo hành", default="Bảo hành 3 tháng")
+    technical_specs = fields.Char(string="Ghi chú / Kích thước", help="Ví dụ: Dài 315, cao 15, ắc 25")
+    axle_info = fields.Char(string="Cầu xe", help="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T")
+    internal_notes = fields.Text(string="Mô tả hàng hóa nội bộ")
+
+    # Tương thích xe, động cơ, hộp số định dạng dấu ; cho Kanban
+    vehicles_display = fields.Char(
+        string="Xe áp dụng",
+        compute="_compute_compatibility_display",
+        store=True
+    )
+    engines_display = fields.Char(
+        string="Động cơ áp dụng",
+        compute="_compute_compatibility_display",
+        store=True
+    )
+    gearboxes_display = fields.Char(
+        string="Hộp số áp dụng",
+        compute="_compute_compatibility_display",
+        store=True
+    )
+
+    # 3. Quản lý Ảnh Phụ (Extra Images)
     extra_image_ids = fields.One2many(
         "qba.product.image",
         "product_tmpl_id",
@@ -49,78 +77,263 @@ class ProductTemplate(models.Model):
         compute="_compute_extra_image_count"
     )
 
-    # 3. Ngày nhập gần nhất & Ngày nhận báo giá gần nhất (Tính toán động từ lịch sử kho & đơn mua/báo giá)
+    # 4. Ngày & Toa nhập gần nhất & Báo giá gần nhất
     last_purchase_date = fields.Date(
         string="Ngày nhập gần nhất",
+        compute="_compute_dates"
+    )
+    last_purchase_code = fields.Char(
+        string="Toa nhập gần nhất",
         compute="_compute_dates"
     )
     last_quotation_date = fields.Date(
         string="Ngày nhận báo giá gần nhất",
         compute="_compute_dates"
     )
+    last_quotation_code = fields.Char(
+        string="Toa báo giá gần nhất",
+        compute="_compute_dates"
+    )
 
     @api.depends("oe_code_ids.name")
     def _compute_oe_codes_display(self):
         for rec in self:
-            codes = rec.oe_code_ids.mapped("name")
-            rec.oe_codes_display = ", ".join(codes) if codes else ""
+            codes = [oe.name.strip() for oe in rec.oe_code_ids if oe.name]
+            rec.oe_codes_display = " | ".join(codes) if codes else ""
+
+    @api.depends("oe_code_ids.name")
+    def _compute_oe_codes_list(self):
+        for rec in self:
+            if not rec.oe_code_ids:
+                rec.oe_codes_list = ""
+                continue
+            lines = [f'<div class="text-nowrap">{oe.name}</div>' for oe in rec.oe_code_ids]
+            rec.oe_codes_list = "".join(lines)
+
+    @api.depends("vehicle_ids.name", "vehicle_ids.complete_name", "engine_ids.name", "engine_ids.complete_name", "gearbox_ids.name", "gearbox_ids.complete_name")
+    def _compute_compatibility_display(self):
+        for rec in self:
+            v_names = rec.vehicle_ids.mapped(lambda v: v.complete_name or v.name)
+            e_names = rec.engine_ids.mapped(lambda e: e.complete_name or e.name)
+            g_names = rec.gearbox_ids.mapped(lambda g: g.complete_name or g.name)
+            rec.vehicles_display = "; ".join(v_names) if v_names else ""
+            rec.engines_display = "; ".join(e_names) if e_names else ""
+            rec.gearboxes_display = "; ".join(g_names) if g_names else ""
 
     @api.depends("extra_image_ids")
     def _compute_extra_image_count(self):
         for rec in self:
-            rec.extra_image_count = len(rec.extra_image_ids)
+            real_id = rec._origin.id or (isinstance(rec.id, int) and rec.id)
+            extra_cnt = len(rec.extra_image_ids)
+            if not real_id:
+                rec.extra_image_count = extra_cnt
+                continue
+
+            att_cnt = self.env['ir.attachment'].search_count([
+                ('res_model', '=', 'product.template'),
+                ('res_id', '=', real_id),
+                ('res_field', '=', False),
+                ('mimetype', '=like', 'image/%')
+            ])
+            rec.extra_image_count = extra_cnt + att_cnt
 
     def _compute_dates(self):
         for rec in self:
             real_id = rec._origin.id or (isinstance(rec.id, int) and rec.id)
+            rec.last_purchase_date = False
+            rec.last_purchase_code = False
+            rec.last_quotation_date = False
+            rec.last_quotation_code = False
             if not real_id:
                 continue
 
-            # 1. Tính ngày nhập gần nhất từ dịch chuyển kho hoàn tất
-            stock_move = self.env["stock.move"].search([
+            uom_name = rec.uom_id.name or "bộ"
+
+            # 1. Tính nhập gần nhất từ đơn mua hàng có số lượng > 0
+            po_line = self.env["purchase.order.line"].search([
                 ("product_id.product_tmpl_id", "=", real_id),
-                ("state", "=", "done"),
-                "|",
-                ("picking_type_id.code", "=", "incoming"),
-                "&", ("location_dest_id.usage", "=", "internal"), ("location_id.usage", "!=", "internal")
-            ], order="date desc", limit=1)
-            
-            if not stock_move:
+                ("product_qty", ">", 0)
+            ], order="date_order desc, id desc", limit=1)
+
+            if po_line and po_line.order_id:
+                po = po_line.order_id
+                code_name = po.name or "PO"
+                dt = po.date_approve or po.date_order
+                date_str = dt.strftime('%d/%m/%Y') if dt else ''
+                rec.last_purchase_date = dt.date() if dt else False
+                qty = po_line.qty_received if po_line.qty_received > 0 else po_line.product_qty
+                rec.last_purchase_code = f"Nhập: {code_name} {date_str} ({qty:g} {uom_name})"
+            else:
+                # Fallback: Kiểm tra dịch chuyển kho hoàn tất
                 stock_move = self.env["stock.move"].search([
                     ("product_id.product_tmpl_id", "=", real_id),
                     ("state", "=", "done"),
-                    ("location_dest_id.usage", "=", "internal")
+                    "|",
+                    ("picking_type_id.code", "=", "incoming"),
+                    "&", ("location_dest_id.usage", "=", "internal"), ("location_id.usage", "!=", "internal")
                 ], order="date desc", limit=1)
 
-            if stock_move and stock_move.date:
-                rec.last_purchase_date = stock_move.date.date()
-            elif not rec.last_purchase_date:
-                # Fallback: Kiểm tra đơn mua hàng đã xác nhận
-                po_line = self.env["purchase.order.line"].search([
-                    ("product_id.product_tmpl_id", "=", real_id),
-                    ("state", "in", ["purchase", "done"])
-                ], order="id desc", limit=1)
-                rec.last_purchase_date = po_line.order_id.date_order.date() if po_line and po_line.order_id and po_line.order_id.date_order else False
+                if stock_move and stock_move.date:
+                    rec.last_purchase_date = stock_move.date.date()
+                    date_str = stock_move.date.strftime('%d/%m/%Y')
+                    qty = stock_move.quantity or stock_move.product_uom_qty
+                    origin = stock_move.picking_id.origin or stock_move.origin or stock_move.picking_id.name or "VN"
+                    rec.last_purchase_code = f"Nhập: {origin} {date_str} ({qty:g} {uom_name})"
 
-            # 2. Tính ngày nhận báo giá NCC gần nhất (Purchase RFQ/Quotation hoặc Báo giá bán)
-            if not rec.last_quotation_date:
-                po_rfq = self.env["purchase.order.line"].search([
+            # 2. Tính ngày nhận báo giá gần nhất (Cứ ngày gần nhất là thể hiện báo giá)
+            po_rfq = self.env["purchase.order.line"].search([
+                ("product_id.product_tmpl_id", "=", real_id)
+            ], order="date_order desc, id desc", limit=1)
+
+            if po_rfq and po_rfq.order_id:
+                dt = po_rfq.order_id.date_order
+                date_str = dt.strftime('%d/%m/%Y') if dt else ''
+                code_name = po_rfq.order_id.name or "PO"
+                rec.last_quotation_date = dt.date() if dt else False
+                rec.last_quotation_code = f"Báo giá: {code_name} {date_str}"
+            else:
+                # Fallback 1: Kiểm tra báo giá bán hàng
+                so_line = self.env["sale.order.line"].search([
                     ("product_id.product_tmpl_id", "=", real_id)
                 ], order="id desc", limit=1)
-                if po_rfq and po_rfq.order_id and po_rfq.order_id.date_order:
-                    rec.last_quotation_date = po_rfq.order_id.date_order.date()
-                else:
-                    # Fallback 1: Kiểm tra báo giá bán hàng
-                    so_line = self.env["sale.order.line"].search([
-                        ("product_id.product_tmpl_id", "=", real_id)
-                    ], order="id desc", limit=1)
-                    if so_line and so_line.order_id and so_line.order_id.date_order:
-                        rec.last_quotation_date = so_line.order_id.date_order.date()
-                    elif rec.seller_ids:
-                        # Fallback 2: Kiểm tra bảng giá nhà cung cấp
-                        sellers = rec.seller_ids.sorted(key=lambda s: s.date_start or s.create_date or fields.Date.today(), reverse=True)
-                        first_seller = sellers[0] if sellers else False
-                        rec.last_quotation_date = first_seller.date_start or (first_seller.create_date.date() if first_seller and first_seller.create_date else False)
+                if so_line and so_line.order_id and so_line.order_id.date_order:
+                    rec.last_quotation_date = so_line.order_id.date_order.date()
+                    date_str = so_line.order_id.date_order.strftime('%d/%m/%Y')
+                    rec.last_quotation_code = f"Báo giá: {so_line.order_id.name or 'TV'} {date_str}"
+                elif rec.seller_ids:
+                    # Fallback 2: Kiểm tra bảng giá nhà cung cấp
+                    def _get_seller_date(s):
+                        if s.date_start:
+                            return s.date_start
+                        if s.create_date:
+                            return s.create_date.date()
+                        return fields.Date.today()
+
+                    sellers = rec.seller_ids.sorted(key=_get_seller_date, reverse=True)
+                    first_seller = sellers[0] if sellers else False
+                    rec.last_quotation_date = first_seller.date_start or (first_seller.create_date.date() if first_seller and first_seller.create_date else False)
+                    if rec.last_quotation_date:
+                        date_str = rec.last_quotation_date.strftime('%d/%m/%Y')
+                        vendor_name = first_seller.partner_id.name if first_seller.partner_id else "NCC"
+                        rec.last_quotation_code = f"Báo giá: {vendor_name} {date_str}"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('internal_notes'):
+                notes = []
+                if vals.get('description_sale'):
+                    notes.append(vals['description_sale'].strip())
+                if vals.get('description_purchase') and vals['description_purchase'].strip() not in notes:
+                    notes.append(vals['description_purchase'].strip())
+                if notes:
+                    vals['internal_notes'] = "\n".join(notes)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
+        if is_admin and 'is_storable' in vals:
+            target_storable = vals.pop('is_storable')
+            res = super().write(vals)
+            self.env.cr.execute(
+                "UPDATE product_template SET is_storable = %s WHERE id IN %s",
+                (target_storable, tuple(self.ids))
+            )
+            self.invalidate_recordset(['is_storable'])
+            variant_ids = self.with_context(active_test=False).mapped('product_variant_ids').ids
+            if variant_ids:
+                self.env.cr.execute(
+                    "UPDATE product_product SET is_storable = %s WHERE id IN %s",
+                    (target_storable, tuple(variant_ids))
+                )
+                self.env['product.product'].browse(variant_ids).invalidate_recordset(['is_storable'])
+            return res
+        return super().write(vals)
+
+    def _register_hook(self):
+        """Tự động đồng bộ mô tả bán hàng / mua hàng sang mô tả hàng hóa nội bộ và chuẩn hóa mã OE dấu |"""
+        super()._register_hook()
+        try:
+            # Chuẩn hóa dấu , thành | trong bảng product_template
+            self.env.cr.execute("""
+                UPDATE product_template 
+                SET oe_codes_display = REPLACE(REPLACE(oe_codes_display, ', ', ' | '), ',', ' | ') 
+                WHERE oe_codes_display LIKE '%,%';
+            """)
+            # Gom toàn bộ mô tả bán hàng / mua hàng về internal_notes nếu internal_notes đang trống
+            products = self.search([
+                ('internal_notes', '=', False),
+                '|',
+                ('description_sale', '!=', False),
+                ('description_purchase', '!=', False)
+            ])
+            for p in products:
+                notes = []
+                if p.description_sale and p.description_sale.strip():
+                    notes.append(p.description_sale.strip())
+                if p.description_purchase and p.description_purchase.strip() and p.description_purchase.strip() not in notes:
+                    notes.append(p.description_purchase.strip())
+                if notes:
+                    p.internal_notes = "\n".join(notes)
+        except Exception:
+            pass
+
+
+    def action_view_extra_images(self):
+        """Xem toàn bộ ảnh phụ của sản phẩm"""
+        self.ensure_one()
+        return {
+            "name": f"Thư Viện Ảnh: {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "qba.product.image",
+            "view_mode": "kanban,list,form",
+            "domain": [("product_tmpl_id", "=", self.id)],
+            "context": {
+                "default_product_tmpl_id": self.id,
+                "default_name": f"Ảnh {self.name}",
+            },
+            "target": "current",
+        }
+
+    def action_open_multi_image_wizard(self):
+        """Mở popup tải lên nhiều ảnh sản phẩm cùng lúc"""
+        self.ensure_one()
+        return {
+            "name": f"Tải Lên Nhiều Ảnh: {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "qba.product.image.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_product_tmpl_id": self.id,
+            },
+        }
+
+    def action_open_ai_assistant(self):
+        """Mở Trợ lý AI tra cứu thông số / hướng dẫn đo"""
+        self.ensure_one()
+        context = {
+            "default_user_query": f"Cách đo thông số kỹ thuật cho: {self.name}",
+        }
+        if "qba.ai.assistant" in self.env:
+            return {
+                "name": "Cách Lấy Thông Số Sản Phẩm (Trợ Lý AI)",
+                "type": "ir.actions.act_window",
+                "res_model": "qba.ai.assistant",
+                "view_mode": "form",
+                "target": "new",
+                "context": context,
+            }
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Trợ Lý AI",
+                "message": "Chức năng AI đang được xử lý hoặc module qba_ai chưa được bật.",
+                "type": "info",
+                "sticky": False,
+            }
+        }
 
     def action_open_compare_wizard(self):
         """Mở bảng so sánh sản phẩm"""
@@ -155,4 +368,3 @@ class ProductTemplate(models.Model):
                 ('product_code', '!=', False)
             ], limit=1)
             rec.supplier_code = supplierinfo.product_code or ''
-

@@ -17,9 +17,8 @@ debian/*
 !/custom_addons/
 !/custom_addons/qba/
 !/custom_addons/qba/**
-
-# 3. TẠM THỜI CHẶN module AI (chưa hoàn thiện, không push lên Git)
-custom_addons/qba_ai/
+!/custom_addons/qba_ai/
+!/custom_addons/qba_ai/**
 
 # 4. Loại trừ file rác, file tạm, cache và dữ liệu runtime
 __pycache__/
@@ -37,7 +36,8 @@ __pycache__/
 # Dữ liệu runtime, filestore & session của Odoo
 filestore/
 sessions/
-data/
+/data/
+!/custom_addons/**/data/
 *.db
 *.sqlite
 

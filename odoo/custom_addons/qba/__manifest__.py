@@ -14,7 +14,8 @@
         "views/gearbox_views.xml",
         "views/vehicle_views.xml",
         "views/product_supplierinfo_views.xml",
-        "views/product_label_wizard_views.xml"
+        "views/product_label_wizard_views.xml",
+        "views/product_image_wizard_views.xml"
     ],
     "assets": {
         "web.assets_backend": [

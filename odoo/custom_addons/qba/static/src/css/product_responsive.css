@@ -1,60 +1,186 @@
 /* ==========================================================================
-   QBA AUTO PARTS - CLEAN & RESPONSIVE STYLING
+   QBA AUTO PARTS - FULL-WIDTH 100% PRODUCT ROW & HIGH-DENSITY STYLING
    ========================================================================== */
 
-/* Thẻ Kanban Odoo tự nhiên */
-.o_kanban_renderer .o_kanban_record {
-    border-radius: 8px;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.o_kanban_renderer .o_kanban_record:hover {
-    border-color: #93c5fd;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
-
-/* ==========================================================================
-   Tối ưu hiển thị Thẻ Sản Phẩm Responsive
-   ========================================================================== */
+/* 1. Thẻ sản phẩm Kanban: Siêu Tinh Gọn, Mật Độ Hiển Thị Cao (Chỉ áp dụng cho thẻ .qba-product-card trong view Kanban QBA) */
+.o_kanban_view.qba-product-kanban-view .o_kanban_record.qba-product-card,
 .o_kanban_renderer .o_kanban_record.qba-product-card {
-    border-radius: 8px;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    align-self: flex-start !important;
+    margin-bottom: 4px !important;
+    padding: 6px 12px !important;
+    position: relative !important;
+    background: #ffffff;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Trên Màn hình di động (< 768px): Thẻ sản phẩm mở rộng 100% chuẩn di động */
-@media (max-width: 767.98px) {
-    .o_kanban_renderer .o_kanban_record.qba-product-card {
-        width: 100% !important;
-        max-width: 100% !important;
-        flex: 1 1 100% !important;
-    }
+.o_kanban_view.qba-product-kanban-view .o_kanban_record.qba-product-card:hover,
+.o_kanban_renderer .o_kanban_record.qba-product-card:hover {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12) !important;
 }
 
-.qba-oe-tag-mini {
-    font-family: 'JetBrains Mono', 'Consolas', monospace;
-    font-size: 0.75rem;
-    background-color: #f8fafc;
-    color: #475569;
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px solid #e2e8f0;
+/* Đảm bảo container không dãn khoảng cách giữa các thẻ dọc - CHỈ áp dụng cho view Kanban sản phẩm QBA */
+.o_kanban_view.qba-product-kanban-view .o_kanban_renderer.o_kanban_ungrouped,
+.o_kanban_renderer:has(> .o_kanban_record.qba-product-card) {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    gap: 4px !important;
+    min-height: auto !important;
+    height: auto !important;
 }
 
-/* Con trỏ kính lúp khi rê vào ảnh để biết có thể bấm phóng to */
+/* 2. Tiện ích văn bản 2 dòng */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 3. Huy hiệu số lượng tồn kho vuông chữ nhật chuẩn concept Odoo */
+.qba-stock-pill {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px !important;
+    padding: 2px 8px;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: #1e293b;
+    background: #f8fafc;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.3;
+}
+
+/* 4. Huy hiệu mã OE vuông vắn chuẩn Odoo */
+.qba-oe-badge {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px !important;
+    background: #f8fafc;
+    font-size: 0.78rem;
+    font-family: monospace;
+    font-weight: 500;
+    color: #1e293b;
+    padding: 1px 7px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* 5. Cột ảnh Thumbnail: Cố định tuyệt đối 72x72px, chống tràn ảnh dọc/ngang */
+.qba-img-hover-box {
+    position: relative !important;
+    width: 72px !important;
+    height: 72px !important;
+    min-width: 72px !important;
+    min-height: 72px !important;
+    max-width: 72px !important;
+    max-height: 72px !important;
+    overflow: hidden !important;
+    border-radius: 6px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2px !important;
+}
+
+.qba-img-hover-box .o_field_image,
+.qba-img-hover-box .o_field_widget {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 70px !important;
+    max-height: 70px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.qba-img-hover-box img,
+.qba-img-hover-box .o_field_image img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 68px !important;
+    max-height: 68px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: auto !important;
+    border: none !important;
+}
+
+/* Huy hiệu ảnh phụ góc thumbnail */
+.qba-extra-badge {
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 2px !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+    border-radius: 3px !important;
+    font-size: 0.65rem !important;
+    padding: 1px 4px !important;
+    line-height: 1.1 !important;
+    cursor: pointer !important;
+    z-index: 5 !important;
+    transition: background 0.15s ease;
+}
+
+.qba-extra-badge:hover {
+    background: rgba(15, 23, 42, 0.98) !important;
+    transform: scale(1.05);
+}
+
+/* 6. Tương tác hình ảnh Thumbnail (Hover có viền highlight, hiển thị popup preview HD) */
+.qba-img-hover-scale {
+    cursor: zoom-in !important;
+    transition: all 0.18s ease;
+}
+
+.qba-img-hover-box:hover {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35) !important;
+}
+
+.qba-form-avatar-zoom img {
+    cursor: zoom-in !important;
+    transition: all 0.18s ease;
+}
+
+.qba-form-avatar-zoom:hover img {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* 7. Tương tác hình ảnh: Phóng to (Zoom-in cursor) cho Lightbox */
 .qba-compare-wrapper img,
 .qba-lightbox-trigger,
-.o_kanban_record aside img {
+.o_list_table .qba-lightbox-trigger img,
+.o_list_table img.qba-lightbox-trigger,
+.o_list_table .o_data_row .qba-lightbox-trigger {
     cursor: zoom-in !important;
+    transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
-.qba-compare-wrapper img:hover,
-.o_kanban_record aside img:hover {
-    opacity: 0.92;
-}
-
-/* ==========================================================================
-   Slider Sản Phẩm Trong Modal So Sánh
-   ========================================================================== */
+/* 8. Slider Sản Phẩm Trong Modal So Sánh */
 .qba-slider-viewport {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;

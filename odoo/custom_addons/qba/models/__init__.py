@@ -1,6 +1,7 @@
 from . import brand
 from . import product_oe_code
 from . import product_image
+from . import product_image_wizard
 from . import product_template
 from . import vehicle
 from . import engine

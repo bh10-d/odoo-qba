@@ -1,0 +1,37 @@
+<odoo>
+    <record id="res_config_settings_view_form_qba_ai" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.qba.ai</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="90"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="QBA AI" string="QBA AI Assistant" name="qba_ai">
+                    <block title="Cấu hình Google Gemini AI API" id="qba_ai_setting_block">
+                        <setting id="gemini_api_key_setting" help="Khóa API để kết nối dịch vụ Gemini AI. Lấy miễn phí tại aistudio.google.com">
+                            <field name="gemini_api_key" password="True"/>
+                        </setting>
+                        <setting id="gemini_model_setting" help="Tên mô hình AI (Mặc định: gemini-1.5-flash)">
+                            <field name="gemini_model_name"/>
+                        </setting>
+                        <setting id="gemini_max_tokens_setting" help="Giới hạn số Token phản hồi để chống tiêu tốn dung lượng (Khuyên dùng: 500-1000)">
+                            <field name="gemini_max_tokens"/>
+                        </setting>
+                        <setting id="ai_cache_setting" help="Lưu đệm các câu hỏi trùng lặp để tiết kiệm 100% lượt gọi API">
+                            <field name="ai_enable_cache"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_qba_ai_config_settings" model="ir.actions.act_window">
+        <field name="name">Cấu hình QBA AI</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module' : 'qba_ai'}</field>
+    </record>
+</odoo>

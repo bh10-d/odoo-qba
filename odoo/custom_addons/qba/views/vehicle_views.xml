@@ -4,10 +4,12 @@
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
             <list>
+                <field name="complete_name" string="Dòng xe (Cây phân cấp mẹ / con)"/>
                 <field name="name"/>
-                <field name="brand"/>
-                <field name="model_code"/>
-                <field name="category"/>
+                <field name="parent_id"/>
+                <field name="product_count" string="Số sản phẩm"/>
+                <field name="brand" optional="hide"/>
+                <field name="category" optional="hide"/>
             </list>
         </field>
     </record>
@@ -17,19 +19,32 @@
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
             <form>
-                <group>
-                    <field name="name"/>
-                    <field name="brand"/>
-                    <field name="model_code"/>
-                    <field name="category"/>
-                    <field name="engine_id"/>
-                    <field name="gearbox_id"/>
-                    <field name="year"/>
-                    <field name="certificate"/>op
-                    <field name="axle"/>
-                    <field name="note"/>
-                    <field name="description"/>
-                </group>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_products" type="object" class="oe_stat_button" icon="fa-cubes">
+                            <field name="product_count" widget="statinfo" string="Sản phẩm"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Tên xe / Cấp phân loại"/>
+                        <h1><field name="name" placeholder="Ví dụ: Thaco, OLLIN, 2015, xe ben..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="parent_id" placeholder="Chọn danh mục cha (VD: Thaco / OLLIN / 2015)"/>
+                            <field name="brand"/>
+                            <field name="model_code"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="year"/>
+                            <field name="engine_id"/>
+                            <field name="gearbox_id"/>
+                            <field name="axle"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                </sheet>
             </form>
         </field>
     </record>

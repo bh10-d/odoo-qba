@@ -1,0 +1,61 @@
+<odoo>
+    <!-- List View Kiến Thức AI -->
+    <record id="view_qba_ai_knowledge_tree" model="ir.ui.view">
+        <field name="name">qba.ai.knowledge.tree</field>
+        <field name="model">qba.ai.knowledge</field>
+        <field name="arch" type="xml">
+            <list string="Thư Viện Kiến Thức AI">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="keywords"/>
+                <field name="product_category_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Kiến Thức AI -->
+    <record id="view_qba_ai_knowledge_form" model="ir.ui.view">
+        <field name="name">qba.ai.knowledge.form</field>
+        <field name="model">qba.ai.knowledge</field>
+        <field name="arch" type="xml">
+            <form string="Bài Hướng Dẫn Kỹ Thuật">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tiêu đề bài hướng dẫn"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Cách đo đường kính ngoài đĩa phanh..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="category"/>
+                            <field name="keywords" placeholder="đĩa phanh, đường kính, lỗ ốc..."/>
+                        </group>
+                        <group>
+                            <field name="product_category_id"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Tóm tắt ngắn (Dành cho AI RAG context)">
+                        <field name="summary" placeholder="Tóm tắt ngắn gọn quy trình đo để AI đọc nhanh..." nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Nội dung chi tiết">
+                            <field name="content" widget="html"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_qba_ai_knowledge" model="ir.actions.act_window">
+        <field name="name">Thư Viện Kiến Thức &amp; Hướng Dẫn Đo</field>
+        <field name="res_model">qba.ai.knowledge</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

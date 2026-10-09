@@ -1,0 +1,89 @@
+<odoo>
+    <data noupdate="1">
+        <!-- Thiết lập System Parameter Mặc Định -->
+        <record id="param_gemini_api_key" model="ir.config_parameter">
+            <field name="key">qba_ai.gemini_api_key</field>
+            <field name="value"></field>
+        </record>
+
+        <record id="param_gemini_model_name" model="ir.config_parameter">
+            <field name="key">qba_ai.gemini_model_name</field>
+            <field name="value">gemini-3.6-flash</field>
+        </record>
+
+        <record id="param_gemini_max_tokens" model="ir.config_parameter">
+            <field name="key">qba_ai.gemini_max_tokens</field>
+            <field name="value">800</field>
+        </record>
+
+        <record id="param_gemini_enable_cache" model="ir.config_parameter">
+            <field name="key">qba_ai.enable_cache</field>
+            <field name="value">True</field>
+        </record>
+
+        <!-- Dữ liệu mẫu Hướng dẫn đo phụ tùng -->
+        <record id="knowledge_dia_phanh" model="qba.ai.knowledge">
+            <field name="name">Cách đo đường kính và độ dày đĩa phanh ô tô</field>
+            <field name="category">measurement</field>
+            <field name="summary">Hướng dẫn cách dùng thước kẹp đo đường kính ngoài, đường kính lỗ moay ơ, và số lỗ ốc đĩa phanh.</field>
+            <field name="keywords">đĩa phanh, thắng, đường kính, độ dày, lỗ ốc, moay ơ, vios, camry</field>
+            <field name="content"><![CDATA[
+                <h4>Quy trình đo đĩa phanh chuẩn kỹ thuật:</h4>
+                <ol>
+                    <li><b>Đường kính ngoài (Outer Diameter):</b> Dùng thước kẹp (hoặc thước dây) đo khoảng cách lớn nhất giữa 2 mép đĩa phanh (VD: 255mm, 275mm).</li>
+                    <li><b>Độ dày đĩa (Thickness):</b> Đo độ dày mặt đĩa phanh mới hoặc mặt làm việc còn lại.</li>
+                    <li><b>Số lỗ ốc & PCD:</b> Đếm tổng số lỗ ốc bắt mâm (4 lỗ, 5 lỗ) và đo khoảng cách tâm giữa các lỗ ốc (PCD).</li>
+                    <li><b>Đường kính lỗ định tâm (Center Bore):</b> Đo đường kính lỗ tròn chính giữa đĩa phanh.</li>
+                </ol>
+            ]]></field>
+        </record>
+
+        <record id="knowledge_moay_o" model="qba.ai.knowledge">
+            <field name="name">Cách đếm số răng moay ơ / đầu láp ô tô</field>
+            <field name="category">measurement</field>
+            <field name="summary">Cách đếm chính xác số răng trong và số răng ngoài của đầu láp / moay ơ.</field>
+            <field name="keywords">moay ơ, đầu láp, số răng, răng trong, răng ngoài, cốt láp</field>
+            <field name="content"><![CDATA[
+                <h4>Hướng dẫn đếm số răng đầu láp:</h4>
+                <ul>
+                    <li><b>Số răng ngoài (Outer Spline):</b> Đếm tổng số răng cưa trên trục đầu láp cắm vào moay ơ bánh xe (VD: 25 răng, 26 răng).</li>
+                    <li><b>Số răng trong (Inner Spline):</b> Đếm số răng cưa phía trong lỗ cắm trục láp.</li>
+                    <li><b>Đường kính phớt chặn mỡ:</b> Dùng thước kẹp đo đường kính vị trí ép phớt chắn bụi.</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <record id="knowledge_bom_tro_luc" model="qba.ai.knowledge">
+            <field name="name">Cách đo thông số bơm trợ lực lái xúc lật / ô tô tải</field>
+            <field name="category">measurement</field>
+            <field name="summary">Hướng dẫn đo gờ định tâm, khoảng cách tâm lỗ bắt bu lông, chiều sâu thân và bước ren đường dầu bơm trợ lực.</field>
+            <field name="keywords">bơm trợ lực, lái, xúc lật, phi 77, phi 80, M18, ren dầu, bu lông</field>
+            <field name="content"><![CDATA[
+                <h4>Quy trình đo thông số bơm trợ lực lái (theo tài liệu kỹ thuật QBA):</h4>
+                <ol>
+                    <li><b>Đường kính gờ định tâm (Flange Diameter):</b> Dùng thước kẹp đo đường kính ngoài của gờ tròn lắp ráp (VD: Ø80mm, Ø77mm).</li>
+                    <li><b>Khoảng cách tâm lỗ bu lông bắt thân:</b> Đo khoảng cách giữa 2 tâm lỗ ốc tai bắt bơm (VD: 107mm).</li>
+                    <li><b>Chiều dài / Chiều sâu cổ gờ:</b> Đo chiều dài từ mặt bích định tâm đến hết gờ (VD: 22mm).</li>
+                    <li><b>Đường kính & bước ren lỗ dầu (Port Thread):</b> Dùng dưỡng đo ren xác định bước ren và đường kính ren cấp/hồi dầu (VD: M18x1.5).</li>
+                </ol>
+            ]]></field>
+        </record>
+        <record id="knowledge_tam_bua_tbua031" model="qba.ai.knowledge">
+            <field name="name">Cách đo thông số Tăm bua sau Thaco cầu bìa 8T3 (TBUA.031)</field>
+            <field name="category">measurement</field>
+            <field name="summary">Quy trình lấy các kích thước chuẩn của Tăm bua sau Thaco 8T3: đường kính ngoài 400mm, đường kính lòng 335mm, gờ định vị 295mm, chiều cao tổng 235mm, lòng bố thắng 165mm, phi lỗ tắc kê.</field>
+            <field name="keywords">TBUA.031, tăm bua, tam bua, thaco, cầu bìa, 8T3, 335, 295, 235, 165, 400, tang trống, bố thắng</field>
+            <field name="content"><![CDATA[
+                <h4>Quy trình đo thông số Tăm bua sau Thaco cầu bìa 8T3 (Mã: TBUA.031):</h4>
+                <ol>
+                    <li><b>Đường kính ngoài lớn nhất (Tán ngoài):</b> Đo mép vành tán lớn nhất của tăm bua = <b>400 mm</b>.</li>
+                    <li><b>Đường kính trong mặt làm việc (Lòng tang trống):</b> Đo đường kính trong vị trí má phanh tiếp xúc = <b>335 mm</b>.</li>
+                    <li><b>Đường kính gờ định tâm / tâm lỗ:</b> Đo đường kính vòng tròn gờ định vị moay ơ = <b>295 mm</b>.</li>
+                    <li><b>Chiều cao tổng thể:</b> Đặt tăm bua trên mặt phẳng, đo từ đáy vành đến đỉnh mặt bích = <b>235 mm</b>.</li>
+                    <li><b>Bề rộng mặt bố thắng (Chiều sâu lòng phanh):</b> Đo chiều sâu lòng làm việc của má phanh = <b>165 mm</b>.</li>
+                    <li><b>Đường kính và số lỗ tắc kê:</b> Đo phi (Ø) lỗ bu lông tắc kê và đếm số lỗ bu lông bắt vào moay ơ.</li>
+                </ol>
+            ]]></field>
+        </record>
+    </data>
+</odoo>

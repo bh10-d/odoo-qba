@@ -1,0 +1,61 @@
+<odoo>
+    <!-- Form View Trợ Lý AI Tra Cứu (Wizard) -->
+    <record id="view_qba_ai_assistant_form" model="ir.ui.view">
+        <field name="name">qba.ai.assistant.form</field>
+        <field name="model">qba.ai.assistant</field>
+        <field name="arch" type="xml">
+            <form string="Trợ Lý AI Tra Cứu Phụ Tùng &amp; Đo Lường">
+                <header>
+                    <button name="action_ask_ai" string="Hỏi AI / Tra Cứu Ngay" type="object" class="btn-primary" icon="fa-magic"/>
+                    <button name="action_send_to_admin" string="Gửi Admin Duyệt Bổ Sung" type="object" class="btn-outline-warning" icon="fa-paper-plane" invisible="not user_query"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="alert" invisible="not status_message">
+                        <i class="fa fa-info-circle fa-2x me-3"></i>
+                        <div>
+                            <strong>Trạng thái: </strong> <field name="status_message" class="mb-0"/>
+                        </div>
+                    </div>
+
+                    <group>
+                        <field name="user_query" placeholder="Nhập câu hỏi hoặc thông số cần đo... (Ví dụ: 'Cách đo đĩa phanh trước Vios', 'Đĩa phanh 250mm 5 lỗ', 'Moay ơ 26 răng')..."/>
+                        <field name="confidence_level" widget="badge" decoration-success="confidence_level == 'high'" decoration-warning="confidence_level == 'medium'" decoration-danger="confidence_level == 'low'" invisible="not confidence_level"/>
+                    </group>
+
+                    <notebook invisible="not ai_response and not matched_product_ids and not matched_knowledge_ids">
+                        <page string="Câu Trả Lời &amp; Hướng Dẫn AI">
+                            <field name="ai_response" widget="html"/>
+                        </page>
+                        <page string="Sản Phẩm Khớp Trong Kho QBA" invisible="not matched_product_ids">
+                            <field name="matched_product_ids" readonly="1">
+                                <list string="Sản phẩm tìm thấy">
+                                    <field name="default_code" string="Mã SP / SKU"/>
+                                    <field name="name" string="Tên sản phẩm"/>
+                                    <field name="brand_id" string="Thương hiệu"/>
+                                    <field name="list_price" string="Giá bán"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Bài Hướng Dẫn Đo Liên Quan" invisible="not matched_knowledge_ids">
+                            <field name="matched_knowledge_ids" readonly="1">
+                                <list string="Bài hướng dẫn">
+                                    <field name="name"/>
+                                    <field name="category"/>
+                                    <field name="keywords"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_qba_ai_assistant" model="ir.actions.act_window">
+        <field name="name">Trợ Lý AI Tra Cứu Phụ Tùng &amp; Đo</field>
+        <field name="res_model">qba.ai.assistant</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>
