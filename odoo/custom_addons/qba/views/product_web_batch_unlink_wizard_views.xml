@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1. Giao diện Wizard Xác nhận Hủy Liên kết Website Hàng loạt -->
+    <record id="view_qba_product_web_batch_unlink_wizard_form" model="ir.ui.view">
+        <field name="name">qba.product.web.batch.unlink.wizard.form</field>
+        <field name="model">qba.product.web.batch.unlink.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Xác nhận hủy liên kết Website hàng loạt">
+                <sheet>
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fa fa-exclamation-triangle fa-2x me-3 text-warning" title="Cảnh báo"/>
+                        <div>
+                            <div class="fw-bold fs-6">Cảnh báo hủy liên kết Website hàng loạt:</div>
+                            <div>
+                                Bạn đang chuẩn bị gỡ bỏ liên kết Website của 
+                                <strong><field name="product_count" readonly="1" class="text-danger"/></strong> sản phẩm.
+                                Thao tác này sẽ xóa đường link trên Odoo và đặt lại trạng thái sản phẩm trên Website thành chưa liên kết.
+                            </div>
+                        </div>
+                    </div>
+
+                    <group>
+                        <field name="product_tmpl_ids" readonly="1">
+                            <list>
+                                <field name="default_code" string="Mã SKU" class="font-monospace fw-bold"/>
+                                <field name="name" string="Tên sản phẩm"/>
+                                <field name="website_product_url" string="Link Web hiện tại" widget="url"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_batch_unlink"
+                            string="Xác nhận hủy liên kết"
+                            type="object"
+                            class="btn-danger"
+                            icon="fa-chain-broken"/>
+                    <button string="Hủy bỏ"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- 2. Server Action gán vào menu Hành động (Action) trong danh sách Sản phẩm (List View) -->
+    <record id="action_server_batch_unlink_website" model="ir.actions.server">
+        <field name="name">Hủy liên kết Web hàng loạt</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_open_batch_unlink_wizard()
+        </field>
+    </record>
+</odoo>
+

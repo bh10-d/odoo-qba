@@ -1,4 +1,6 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+from .api_utils import get_odoo_api_headers
 
 
 class ProductTemplate(models.Model):
@@ -14,16 +16,39 @@ class ProductTemplate(models.Model):
 
     engine_ids = fields.Many2many(
         "qba.engine", "product_engine_rel", "product_id", "engine_id",
-        string="Động cơ áp dụng"
+        string="Danh sách động cơ"
     )
 
     gearbox_ids = fields.Many2many(
         "qba.gearbox", "product_gearbox_rel", "product_id", "gearbox_id",
-        string="Hộp số áp dụng"
+        string="Danh sách hộp số"
     )
 
     barcode = fields.Char(string="Mã vạch", related="default_code", readonly=True)
     label_image = fields.Binary("Tem sản phẩm", attachment=True)
+
+    # 5. Liên kết Website SEO (Next.js / Express.js)
+    website_product_url = fields.Char(
+        string="Đường link Website",
+        help="Đường link sản phẩm trên website SEO (vd: https://phutungotoquyba.com/products/loc-nhot-dong-co-123)"
+    )
+    website_product_id = fields.Integer(
+        string="ID Sản phẩm Web",
+        index=True,
+        help="ID định danh sản phẩm trên database website"
+    )
+    website_product_slug = fields.Char(
+        string="Slug Web"
+    )
+    is_website_linked = fields.Boolean(
+        string="Đã liên kết Website",
+        compute="_compute_is_website_linked",
+        store=True,
+        index=True
+    )
+    website_link_date = fields.Datetime(
+        string="Ngày liên kết Web"
+    )
 
     # 1. Quản lý Đa Mã OE (OE Codes)
     oe_code_ids = fields.One2many(
@@ -217,6 +242,29 @@ class ProductTemplate(models.Model):
                         vendor_name = first_seller.partner_id.name if first_seller.partner_id else "NCC"
                         rec.last_quotation_code = f"Báo giá: {vendor_name} {date_str}"
 
+    @api.model
+    def _parse_website_url_data(self, url):
+        """Tách ID và slug từ URL website nếu người dùng nhập hoặc import trực tiếp"""
+        if not url:
+            return 0, False
+        import re
+        clean_url = str(url).strip().split("?")[0].split("#")[0].rstrip("/")
+        p_id = 0
+        match = re.search(r'(?:/|-)(\d+)$', clean_url)
+        if match:
+            try:
+                p_id = int(match.group(1))
+            except (ValueError, TypeError):
+                pass
+        parts = clean_url.split("/")
+        p_slug = False
+        if parts:
+            last_segment = parts[-1]
+            slug_match = re.match(r'^(.*?)(?:-\d+)?$', last_segment)
+            if slug_match and slug_match.group(1):
+                p_slug = slug_match.group(1)
+        return p_id, p_slug
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -228,6 +276,16 @@ class ProductTemplate(models.Model):
                     notes.append(vals['description_purchase'].strip())
                 if notes:
                     vals['internal_notes'] = "\n".join(notes)
+
+            # Tự động trích xuất thông tin liên kết Web nếu có website_product_url
+            if vals.get('website_product_url') and not vals.get('website_product_id'):
+                p_id, p_slug = self._parse_website_url_data(vals['website_product_url'])
+                if p_id:
+                    vals['website_product_id'] = p_id
+                if p_slug:
+                    vals['website_product_slug'] = p_slug
+                if not vals.get('website_link_date'):
+                    vals['website_link_date'] = fields.Datetime.now()
         return super().create(vals_list)
 
     def write(self, vals):
@@ -248,6 +306,24 @@ class ProductTemplate(models.Model):
                 )
                 self.env['product.product'].browse(variant_ids).invalidate_recordset(['is_storable'])
             return res
+
+        # Tự động trích xuất hoặc dọn dẹp liên kết Web khi cập nhật website_product_url
+        if 'website_product_url' in vals:
+            url = vals.get('website_product_url')
+            if url:
+                if not vals.get('website_product_id'):
+                    p_id, p_slug = self._parse_website_url_data(url)
+                    if p_id:
+                        vals['website_product_id'] = p_id
+                    if p_slug:
+                        vals['website_product_slug'] = p_slug
+                if not vals.get('website_link_date'):
+                    vals['website_link_date'] = fields.Datetime.now()
+            else:
+                vals.setdefault('website_product_id', False)
+                vals.setdefault('website_product_slug', False)
+                vals.setdefault('website_link_date', False)
+
         return super().write(vals)
 
     def _register_hook(self):
@@ -287,6 +363,7 @@ class ProductTemplate(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "qba.product.image",
             "view_mode": "kanban,list,form",
+            "views": [(False, "kanban"), (False, "list"), (False, "form")],
             "domain": [("product_tmpl_id", "=", self.id)],
             "context": {
                 "default_product_tmpl_id": self.id,
@@ -303,6 +380,7 @@ class ProductTemplate(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "qba.product.image.wizard",
             "view_mode": "form",
+            "views": [(False, "form")],
             "target": "new",
             "context": {
                 "default_product_tmpl_id": self.id,
@@ -321,6 +399,7 @@ class ProductTemplate(models.Model):
                 "type": "ir.actions.act_window",
                 "res_model": "qba.ai.assistant",
                 "view_mode": "form",
+                "views": [(False, "form")],
                 "target": "new",
                 "context": context,
             }
@@ -342,6 +421,7 @@ class ProductTemplate(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "qba.product.compare.wizard",
             "view_mode": "form",
+            "views": [(False, "form")],
             "target": "new",
             "context": {
                 "default_product_ids": [(6, 0, self.ids)],
@@ -355,6 +435,7 @@ class ProductTemplate(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'qba.product.label.wizard',
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'new',
             'context': {
                 'default_product_id': self.id,
@@ -368,3 +449,170 @@ class ProductTemplate(models.Model):
                 ('product_code', '!=', False)
             ], limit=1)
             rec.supplier_code = supplierinfo.product_code or ''
+
+    @api.depends("website_product_url", "website_product_id")
+    def _compute_is_website_linked(self):
+        for rec in self:
+            rec.is_website_linked = bool(rec.website_product_url or rec.website_product_id)
+
+    @api.onchange("website_product_url")
+    def _onchange_website_product_url(self):
+        if self.website_product_url:
+            url = self.website_product_url.strip()
+            clean_url = url.split("?")[0].split("#")[0].rstrip("/")
+            import re
+            # Lấy ID dạng /123 hoặc -123 ở cuối URL
+            match = re.search(r'(?:/|-)(\d+)$', clean_url)
+            if match:
+                try:
+                    self.website_product_id = int(match.group(1))
+                except (ValueError, TypeError):
+                    pass
+            # Lấy slug
+            parts = clean_url.split("/")
+            if parts:
+                last_segment = parts[-1]
+                slug_match = re.match(r'^(.*?)(?:-\d+)?$', last_segment)
+                if slug_match and slug_match.group(1):
+                    self.website_product_slug = slug_match.group(1)
+            if not self.website_link_date:
+                self.website_link_date = fields.Datetime.now()
+        else:
+            self.website_product_id = False
+            self.website_product_slug = False
+            self.website_link_date = False
+
+    def action_open_website_url(self):
+        """Mở trực tiếp trang sản phẩm trên website hoặc mở popup liên kết nếu chưa có link"""
+        self.ensure_one()
+        url = self.website_product_url
+        if not url and self.website_product_id:
+            base_url = self.env['ir.config_parameter'].sudo().get_param(
+                'qba.website_public_url', 'http://localhost:3000'
+            ).rstrip('/')
+            slug = self.website_product_slug or 'san-pham'
+            url = f"{base_url}/products/{slug}-{self.website_product_id}"
+
+        if not url:
+            return self.action_open_web_link_wizard()
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
+
+    def action_open_web_link_wizard(self):
+        """Mở popup liên kết / tra cứu sản phẩm với Website SEO"""
+        self.ensure_one()
+        return {
+            "name": f"Liên Kết Website SEO: {self.name}",
+            "type": "ir.actions.act_window",
+            "res_model": "qba.product.web.link.wizard",
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+            "context": {
+                "default_product_tmpl_id": self.id,
+                "default_target_url": self.website_product_url or "",
+                "default_search_query": self.default_code or self.name or "",
+            },
+        }
+
+    def action_unlink_website(self):
+        """Hủy liên kết sản phẩm với Website cả ở Odoo lẫn Backend Express"""
+        for rec in self:
+            web_id = rec.website_product_id
+            if web_id:
+                success, auth_error = rec._notify_express_unlink(web_id)
+                if auth_error:
+                    raise UserError(_(
+                        "Xác thực thất bại (401 Unauthorized)!\n\n"
+                        "Khóa bí mật HMAC không chính xác hoặc không khớp với cấu hình Backend. Dữ liệu trên Odoo được giữ nguyên."
+                    ))
+            rec.website_product_url = False
+            rec.website_product_id = False
+            rec.website_product_slug = False
+            rec.website_link_date = False
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": "Đã hủy liên kết",
+                "message": "Đã gỡ liên kết trên cả Odoo ERP và Website SEO thành công.",
+                "type": "info",
+                "sticky": False,
+            }
+        }
+
+    def _notify_express_unlink(self, web_product_id):
+        """Gửi lệnh hủy liên kết tới Backend Express để đặt odooProductId = null và isOdooLinked = false"""
+        import requests
+        api_param = self.env['ir.config_parameter'].sudo().get_param('qba.website_api_url') or 'http://host.docker.internal:5000/api/v1'
+        candidates = [
+            api_param.strip().rstrip('/'),
+            'http://host.docker.internal:5000/api/v1',
+            'http://172.18.0.1:5000/api/v1',
+            'http://localhost:5000/api/v1',
+        ]
+        dedup = []
+        for c in candidates:
+            if c:
+                if 'localhost:5000' in c or '127.0.0.1:5000' in c:
+                    c = c.replace('localhost:5000', 'host.docker.internal:5000').replace('127.0.0.1:5000', 'host.docker.internal:5000')
+                if c not in dedup:
+                    dedup.append(c)
+
+        headers = get_odoo_api_headers(self.env)
+        success = False
+        auth_error = False
+        for ep in dedup:
+            endpoint = f"{ep}/products/{web_product_id}/link-odoo"
+            try:
+                resp = requests.post(endpoint, json={'odooProductId': None}, headers=headers, timeout=2.5)
+                if resp.status_code == 200:
+                    success = True
+                    break
+                elif resp.status_code == 401:
+                    auth_error = True
+                    break
+            except Exception:
+                pass
+        return success, auth_error
+
+    def action_open_batch_sync_wizard(self):
+        """Mở popup đối soát & đồng bộ liên kết Website theo SKU từ menu Hành động"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Đồng bộ liên kết Website theo SKU',
+            'res_model': 'qba.product.web.batch.sync.wizard',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'active_model': 'product.template',
+                'active_ids': self.ids,
+            }
+        }
+
+    def action_open_batch_unlink_wizard(self):
+        """Mở popup xác nhận hủy liên kết Website hàng loạt từ menu Hành động"""
+        valid_prods = self.exists().filtered(lambda p: p.is_website_linked)
+        if not valid_prods:
+            raise UserError(_("Không có sản phẩm nào trong các bản ghi được chọn đang có liên kết Website."))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Xác nhận hủy liên kết Website hàng loạt',
+            'res_model': 'qba.product.web.batch.unlink.wizard',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'new',
+            'context': {
+                'active_model': 'product.template',
+                'active_ids': valid_prods.ids,
+                'default_product_tmpl_ids': [(6, 0, valid_prods.ids)],
+            }
+        }
+
+
+

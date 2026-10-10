@@ -20,6 +20,21 @@
             </field>
 
             <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="is_website_linked" invisible="1"/>
+                <button name="action_open_website_url"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-globe">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text text-success fw-bold" invisible="not is_website_linked">
+                            <i class="fa fa-check-circle me-1"/>Trên Web
+                        </span>
+                        <span class="o_stat_text text-muted" invisible="is_website_linked">
+                            <i class="fa fa-chain me-1"/>Chưa Link
+                        </span>
+                        <span class="o_stat_text small text-secondary">Website SEO</span>
+                    </div>
+                </button>
                 <button name="action_view_extra_images"
                         type="object"
                         class="oe_stat_button"
@@ -29,6 +44,11 @@
             </xpath>
 
             <xpath expr="//header" position="inside">
+                <button name="action_open_web_link_wizard"
+                        type="object"
+                        string="Link Web SEO"
+                        class="btn-outline-primary"
+                        icon="fa-globe"/>
                 <button name="action_open_ai_assistant"
                         type="object"
                         string="Cách Lấy Thông Số SP (AI)"
@@ -160,6 +180,41 @@
                         </list>
                     </field>
                 </page>
+
+                <!-- Tab Liên Kết Website SEO -->
+                <page string="Website SEO" name="website_seo">
+                    <group>
+                        <group string="Thông Tin Liên Kết Website (phutungotoquyba.com)">
+                            <field name="is_website_linked" widget="boolean_toggle" readonly="1"/>
+                            <field name="website_product_url" widget="url" placeholder="https://phutungotoquyba.com/products/slug-id"/>
+                            <field name="website_product_id" readonly="1"/>
+                            <field name="website_product_slug" readonly="1"/>
+                            <field name="website_link_date" readonly="1"/>
+                        </group>
+                        <group string="Thao Tác Nhanh">
+                            <div class="d-flex flex-column gap-2 pt-2">
+                                <button name="action_open_web_link_wizard"
+                                        type="object"
+                                        string="Tìm Kiếm &amp; Chọn Từ Website"
+                                        class="btn btn-outline-primary"
+                                        icon="fa-search"/>
+                                <button name="action_open_website_url"
+                                        type="object"
+                                        string="Mở Xem Trên Website Công Khai"
+                                        class="btn btn-outline-success"
+                                        icon="fa-external-link"
+                                        invisible="not is_website_linked"/>
+                                <button name="action_unlink_website"
+                                        type="object"
+                                        string="Hủy Liên Kết Website"
+                                        class="btn btn-outline-danger"
+                                        icon="fa-chain-broken"
+                                        invisible="not is_website_linked"
+                                        confirm="Bạn có chắc chắn muốn gỡ liên kết website cho sản phẩm này không?"/>
+                            </div>
+                        </group>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>
@@ -183,6 +238,8 @@
             </xpath>
             <xpath expr="//field[@name='list_price']" position="after">
                 <field name="qty_available" optional="show"/>
+                <field name="is_website_linked" optional="show" string="Web SEO" widget="boolean"/>
+                <field name="website_product_url" optional="hide" widget="url" string="Link Web"/>
                 <field name="last_purchase_code" optional="show" string="Toa nhập gần nhất"/>
                 <field name="last_quotation_code" optional="hide" string="Toa báo giá gần nhất"/>
                 <field name="internal_notes" optional="hide" string="Mô tả nội bộ"/>
@@ -208,6 +265,9 @@
             <xpath expr="//filter[@name='filter_to_sell']" position="before">
                 <filter string="Có mã OE" name="filter_has_oe_code" domain="[('oe_code_ids', '!=', False)]"/>
                 <filter string="Hàng sẵn trong kho" name="filter_in_stock" domain="[('qty_available', '&gt;', 0)]"/>
+                <separator/>
+                <filter string="Đã liên kết Web" name="filter_website_linked" domain="[('is_website_linked', '=', True)]"/>
+                <filter string="Chưa liên kết Web" name="filter_not_website_linked" domain="[('is_website_linked', '=', False)]"/>
                 <separator/>
             </xpath>
         </field>
@@ -246,6 +306,8 @@
                 <field name="uom_id"/>
                 <field name="internal_notes"/>
                 <field name="image_512"/>
+                <field name="is_website_linked"/>
+                <field name="website_product_url"/>
             </xpath>
             <xpath expr="//t[@t-name='card']" position="replace">
                 <t t-name="card" class="qba-product-card d-flex flex-row align-items-center w-100" t-att-data-product-id="record.id.raw_value" t-att-data-extra-count="record.extra_image_count.raw_value">
@@ -264,7 +326,7 @@
 
                     <!-- CỘT PHẢI: 3 dòng thông tin siêu tinh gọn -->
                     <div class="d-flex flex-column justify-content-center flex-grow-1" style="min-width: 0; gap: 3px;">
-                        <!-- Dòng 1: [Mã SKU] Tên sản phẩm | [Thương hiệu] | SL Tồn kho vuông Odoo -->
+                        <!-- Dòng 1: [Mã SKU] Tên sản phẩm | [Thương hiệu] | [Web] | SL Tồn kho vuông Odoo -->
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="d-flex align-items-center text-truncate me-2" style="font-size: 0.92rem;">
                                 <field class="me-1 flex-shrink-0" name="is_favorite" widget="boolean_favorite" nolabel="1"/>
@@ -274,7 +336,10 @@
                                 </span>
                             </div>
                             <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                <span t-if="record.brand_id.value" class="badge bg-light text-dark border px-2 py-0 font-monospace" style="border-radius: 4px; font-size: 0.76rem;">
+                                <span t-if="record.is_website_linked.raw_value" class="qba-web-badge" title="Đã có bài viết trên Website SEO">
+                                    <i class="fa fa-globe me-1" title="Website SEO"/>Web SEO
+                                </span>
+                                <span t-if="record.brand_id.value" class="qba-brand-pill">
                                     [<field name="brand_id"/>]
                                 </span>
                                 <div class="qba-stock-pill">
@@ -296,15 +361,15 @@
                                 </div>
                                 <div t-if="record.warranty.value" class="flex-shrink-0">
                                     <span class="badge bg-light text-primary border px-2 py-0 fw-semibold" style="border-radius: 4px; font-size: 0.75rem;">
-                                        <i class="fa fa-shield me-1"/><field name="warranty"/>
+                                        <i class="fa fa-shield me-1" title="Bảo hành"/><field name="warranty"/>
                                     </span>
                                 </div>
                                 <div class="small text-secondary text-truncate" t-if="record.technical_specs.value" style="font-size: 0.78rem;" title="Thông số kỹ thuật / Kích thước">
-                                    <i class="fa fa-wrench me-1 text-muted"/><field name="technical_specs"/>
+                                    <i class="fa fa-wrench me-1 text-muted" title="Thông số"/><field name="technical_specs"/>
                                 </div>
                             </div>
                             <div class="text-muted small text-truncate flex-shrink-0 ms-2" style="font-size: 0.75rem; max-width: 35%;" title="Danh mục">
-                                <i class="fa fa-folder-o me-1"/><field name="categ_id"/>
+                                <i class="fa fa-folder-o me-1" title="Danh mục"/><field name="categ_id"/>
                             </div>
                         </div>
 

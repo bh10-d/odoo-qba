@@ -49,6 +49,7 @@ class QbaGearbox(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "product.template",
             "view_mode": "kanban,list,form",
+            "views": [(False, "kanban"), (False, "list"), (False, "form")],
             "domain": [("gearbox_ids", "in", [self.id])],
             "context": {"default_gearbox_ids": [(4, self.id)]},
         }
