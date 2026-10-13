@@ -102,6 +102,7 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
             'res_model': 'qba.ai.assistant',
             'res_id': self.id,
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'current',
         }
 
@@ -121,6 +122,7 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
             'res_model': 'qba.ai.assistant',
             'res_id': self.id,
             'view_mode': 'form',
+            'views': [(False, 'form')],
             'target': 'current',
         }
 

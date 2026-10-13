@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_qba" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.qba</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="85"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Phụ Tùng QBA" string="Phụ Tùng Ô Tô QBA" name="qba">
+                    <block title="Cấu hình Kết nối Website SEO" id="qba_website_setting_block">
+                        <setting id="qba_website_public_url_setting" help="Địa chỉ trang web công khai mở trên trình duyệt (vd: https://phutungqba.io.vn/)">
+                            <field name="website_public_url" placeholder="http://localhost:3000"/>
+                        </setting>
+                        <setting id="qba_website_api_url_setting" help="Địa chỉ API Web SEO (vd: https://be.phutungqba.io.vn/api/v1)">
+                            <field name="website_api_url" placeholder="http://host.docker.internal:5000/api/v1"/>
+                            <div class="mt-2">
+                                <button name="action_test_website_api_connection"
+                                        type="object"
+                                        string="Kiểm Tra Kết Nối API Web"
+                                        class="btn btn-sm btn-outline-primary"
+                                        icon="fa-plug"/>
+                            </div>
+                        </setting>
+                        <setting id="qba_website_api_secret_setting" help="Khóa bí mật dùng để sinh chữ ký điện tử HMAC-SHA256 khi gọi API sang Backend Express. Khóa này tuyệt đối không gửi thô qua mạng và chỉ dùng để tạo chữ ký động xác thực kèm timestamp.">
+                            <field name="website_api_secret" password="True" placeholder="Nhập khóa bí mật HMAC..."/>
+                        </setting>
+                        <setting id="qba_website_batch_sync_setting" help="Tự động quét và khớp toàn bộ sản phẩm trong kho Odoo với các bài viết trên Website SEO theo mã SKU (Mã nội bộ).">
+                            <div class="mt-2">
+                                <button name="action_open_batch_sync_wizard"
+                                        type="object"
+                                        string="Quét &amp; Đồng Bộ Kho Với Web Theo SKU"
+                                        class="btn btn-sm btn-outline-success"
+                                        icon="fa-refresh"/>
+                            </div>
+                        </setting>
+                        <setting id="qba_website_batch_unlink_setting" help="Gỡ bỏ toàn bộ liên kết Website của tất cả sản phẩm đang có link trong kho Odoo và đặt lại trạng thái trên Website.">
+                            <div class="mt-2">
+                                <button name="action_open_batch_unlink_wizard"
+                                        type="object"
+                                        string="Hủy Liên Kết Toàn Bộ Kho Với Web"
+                                        class="btn btn-sm btn-outline-danger"
+                                        icon="fa-chain-broken"/>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_qba_config_settings" model="ir.actions.act_window">
+        <field name="name">Cấu hình Phụ Tùng QBA</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module' : 'qba'}</field>
+    </record>
+</odoo>
+

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- 1. Giao diện Wizard Đồng bộ Liên kết Web theo SKU -->
+    <record id="view_qba_product_web_batch_sync_wizard_form" model="ir.ui.view">
+        <field name="name">qba.product.web.batch.sync.wizard.form</field>
+        <field name="model">qba.product.web.batch.sync.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Đồng bộ liên kết Website SEO theo SKU">
+                <header>
+                    <button name="action_start_sync"
+                            string="Bắt đầu đồng bộ"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-refresh"
+                            invisible="state == 'done'"/>
+                    <button string="Đóng &amp; Tải lại danh sách"
+                            class="btn-primary"
+                            special="cancel"
+                            invisible="state != 'done'"/>
+                    <button string="Hủy bỏ"
+                            class="btn-secondary"
+                            special="cancel"
+                            invisible="state == 'done'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <!-- Thông báo hướng dẫn ở bước chuẩn bị -->
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="status" invisible="state == 'done'">
+                        <i class="fa fa-info-circle fa-2x me-3 text-info" title="Thông tin hướng dẫn"/>
+                        <div>
+                            <div class="fw-bold">Cơ chế đối soát tự động theo mã SKU:</div>
+                            <div>
+                                Hệ thống sẽ đối chiếu mã SKU (Mã nội bộ) của Odoo với Mã SKU Kho trên Website SEO. 
+                                Các sản phẩm trùng khớp chính xác 100% sẽ được tự động liên kết 2 chiều trên cả Odoo ERP và Website.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông báo kết quả sau khi hoàn thành -->
+                    <div class="alert alert-success d-flex align-items-center mb-3" role="status" invisible="state != 'done'">
+                        <i class="fa fa-check-circle fa-2x me-3 text-success" title="Hoàn tất"/>
+                        <div>
+                            <div class="fw-bold fs-6">Đã hoàn thành đồng bộ dữ liệu:</div>
+                            <div><field name="result_message" readonly="1" class="fw-semibold text-success"/></div>
+                        </div>
+                    </div>
+
+                    <!-- Màn hình cấu hình trước khi chạy -->
+                    <div invisible="state == 'done'">
+                        <group>
+                            <group string="Tùy chọn phạm vi quét">
+                                <field name="mode" widget="radio"/>
+                                <field name="product_count" string="Số lượng mã dự kiến xử lý" readonly="1"/>
+                                <field name="skip_already_linked" widget="boolean_toggle"/>
+                            </group>
+                            <group string="Thông tin kết nối">
+                                <field name="site_url" readonly="1"/>
+                                <field name="api_url" readonly="1"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <!-- Màn hình kết quả sau khi chạy -->
+                    <div invisible="state != 'done'">
+                        <div class="row text-center mb-3 g-2">
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-success-subtle text-success">
+                                    <div class="small fw-semibold text-uppercase">Khớp thành công</div>
+                                    <div class="fs-4 fw-bold"><field name="matched_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-warning-subtle text-warning">
+                                    <div class="small fw-semibold text-uppercase">Chưa có trên Web</div>
+                                    <div class="fs-4 fw-bold"><field name="unmatched_count"/></div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 border rounded bg-light text-secondary">
+                                    <div class="small fw-semibold text-uppercase">Bỏ qua (Đã có link)</div>
+                                    <div class="fs-4 fw-bold"><field name="skipped_count"/></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <field name="line_ids" readonly="1">
+                            <list decoration-success="state == 'success'"
+                                  decoration-warning="state == 'not_found'"
+                                  decoration-muted="state == 'skipped'">
+                                <field name="sku" string="Mã SKU" class="font-monospace fw-bold"/>
+                                <field name="product_name" string="Sản phẩm Odoo"/>
+                                <field name="web_name" string="Bài viết Website"/>
+                                <field name="web_url" string="Link Web" widget="url" optional="show"/>
+                                <field name="state" string="Trạng thái" widget="badge"
+                                       decoration-success="state == 'success'"
+                                       decoration-warning="state == 'not_found'"
+                                       decoration-muted="state == 'skipped'"/>
+                            </list>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- 2. Server Action gán vào menu Hành động (Action) trong danh sách Sản phẩm (List View) -->
+    <record id="action_server_batch_sync_web_link_by_sku" model="ir.actions.server">
+        <field name="name">Đồng bộ liên kết Web theo SKU</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = records.action_open_batch_sync_wizard()
+        </field>
+    </record>
+</odoo>

@@ -8,3 +8,8 @@ access_qba_product_oe_code_user,qba.product.oe_code.user,model_qba_product_oe_co
 access_qba_product_image_user,qba.product.image.user,model_qba_product_image,base.group_user,1,1,1,1
 access_qba_product_image_wizard_user,qba.product.image.wizard.user,model_qba_product_image_wizard,base.group_user,1,1,1,1
 access_qba_product_compare_wizard_user,qba.product.compare.wizard.user,model_qba_product_compare_wizard,base.group_user,1,1,1,1
+access_qba_product_web_link_wizard_user,qba.product.web.link.wizard.user,model_qba_product_web_link_wizard,base.group_user,1,1,1,1
+access_qba_product_web_link_candidate_user,qba.product.web.link.candidate.user,model_qba_product_web_link_candidate,base.group_user,1,1,1,1
+access_qba_product_web_batch_sync_wizard_user,qba.product.web.batch.sync.wizard.user,model_qba_product_web_batch_sync_wizard,base.group_user,1,1,1,1
+access_qba_product_web_batch_sync_line_user,qba.product.web.batch.sync.line.user,model_qba_product_web_batch_sync_line,base.group_user,1,1,1,1
+access_qba_product_web_batch_unlink_wizard_user,qba.product.web.batch.unlink.wizard.user,model_qba_product_web_batch_unlink_wizard,base.group_user,1,1,1,1
