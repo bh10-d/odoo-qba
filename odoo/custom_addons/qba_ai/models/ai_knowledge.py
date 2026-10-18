@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import AccessError
 
 class QbaAiKnowledge(models.Model):
     _name = "qba.ai.knowledge"
@@ -27,3 +27,19 @@ class QbaAiKnowledge(models.Model):
             name = f"[{dict(self._fields['category'].selection).get(rec.category)}] {rec.name}"
             result.append((rec.id, name))
         return result
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.user.has_group('qba_ai.group_qba_ai_manager'):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI (AI Manager) mới có quyền tạo bài kiến thức kỹ thuật."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.user.has_group('qba_ai.group_qba_ai_manager'):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI (AI Manager) mới có quyền chỉnh sửa bài kiến thức kỹ thuật."))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.user.has_group('qba_ai.group_qba_ai_manager'):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI (AI Manager) mới có quyền xóa bài kiến thức kỹ thuật."))
+        return super().unlink()

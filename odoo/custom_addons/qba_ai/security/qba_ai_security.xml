@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_qba_ai" model="ir.module.category">
+        <field name="name">QBA AI</field>
+        <field name="description">Phân quyền trợ lý AI và quản lý thông số kỹ thuật phụ tùng QBA</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- 1. Nhóm Người Dùng AI / Kỹ Thuật Viên: Có quyền xem kiến thức, xem thông số, nhập bản nháp thông số -->
+    <record id="group_qba_ai_user" model="res.groups">
+        <field name="name">Người dùng AI / Kỹ thuật viên (AI User)</field>
+        <field name="category_id" ref="module_category_qba_ai"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!-- 2. Nhóm Quản Trị Viên AI (AI Manager): Duy nhất có quyền duyệt, xác thực, từ chối hoặc thu hồi thông số chính thức & bài kiến thức -->
+    <record id="group_qba_ai_manager" model="res.groups">
+        <field name="name">Quản trị viên AI (AI Manager / Approver)</field>
+        <field name="category_id" ref="module_category_qba_ai"/>
+        <field name="implied_ids" eval="[(4, ref('group_qba_ai_user'))]"/>
+        <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+</odoo>
+

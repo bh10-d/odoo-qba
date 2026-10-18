@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Ke Thua Form View Danh Muc San Pham: Thiet Ke Chuan Theo Mau Mockup -->
+    <record id="view_product_category_tech_specs_form" model="ir.ui.view">
+        <field name="name">product.category.tech.specs.form</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <!-- 0. Gan class dinh danh rieng cho form view Danh muc ky thuat -->
+            <xpath expr="//form" position="attributes">
+                <attribute name="class" add="qba-category-specs-form" separator=" "/>
+            </xpath>
+
+            <!-- 1. Chen 3 cot truc quan (Van ban huong dan - Anh so do do - Hinh anh danh muc) ngay duoi Danh muc chinh -->
+            <xpath expr="//group[@name='first']" position="after">
+                <div class="row align-items-start my-3">
+                    <!-- Cot 1: Mo ta danh muc, Cach dat ten, Cach do -->
+                    <div class="col-12 col-lg-5 pe-lg-3">
+                        <div class="mb-3">
+                            <label for="tech_introduction" string="Mô tả danh mục" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
+                            <field name="tech_introduction" widget="html" nolabel="1" placeholder="Nhập mô tả danh mục..."/>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="naming_convention" string="Cách đặt tên:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
+                            <field name="naming_convention" widget="html" nolabel="1" placeholder="Nhập quy ước đặt tên sản phẩm..."/>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="measurement_instructions" string="Cách đo:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
+                            <field name="measurement_instructions" widget="html" nolabel="1" placeholder="A: Đo thông số 1&#10;B: Đo thông số 2..."/>
+                        </div>
+                    </div>
+
+                    <!-- Cot 2: Anh huong dan cach do san pham (So do A, B, C, D...) -->
+                    <div class="col-12 col-md-6 col-lg-4 text-center px-lg-2">
+                        <field name="measurement_diagram" widget="image" options="{'size': [0, 420]}" class="w-100 object-fit-contain" style="max-height: 450px;" nolabel="1"/>
+                        <field name="measurement_diagram_filename" invisible="1"/>
+                    </div>
+
+                    <!-- Cot 3: Khung anh danh muc (Ti le ngang 3 : cao 4) -->
+                    <div class="col-12 col-md-6 col-lg-3 text-center ps-lg-2">
+                        <field name="category_image" widget="image" options="{'size': [0, 420]}" class="w-100 object-fit-contain" style="max-height: 450px;" nolabel="1"/>
+                        <field name="category_image_filename" invisible="1"/>
+                    </div>
+                </div>
+            </xpath>
+
+            <!-- 2. Chen Bang cau hinh thong so ky thuat dong va Luu y AI o duoi cung cua Form Sheet -->
+            <xpath expr="//sheet" position="inside">
+                <notebook class="mt-4">
+                    <!-- Tab 1: Cấu hình thông số kỹ thuật -->
+                    <page string="Cấu hình thông số kỹ thuật (A, B, C, D...)" name="spec_defs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small">
+                                Bấm biểu tượng cây bút để xem/sửa chi tiết (mô tả, cách đo, tùy chọn selection) của thông số đã tạo.
+                            </span>
+                            <div class="d-flex gap-2">
+                                <button name="action_create_new_spec"
+                                        type="object"
+                                        string="Tạo thông số chi tiết (Modal)"
+                                        icon="fa-plus-circle"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Mở popup tạo mới thông số kỹ thuật với đầy đủ cấu hình chi tiết (Hướng dẫn đo, Tùy chọn selection...)"
+                                        groups="qba_ai.group_qba_ai_manager,base.group_system"/>
+                                <button name="action_open_spec_parser_wizard"
+                                        type="object"
+                                        string="Trích xuất từ tên sản phẩm (AI)"
+                                        icon="fa-magic"
+                                        class="btn btn-sm btn-outline-success"
+                                        title="Chạy công cụ trích xuất thông số từ tên sản phẩm thuộc danh mục này"
+                                        groups="qba_ai.group_qba_ai_manager"/>
+                            </div>
+                        </div>
+                        <field name="tech_spec_definition_ids" context="{'active_test': False, 'default_category_ids': [(4, id)], 'current_category_id': id}">
+                            <list editable="bottom" open_form_view="True" decoration-muted="not active">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name" string="Tên thông số (Ký hiệu A, B, C...)"/>
+                                <field name="code" string="Mã kỹ thuật"/>
+                                <field name="data_type" string="Kiểu dữ liệu"/>
+                                <field name="uom" string="Đơn vị tính"/>
+                                <field name="is_critical" string="Thông số cốt lõi" widget="boolean_toggle"/>
+                                <field name="is_required" string="Bắt buộc" widget="boolean_toggle"/>
+                                <field name="is_searchable" string="Tìm kiếm" widget="boolean_toggle" optional="show"/>
+                                <field name="active" widget="boolean_toggle"/>
+                                <button name="action_open_spec_form"
+                                        type="object"
+                                        string="Chi tiết"
+                                        icon="fa-pencil"
+                                        class="btn-link text-primary"
+                                        title="Mở modal cấu hình chi tiết thông số (Hướng dẫn đo, Tùy chọn selection, v.v.)"
+                                        invisible="not id"/>
+                                <button name="action_delete_spec_definition"
+                                        type="object"
+                                        string="Xóa hẳn"
+                                        icon="fa-trash"
+                                        class="btn-link text-danger"
+                                        title="Xóa vĩnh viễn thông số này khỏi toàn bộ hệ thống"
+                                        confirm="Bạn có chắc chắn muốn XÓA VĨNH VIỄN thông số kỹ thuật này khỏi hệ thống không? Dữ liệu thông số này trên các sản phẩm (nếu có) cũng sẽ bị xóa hoàn toàn."
+                                        groups="qba_ai.group_qba_ai_manager,base.group_system"
+                                        invisible="not id"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <!-- Tab 2: Lưu ý kỹ thuật & Gợi ý AI -->
+                    <page string="Lưu ý kỹ thuật &amp; Gợi ý AI" name="tech_notes">
+                        <field name="tech_notes" placeholder="Ghi chú về sai số cho phép, lưu ý nhận diện phụ tùng cho AI gợi ý..."/>
+                    </page>
+
+                    <!-- Tab 3: Tab trong de chua Logistics & Dinh gia kho -->
+                    <page string="Kho &amp; Định giá" name="stock_valuation_tab"/>
+                </notebook>
+
+                <!-- 3. Dua Chatter (Gui tin, Ghi chu) truc tiep vao trong Sheet de khong bi day sang cot ben phai (o-aside) -->
+                <chatter class="mt-5 pt-3 border-top"/>
+            </xpath>
+
+            <!-- 4. Di chuyen nhom Logistics, Dinh gia ton kho va Tai khoan vao Tab 'Kho & Dinh gia' -->
+            <xpath expr="//page[@name='stock_valuation_tab']" position="inside">
+                <xpath expr="//group[@name='logistics']/.." position="move"/>
+                <xpath expr="//group[@name='account_property']" position="move"/>
+            </xpath>
+
+            <!-- Xoa chatter o vi tri ben phai de tranh ep hep khung form -->
+            <xpath expr="//form/chatter" position="replace"/>
+        </field>
+    </record>
+
+    <!-- Action Truy Cap Danh Muc & Huong Dan Do Luong Tu Menu AI -->
+    <record id="action_qba_category_tech_info" model="ir.actions.act_window">
+        <field name="name">Danh Mục &amp; Hướng Dẫn Đo Lường</field>
+        <field name="res_model">product.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="product.product_category_list_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chọn danh mục để xem hoặc cấu hình hướng dẫn kỹ thuật!
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,15 @@
+/* ==========================================================================
+   QBA AI - TECHNICAL SPECIFICATIONS SCOPED LAYOUT
+   ========================================================================== */
+
+/* Mo rong Form Sheet 100% chieu ngang chi cho rieng Form Danh muc ky thuat */
+.o_form_view.qba-category-specs-form .o_form_sheet_bg {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+.o_form_view.qba-category-specs-form .o_form_sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+

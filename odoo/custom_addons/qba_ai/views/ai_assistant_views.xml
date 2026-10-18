@@ -11,7 +11,7 @@
                 </header>
                 <sheet>
                     <div class="alert alert-info d-flex align-items-center mb-3" role="alert" invisible="not status_message">
-                        <i class="fa fa-info-circle fa-2x me-3"></i>
+                        <i class="fa fa-info-circle fa-2x me-3" title="Thông tin"></i>
                         <div>
                             <strong>Trạng thái: </strong> <field name="status_message" class="mb-0"/>
                         </div>
@@ -22,7 +22,12 @@
                         <field name="confidence_level" widget="badge" decoration-success="confidence_level == 'high'" decoration-warning="confidence_level == 'medium'" decoration-danger="confidence_level == 'low'" invisible="not confidence_level"/>
                     </group>
 
-                    <notebook invisible="not ai_response and not matched_product_ids and not matched_knowledge_ids">
+                    <field name="query_perf_html" widget="html" nolabel="1" invisible="not query_perf_html"/>
+
+                    <notebook>
+                        <page string="Bảng Đối Chiếu Kỹ Thuật (Matching)">
+                            <field name="matching_explanation_html" widget="html" nolabel="1"/>
+                        </page>
                         <page string="Câu Trả Lời &amp; Hướng Dẫn AI">
                             <field name="ai_response" widget="html"/>
                         </page>

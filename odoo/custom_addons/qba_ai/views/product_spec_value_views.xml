@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View Thông Số Kỹ Thuật Sản Phẩm (Odoo 18 <list>) -->
+    <record id="view_qba_product_spec_value_list" model="ir.ui.view">
+        <field name="name">qba.product.spec.value.list</field>
+        <field name="model">qba.product.spec.value</field>
+        <field name="arch" type="xml">
+            <list string="Thông Số Kỹ Thuật Sản Phẩm"
+                  decoration-success="validation_status == 'verified'"
+                  decoration-warning="validation_status == 'unverified'"
+                  decoration-danger="validation_status == 'conflicted'">
+                <field name="product_tmpl_id"/>
+                <field name="spec_definition_id"/>
+                <field name="spec_code" optional="show"/>
+                <field name="value_display" string="Giá trị"/>
+                <field name="uom" optional="show"/>
+                <field name="data_type" optional="show"/>
+                <field name="is_critical" optional="show" widget="boolean_toggle"/>
+                <field name="validation_status" widget="badge"
+                       decoration-success="validation_status == 'verified'"
+                       decoration-warning="validation_status == 'unverified'"
+                       decoration-danger="validation_status == 'conflicted'"/>
+                <field name="source" optional="show"/>
+                <field name="notes" optional="show"/>
+                <field name="verified_by_id" optional="hide"/>
+                <field name="verified_date" optional="hide"/>
+                <button name="action_verify" type="object" string="Duyệt" icon="fa-check"
+                        title="Quản trị viên AI duyệt thông số chính thức"
+                        invisible="validation_status == 'verified'"
+                        groups="qba_ai.group_qba_ai_manager"/>
+                <button name="action_reject" type="object" string="Báo lỗi" icon="fa-exclamation-triangle"
+                        title="Báo xung đột hoặc sai thông số"
+                        invisible="validation_status == 'conflicted'"
+                        groups="qba_ai.group_qba_ai_manager"/>
+                <button name="action_reset_unverified" type="object" string="Hủy duyệt" icon="fa-undo"
+                        title="Thu hồi xác thực về trạng thái chưa duyệt"
+                        invisible="validation_status == 'unverified'"
+                        groups="qba_ai.group_qba_ai_manager"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Thông Số Kỹ Thuật Sản Phẩm -->
+    <record id="view_qba_product_spec_value_form" model="ir.ui.view">
+        <field name="name">qba.product.spec.value.form</field>
+        <field name="model">qba.product.spec.value</field>
+        <field name="arch" type="xml">
+            <form string="Chi Tiết Thông Số Kỹ Thuật">
+                <header>
+                    <button name="action_verify" type="object" string="Xác Thực Chính Thức"
+                            class="btn-success" invisible="validation_status == 'verified'"
+                            groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_reject" type="object" string="Đánh Dấu Xung Đột"
+                            class="btn-danger" invisible="validation_status == 'conflicted'"
+                            groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_reset_unverified" type="object" string="Hủy Duyệt Về Bản Nháp"
+                            class="btn-secondary" invisible="validation_status == 'unverified'"
+                            groups="qba_ai.group_qba_ai_manager"/>
+                    <field name="validation_status" widget="statusbar" statusbar_visible="unverified,verified,conflicted"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Sản phẩm &amp; Định nghĩa">
+                            <field name="product_tmpl_id"/>
+                            <field name="spec_definition_id"/>
+                            <field name="spec_code" readonly="1"/>
+                            <field name="data_type" readonly="1"/>
+                            <field name="uom" readonly="1"/>
+                            <field name="is_critical" readonly="1"/>
+                        </group>
+                        <group string="Kiểm duyệt &amp; Nguồn dữ liệu">
+                            <field name="source"/>
+                            <field name="verified_by_id" readonly="1" invisible="not verified_by_id"/>
+                            <field name="verified_date" readonly="1" invisible="not verified_date"/>
+                        </group>
+                    </group>
+                    <group string="Giá trị thông số">
+                        <field name="value_display" string="Giá trị (Nhập tại đây)"/>
+                        <field name="value_char" invisible="data_type not in ('char', 'selection')" readonly="1"/>
+                        <field name="value_integer" invisible="data_type != 'integer'" readonly="1"/>
+                        <field name="value_float" invisible="data_type != 'float'" readonly="1"/>
+                        <field name="value_boolean" invisible="data_type != 'boolean'" readonly="1"/>
+                    </group>
+                    <group string="Ghi chú &amp; Lý do xung đột">
+                        <field name="notes" placeholder="Ghi chú thêm hoặc lý do báo sai lệch thông số..." nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View Thông Số Kỹ Thuật -->
+    <record id="view_qba_product_spec_value_search" model="ir.ui.view">
+        <field name="name">qba.product.spec.value.search</field>
+        <field name="model">qba.product.spec.value</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm thông số sản phẩm">
+                <field name="product_tmpl_id" string="Sản phẩm"/>
+                <field name="spec_definition_id" string="Thông số"/>
+                <field name="spec_code" string="Mã thông số"/>
+                <field name="value_display" string="Giá trị"/>
+                <field name="notes" string="Ghi chú"/>
+                <separator/>
+                <filter name="need_review" string="Cần Kiểm Duyệt (Chưa duyệt / Lỗi)"
+                        domain="[('validation_status', 'in', ('unverified', 'conflicted'))]"/>
+                <filter name="unverified" string="Chưa kiểm duyệt" domain="[('validation_status', '=', 'unverified')]"/>
+                <filter name="verified" string="Đã xác thực" domain="[('validation_status', '=', 'verified')]"/>
+                <filter name="conflicted" string="Xung đột / Lỗi" domain="[('validation_status', '=', 'conflicted')]"/>
+                <separator/>
+                <filter name="critical" string="Thông số cốt lõi" domain="[('is_critical', '=', True)]"/>
+                <group expand="0" string="Nhóm theo">
+                    <filter string="Sản phẩm" name="group_product" context="{'group_by': 'product_tmpl_id'}"/>
+                    <filter string="Thông số kỹ thuật" name="group_spec" context="{'group_by': 'spec_definition_id'}"/>
+                    <filter string="Trạng thái xác thực" name="group_status" context="{'group_by': 'validation_status'}"/>
+                    <filter string="Nguồn dữ liệu" name="group_source" context="{'group_by': 'source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: Hàng Chờ Kiểm Duyệt Thông Số (Review Queue) -->
+    <record id="action_qba_product_spec_value_review" model="ir.actions.act_window">
+        <field name="name">Kiểm Duyệt Thông Số Kỹ Thuật</field>
+        <field name="res_model">qba.product.spec.value</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_qba_product_spec_value_search"/>
+        <field name="context">{'search_default_need_review': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Không có thông số nào cần kiểm duyệt!
+            </p>
+            <p>
+                Tất cả các thông số kỹ thuật đã được Quản trị viên AI xác thực chính xác.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Tất Cả Thông Số Sản Phẩm -->
+    <record id="action_qba_product_spec_value_all" model="ir.actions.act_window">
+        <field name="name">Tất Cả Thông Số Sản Phẩm</field>
+        <field name="res_model">qba.product.spec.value</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_qba_product_spec_value_search"/>
+    </record>
+</odoo>
+

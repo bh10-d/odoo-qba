@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, AccessError
 
 class QbaAiApprovalQueue(models.Model):
     _name = "qba.ai.approval.queue"
@@ -29,6 +28,8 @@ class QbaAiApprovalQueue(models.Model):
 
     def action_approve(self):
         """Admin duyệt -> Tự động chuyển câu trả lời thành 1 bài Kiến Thức Chuẩn"""
+        if not self.env.user.has_group('qba_ai.group_qba_ai_manager'):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI (AI Manager) mới có quyền duyệt yêu cầu này."))
         for rec in self:
             if rec.state == 'approved':
                 continue
@@ -51,8 +52,26 @@ class QbaAiApprovalQueue(models.Model):
 
     def action_reject(self):
         """Từ chối câu trả lời"""
+        if not self.env.user.has_group('qba_ai.group_qba_ai_manager'):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI (AI Manager) mới có quyền từ chối yêu cầu này."))
         for rec in self:
             rec.write({
                 'state': 'rejected',
                 'reviewer_id': self.env.user.id
             })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        is_ai_manager = self.env.user.has_group("qba_ai.group_qba_ai_manager")
+        for vals in vals_list:
+            if vals.get("state") and vals.get("state") != "pending":
+                if not is_ai_manager:
+                    raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền tạo bản ghi hàng chờ ở trạng thái khác 'Chờ duyệt'."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals and not self.env.user.has_group("qba_ai.group_qba_ai_manager"):
+            for rec in self:
+                if vals["state"] != rec.state:
+                    raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền thay đổi trạng thái phê duyệt hàng chờ."))
+        return super().write(vals)
