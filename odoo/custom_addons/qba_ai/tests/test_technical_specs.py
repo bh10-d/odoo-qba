@@ -1438,6 +1438,100 @@ class TestTechnicalSpecs(TransactionCase):
         self.assertEqual(action_cat_tbua.get("params", {}).get("type"), "warning")
         self.assertIn("Chưa hỗ trợ công cụ trích xuất", action_cat_tbua.get("params", {}).get("title", ""))
 
+    def test_24_approval_queue_security_and_isolation(self):
+        """Kiểm tra toàn diện phân quyền và cách ly hàng chờ phê duyệt kiến thức AI (qba.ai.approval.queue):
+        1. Người dùng thường tạo yêu cầu -> Thành công ở trạng thái 'pending' và user_id là chính mình.
+        2. Người dùng thường KHÔNG THỂ tạo yêu cầu ở trạng thái khác 'pending' -> AccessError.
+        3. Cách ly dữ liệu: Người dùng khác (user_stock_manager) KHÔNG THỂ thấy yêu cầu trong search.
+        4. Người dùng khác cố tình đọc / ghi / xóa yêu cầu theo ID -> AccessError.
+        5. Người dùng thường KHÔNG THỂ duyệt (action_approve) hoặc từ chối (action_reject) yêu cầu của chính mình -> AccessError.
+        6. Người dùng thường KHÔNG THỂ thay đổi state, reviewer_id, review_notes via write() -> AccessError.
+        7. Người dùng thường KHÔNG THỂ xóa yêu cầu (unlink) -> AccessError.
+        8. Quản trị viên AI (user_ai_admin) có toàn quyền: tìm thấy, đọc, cập nhật review_notes.
+        9. Quản trị viên AI duyệt (action_approve) -> trạng thái chuyển sang 'approved', tạo bài qba.ai.knowledge tương ứng.
+        10. Sau khi đã duyệt, người dùng thường KHÔNG THỂ chỉnh sửa bản ghi -> AccessError.
+        11. Quản trị viên AI xóa bản ghi thành công.
+        """
+        queue_model = self.env["qba.ai.approval.queue"]
+
+        # 1. User thường tạo yêu cầu hợp lệ -> Thành công
+        req = queue_model.with_user(self.user_normal).create({
+            "name": "Câu hỏi test duyệt lá côn",
+            "question": "Cách kiểm tra độ mòn lá côn?",
+            "suggested_answer": "Đo độ sâu đinh tán tối thiểu 0.5mm",
+        })
+        self.assertTrue(req.id)
+        self.assertEqual(req.state, "pending")
+        self.assertEqual(req.user_id, self.user_normal)
+
+        # 2. User thường tạo yêu cầu ở trạng thái 'approved' -> Bị chặn bằng AccessError
+        with self.assertRaises(AccessError):
+            queue_model.with_user(self.user_normal).create({
+                "name": "Trái phép approved",
+                "question": "Hỏi trái phép",
+                "state": "approved",
+            })
+
+        # 3. User khác (user_stock_manager) tìm kiếm -> KHÔNG THẤY bản ghi của user_normal
+        records_other = queue_model.with_user(self.user_stock_manager).search([("id", "=", req.id)])
+        self.assertEqual(len(records_other), 0)
+
+        # 4. User khác cố tình đọc / ghi / xóa theo ID -> AccessError
+        with self.assertRaises(AccessError):
+            queue_model.with_user(self.user_stock_manager).browse(req.id).read(["name"])
+
+        with self.assertRaises(AccessError):
+            queue_model.with_user(self.user_stock_manager).browse(req.id).write({"name": "Sửa lén"})
+
+        with self.assertRaises(AccessError):
+            queue_model.with_user(self.user_stock_manager).browse(req.id).unlink()
+
+        # 5. User thường cố tình tự duyệt / tự từ chối yêu cầu của mình -> AccessError
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).action_approve()
+
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).action_reject()
+
+        # 6. User thường cố tình đổi state hoặc gán reviewer_id / review_notes qua write() -> AccessError
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).write({"state": "approved"})
+
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).write({"reviewer_id": self.user_normal.id})
+
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).write({"review_notes": "Tự phê duyệt"})
+
+        # 7. User thường cố tình xóa bản ghi (unlink) -> AccessError
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).unlink()
+
+        # 8. Quản trị viên AI (user_ai_admin) có toàn quyền: tìm thấy, đọc, cập nhật review_notes
+        req_admin = queue_model.with_user(self.user_ai_admin).browse(req.id)
+        self.assertTrue(req_admin.exists())
+        self.assertEqual(req_admin.name, "Câu hỏi test duyệt lá côn")
+
+        req_admin.write({"review_notes": "Admin ghi chú: Nội dung chuẩn xác"})
+        self.assertEqual(req_admin.review_notes, "Admin ghi chú: Nội dung chuẩn xác")
+
+        # 9. Quản trị viên AI duyệt yêu cầu -> Tạo bài viết qba.ai.knowledge
+        req_admin.action_approve()
+        self.assertEqual(req_admin.state, "approved")
+        self.assertEqual(req_admin.reviewer_id, self.user_ai_admin)
+        self.assertTrue(req_admin.created_knowledge_id)
+        self.assertEqual(req_admin.created_knowledge_id.name, "Câu hỏi test duyệt lá côn")
+        self.assertTrue(req_admin.created_knowledge_id.active)
+
+        # 10. Sau khi đã duyệt, user thường cố tình sửa câu hỏi -> AccessError
+        with self.assertRaises(AccessError):
+            req.with_user(self.user_normal).write({"question": "Sửa câu hỏi sau khi đã duyệt"})
+
+        # 11. Quản trị viên AI xóa bản ghi hàng chờ -> Thành công
+        req_admin.unlink()
+        self.assertFalse(req_admin.exists())
+
+
 
 
 

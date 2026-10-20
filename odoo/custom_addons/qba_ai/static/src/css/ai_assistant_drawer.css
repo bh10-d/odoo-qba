@@ -1,0 +1,225 @@
+/* QBA AI Assistant Drawer Styles */
+
+.qba-ai-assistant-wrapper {
+    position: relative;
+    font-family: inherit;
+}
+
+/* Floating Launcher Button */
+.qba-ai-floating-launcher {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1040;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.qba-ai-floating-launcher:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Backdrop: Chỉ hiển thị làm mờ trên màn hình hẹp di động (<992px).
+   Trên màn hình Desktop (>=992px), Drawer mở dạng sidebar bên phải
+   giúp người dùng có thể đồng thời xem và click vào các dòng danh sách bên trái */
+.qba-ai-drawer-backdrop {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .qba-ai-drawer-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.3);
+        z-index: 1050;
+        backdrop-filter: blur(2px);
+        animation: qbaFadeIn 0.2s ease-out;
+    }
+}
+
+/* Drawer Container */
+.qba-ai-drawer {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: auto !important;
+    width: 480px;
+    max-width: 95vw;
+    height: 100vh !important;
+    background: #ffffff;
+    z-index: 1055 !important;
+    animation: qbaSlideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: -6px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Header */
+.qba-ai-drawer-header {
+    min-height: 58px;
+    flex-shrink: 0 !important;
+}
+
+/* Context & Filters */
+.qba-ai-context-banner {
+    background-color: #f1f5f9;
+    flex-shrink: 0 !important;
+}
+
+.qba-ai-filters-banner {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0 !important;
+}
+
+/* Body / Messages */
+.qba-ai-drawer-body {
+    background-color: #f8fafc;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+}
+
+.qba-ai-bubble-user {
+    max-width: 82%;
+    border-radius: 16px 16px 4px 16px;
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+}
+
+.qba-ai-bubble-assistant {
+    max-width: 96%;
+    border-radius: 16px 16px 16px 4px;
+    background-color: #ffffff;
+}
+
+/* Rich Text Formatted Message */
+.qba-ai-message-content {
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.qba-ai-message-content p:last-child,
+.qba-ai-message-content ul:last-child,
+.qba-ai-message-content ol:last-child {
+    margin-bottom: 0 !important;
+}
+
+.qba-ai-message-content table {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.qba-ai-message-content pre {
+    margin-bottom: 0.5rem;
+    overflow-x: auto;
+}
+
+/* Product Cards */
+.qba-ai-product-card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.15s ease-in-out;
+}
+
+.qba-ai-product-card:hover {
+    border-color: #cbd5e1;
+    background-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* Explanation Content */
+.qba-ai-explanation-content table {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.qba-ai-explanation-content table th,
+.qba-ai-explanation-content table td {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+}
+
+/* Quick Chips */
+.qba-ai-quick-chips {
+    white-space: nowrap;
+    scrollbar-width: thin;
+    flex-shrink: 0 !important;
+    min-height: 38px;
+    background-color: #f8fafc;
+    display: flex;
+    align-items: center;
+}
+
+.qba-ai-quick-chips .btn {
+    flex-shrink: 0 !important;
+}
+
+.qba-ai-quick-chips::-webkit-scrollbar {
+    height: 4px;
+}
+
+.qba-ai-quick-chips::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+/* Footer / Composer */
+.qba-ai-drawer-footer {
+    flex-shrink: 0 !important;
+}
+
+/* Animations */
+@keyframes qbaSlideInRight {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes qbaFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Small button helper */
+.btn-xs {
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+}
+
+/* History Panel */
+.qba-ai-history-panel {
+    background-color: #f8fafc;
+}
+
+.qba-ai-history-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.qba-ai-history-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    border-color: #93c5fd !important;
+}
+
+/* Request Modal Overlay */
+.qba-ai-request-modal-overlay {
+    animation: qbaFadeIn 0.2s ease-out;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+

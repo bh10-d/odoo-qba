@@ -1,4 +1,11 @@
 <odoo>
+    <!-- Client Action to open QBA AI Assistant Drawer (Khai báo trước để form view có thể tham chiếu) -->
+    <record id="action_open_qba_ai_drawer" model="ir.actions.client">
+        <field name="name">Mở Trợ Lý QBA AI</field>
+        <field name="tag">qba_ai_assistant_open</field>
+        <field name="target">new</field>
+    </record>
+
     <!-- Form View Trợ Lý AI Tra Cứu (Wizard) -->
     <record id="view_qba_ai_assistant_form" model="ir.ui.view">
         <field name="name">qba.ai.assistant.form</field>
@@ -8,6 +15,7 @@
                 <header>
                     <button name="action_ask_ai" string="Hỏi AI / Tra Cứu Ngay" type="object" class="btn-primary" icon="fa-magic"/>
                     <button name="action_send_to_admin" string="Gửi Admin Duyệt Bổ Sung" type="object" class="btn-outline-warning" icon="fa-paper-plane" invisible="not user_query"/>
+                    <button name="%(qba_ai.action_open_qba_ai_drawer)d" string="Mở Trợ Lý QBA AI (Drawer)" type="action" class="btn-outline-secondary" icon="fa-comments"/>
                 </header>
                 <sheet>
                     <div class="alert alert-info d-flex align-items-center mb-3" role="alert" invisible="not status_message">
@@ -63,4 +71,5 @@
         <field name="view_mode">form</field>
         <field name="target">current</field>
     </record>
+
 </odoo>

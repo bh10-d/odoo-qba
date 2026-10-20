@@ -8,7 +8,7 @@ class QbaAiApprovalQueue(models.Model):
 
     name = fields.Char(string="Tiêu đề câu hỏi / Vấn đề", required=True)
     question = fields.Text(string="Câu hỏi của nhân viên", required=True)
-    suggested_answer = fields.Text(string="Câu trả lời đề xuất từ AI / Nhân viên")
+    suggested_answer = fields.Html(string="Câu trả lời đề xuất từ AI / Nhân viên")
     reason = fields.Selection([
         ('low_confidence', 'Độ tin cậy AI thấp'),
         ('no_product_found', 'Không tìm thấy sản phẩm trong DB'),
@@ -22,7 +22,14 @@ class QbaAiApprovalQueue(models.Model):
         ('rejected', 'Từ chối')
     ], string="Trạng thái", default='pending', required=True, index=True)
 
-    reviewer_id = fields.Many2one('res.users', string="Người duyệt")
+    user_id = fields.Many2one(
+        'res.users',
+        string="Người yêu cầu",
+        default=lambda self: self.env.user,
+        readonly=True,
+        index=True
+    )
+    reviewer_id = fields.Many2one('res.users', string="Người duyệt", readonly=True)
     review_notes = fields.Text(string="Ghi chú người duyệt")
     created_knowledge_id = fields.Many2one('qba.ai.knowledge', string="Bài kiến thức đã tạo", readonly=True)
 
@@ -35,10 +42,11 @@ class QbaAiApprovalQueue(models.Model):
                 continue
             
             # Tạo bản ghi kiến thức mới
+            content_val = rec.suggested_answer or f"<p>{rec.question}</p>"
             knowledge = self.env['qba.ai.knowledge'].create({
                 'name': rec.name or rec.question[:50],
                 'category': 'measurement',
-                'content': f"<p>{rec.suggested_answer or rec.question}</p>",
+                'content': content_val,
                 'summary': rec.question,
                 'keywords': rec.name,
                 'active': True
@@ -64,14 +72,25 @@ class QbaAiApprovalQueue(models.Model):
     def create(self, vals_list):
         is_ai_manager = self.env.user.has_group("qba_ai.group_qba_ai_manager")
         for vals in vals_list:
+            if not vals.get("user_id"):
+                vals["user_id"] = self.env.user.id
             if vals.get("state") and vals.get("state") != "pending":
                 if not is_ai_manager:
                     raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền tạo bản ghi hàng chờ ở trạng thái khác 'Chờ duyệt'."))
         return super().create(vals_list)
 
     def write(self, vals):
-        if "state" in vals and not self.env.user.has_group("qba_ai.group_qba_ai_manager"):
+        is_ai_manager = self.env.user.has_group("qba_ai.group_qba_ai_manager")
+        if not is_ai_manager:
+            protected_fields = {"state", "reviewer_id", "review_notes", "created_knowledge_id"}
+            if any(f in vals for f in protected_fields):
+                raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền thay đổi thông tin kiểm duyệt hàng chờ."))
             for rec in self:
-                if vals["state"] != rec.state:
-                    raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền thay đổi trạng thái phê duyệt hàng chờ."))
+                if rec.state != "pending":
+                    raise AccessError(_("Không thể chỉnh sửa yêu cầu đã được phê duyệt hoặc từ chối."))
         return super().write(vals)
+
+    def unlink(self):
+        if not self.env.user.has_group("qba_ai.group_qba_ai_manager"):
+            raise AccessError(_("Chỉ Quản trị viên QBA AI mới có quyền xóa bản ghi hàng chờ phê duyệt."))
+        return super().unlink()

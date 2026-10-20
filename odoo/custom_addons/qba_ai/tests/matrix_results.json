@@ -1,0 +1,411 @@
+{
+  "matrix": [
+    {
+      "id": "MAT-01",
+      "name": "SKU-only LC.002",
+      "query": "LC.002",
+      "expected_cat": "LC",
+      "parsed_intent": "exact_sku",
+      "target_cat": "LC - Lá côn",
+      "target_prod": "LC.002",
+      "extracted_specs": {},
+      "matched_count": 1,
+      "matched_skus": [
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 52.67,
+      "t_total_ms": 83.4
+    },
+    {
+      "id": "MAT-02",
+      "name": "SKU-only TBUA.046",
+      "query": "TBUA.046",
+      "expected_cat": "TBUA",
+      "parsed_intent": "exact_sku",
+      "target_cat": "TBUA - Tăm bua",
+      "target_prod": "TBUA.046",
+      "extracted_specs": {},
+      "matched_count": 1,
+      "matched_skus": [
+        "TBUA.046"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 6.72,
+      "t_total_ms": 26.62
+    },
+    {
+      "id": "MAT-03",
+      "name": "SKU-only BI.087",
+      "query": "BI.087",
+      "expected_cat": "BI",
+      "parsed_intent": "exact_sku",
+      "target_cat": "BI - Bi các loại",
+      "target_prod": "BI.087",
+      "extracted_specs": {},
+      "matched_count": 1,
+      "matched_skus": [
+        "BI.087"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 6.99,
+      "t_total_ms": 26.13
+    },
+    {
+      "id": "MAT-04",
+      "name": "Name alias: lá côn howo",
+      "query": "lá côn howo",
+      "expected_cat": "LC",
+      "parsed_intent": "equipment_context",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.006",
+        "RT.015"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 64.98,
+      "t_total_ms": 40.6
+    },
+    {
+      "id": "MAT-05",
+      "name": "Name alias: tăm bua sau",
+      "query": "tăm bua sau",
+      "expected_cat": "TBUA",
+      "parsed_intent": "product_name_alias",
+      "target_cat": "TBUA - Tăm bua",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 10,
+      "matched_skus": [
+        "TBUA.107",
+        "TBUA.003",
+        "TBUA.105",
+        "TBUA.111",
+        "TBUA.112"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 11.83,
+      "t_total_ms": 35.99
+    },
+    {
+      "id": "MAT-06",
+      "name": "Name alias: bi moay ơ",
+      "query": "bi moay ơ",
+      "expected_cat": "BI",
+      "parsed_intent": "product_name_alias",
+      "target_cat": "BI - Bi các loại",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 10,
+      "matched_skus": [
+        "BI.087",
+        "BI.082",
+        "BI.086",
+        "BI.049",
+        "BI.027"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 12.45,
+      "t_total_ms": 39.05
+    },
+    {
+      "id": "MAT-07",
+      "name": "Multi-param: lá côn phi 325 10 răng 8 lò xo",
+      "query": "lá côn phi 325 10 răng 8 lò xo",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "duong_kinh_ngoai": 325.0,
+        "rang": 10,
+        "lo_xo": 8
+      },
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.007",
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 13.52,
+      "t_total_ms": 81.01
+    },
+    {
+      "id": "MAT-08",
+      "name": "Multi-param: lá côn 325 10 răng",
+      "query": "lá côn 325 10 răng",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "rang": 10,
+        "duong_kinh_ngoai": 325.0
+      },
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.007",
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 13.09,
+      "t_total_ms": 62.13
+    },
+    {
+      "id": "MAT-09",
+      "name": "Multi-param: 325, 10 răng",
+      "query": "325, 10 răng",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "rang": 10,
+        "duong_kinh_ngoai": 325.0
+      },
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.007",
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 13.49,
+      "t_total_ms": 62.51
+    },
+    {
+      "id": "MAT-10",
+      "name": "With units: 325mm, 10 răng",
+      "query": "325mm, 10 răng",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "rang": 10,
+        "duong_kinh_ngoai": 325.0
+      },
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.007",
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 13.19,
+      "t_total_ms": 76.6
+    },
+    {
+      "id": "MAT-11",
+      "name": "Without units / comma: 325 10",
+      "query": "325 10",
+      "expected_cat": "LC",
+      "parsed_intent": "ambiguous",
+      "target_cat": null,
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_result",
+      "t_route_ms": 11.85,
+      "t_total_ms": 16.37
+    },
+    {
+      "id": "MAT-12",
+      "name": "Alt term: đĩa ly hợp 325 10 răng",
+      "query": "đĩa ly hợp 325 10 răng",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "rang": 10,
+        "duong_kinh_ngoai": 325.0
+      },
+      "matched_count": 2,
+      "matched_skus": [
+        "LC.007",
+        "LC.002"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 13.61,
+      "t_total_ms": 60.78
+    },
+    {
+      "id": "MAT-13",
+      "name": "Alt term: tang trống phanh",
+      "query": "tang trống phanh",
+      "expected_cat": "TBUA",
+      "parsed_intent": "product_name_alias",
+      "target_cat": "TBUA - Tăm bua",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_empty",
+      "t_route_ms": 12.83,
+      "t_total_ms": 35.12
+    },
+    {
+      "id": "MAT-14",
+      "name": "Alt term: bạc đạn bánh trước",
+      "query": "bạc đạn bánh trước",
+      "expected_cat": "BI",
+      "parsed_intent": "product_name_alias",
+      "target_cat": "BI - Bi các loại",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 3,
+      "matched_skus": [
+        "TCO.015",
+        "TCO.034",
+        "TCO.063"
+      ],
+      "message_type": "search_result",
+      "t_route_ms": 14.01,
+      "t_total_ms": 36.76
+    },
+    {
+      "id": "MAT-15",
+      "name": "Ambiguous: bare number 325",
+      "query": "325",
+      "expected_cat": "None",
+      "parsed_intent": "ambiguous",
+      "target_cat": null,
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_result",
+      "t_route_ms": 21.33,
+      "t_total_ms": 26.88
+    },
+    {
+      "id": "MAT-16",
+      "name": "Ambiguous: punctuation ???",
+      "query": "???",
+      "expected_cat": "None",
+      "parsed_intent": "ambiguous",
+      "target_cat": null,
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_result",
+      "t_route_ms": 12.69,
+      "t_total_ms": 16.77
+    },
+    {
+      "id": "MAT-17",
+      "name": "Cross-cat: tăm bua xe howo",
+      "query": "tăm bua xe howo",
+      "expected_cat": "TBUA",
+      "parsed_intent": "equipment_context",
+      "target_cat": "TBUA - Tăm bua",
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_empty",
+      "t_route_ms": 12.7,
+      "t_total_ms": 33.97
+    },
+    {
+      "id": "MAT-18",
+      "name": "Cross-cat: bi 3017",
+      "query": "bi 3017",
+      "expected_cat": "BI",
+      "parsed_intent": "ambiguous",
+      "target_cat": null,
+      "target_prod": null,
+      "extracted_specs": {},
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_result",
+      "t_route_ms": 12.1,
+      "t_total_ms": 16.87
+    },
+    {
+      "id": "MAT-19",
+      "name": "Empty search: lá côn phi 999 99 răng",
+      "query": "lá côn phi 999 99 răng",
+      "expected_cat": "LC",
+      "parsed_intent": "technical_spec_only",
+      "target_cat": "LC - Lá côn",
+      "target_prod": null,
+      "extracted_specs": {
+        "duong_kinh_ngoai": 999.0,
+        "rang": 99
+      },
+      "matched_count": 0,
+      "matched_skus": [],
+      "message_type": "search_empty",
+      "t_route_ms": 12.47,
+      "t_total_ms": 60.03
+    }
+  ],
+  "chain": {
+    "turn_1": {
+      "query": "lá côn phi 325",
+      "specs": {
+        "duong_kinh_ngoai": {
+          "value": 325.0,
+          "value_display": "325",
+          "token": "phi 325"
+        }
+      },
+      "matched": [
+        "LC.007",
+        "LC.002"
+      ],
+      "time_ms": 57.73
+    },
+    "turn_2": {
+      "query": "thêm 10 răng",
+      "specs": {
+        "duong_kinh_ngoai": {
+          "value": 325.0,
+          "value_display": "325",
+          "token": "phi 325"
+        },
+        "rang": {
+          "value": 10,
+          "value_display": "10",
+          "token": "10 răng"
+        }
+      },
+      "matched": [
+        "LC.007",
+        "LC.002"
+      ],
+      "time_ms": 58.28
+    },
+    "turn_3": {
+      "query": "đổi sang 8 lò xo",
+      "specs": {
+        "lo_xo": {
+          "value": 8,
+          "uom": "cái",
+          "spec_name": "Số lò xo"
+        }
+      },
+      "matched": [],
+      "time_ms": 25.06
+    },
+    "turn_4": {
+      "query": "So sánh với LC.002",
+      "mode": "compare",
+      "base": "LC.002",
+      "msg_type": "search_result",
+      "time_ms": 52.5
+    },
+    "turn_5": {
+      "query": "tăm bua sau 1069",
+      "cat": "PHỤ TÙNG GẦM / TBUA - Tăm bua",
+      "specs": {},
+      "mode": null,
+      "time_ms": 35.54
+    }
+  }
+}

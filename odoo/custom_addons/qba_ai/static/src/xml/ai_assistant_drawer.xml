@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="qba_ai.QbaAiAssistantDrawer">
+        <div class="qba-ai-assistant-wrapper">
+            <!-- Floating Launcher Pill -->
+            <button
+                t-if="!state.isOpen"
+                class="qba-ai-floating-launcher btn btn-primary rounded-pill shadow-lg"
+                t-on-click="toggleDrawer"
+                title="Mở Trợ lý Tìm kiếm Phụ tùng QBA AI"
+            >
+                <i class="fa fa-magic me-2"/>
+                <span class="fw-bold">QBA AI Tìm Phụ Tùng</span>
+            </button>
+
+            <!-- Backdrop -->
+            <div
+                t-if="state.isOpen"
+                class="qba-ai-drawer-backdrop"
+                t-on-click="closeDrawer"
+            />
+
+            <!-- Slide-in Drawer Container -->
+            <div
+                t-if="state.isOpen"
+                class="qba-ai-drawer d-flex flex-column shadow-lg"
+            >
+                <!-- Admin Request Modal Overlay -->
+                <div
+                    t-if="state.showRequestModal"
+                    class="qba-ai-request-modal-overlay position-absolute top-0 start-0 w-100 h-100 bg-white p-3 d-flex flex-column"
+                    style="z-index: 1050; overflow-y: auto;"
+                >
+                    <div class="d-flex justify-content-between align-items-center pb-2 border-bottom mb-3">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fa fa-paper-plane text-primary me-2"/>Gửi Yêu Cầu Hỗ Trợ Tới Admin
+                        </h6>
+                        <button class="btn btn-sm btn-close" t-on-click="closeRequestModal"/>
+                    </div>
+                    <div class="modal-body flex-grow-1">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Loại yêu cầu</label>
+                            <select class="form-select form-select-sm" t-model="state.requestForm.type">
+                                <option value="missing_product">Sản phẩm chưa có trong danh mục (Missing Product)</option>
+                                <option value="missing_spec">Sản phẩm thiếu thông số kỹ thuật (Missing Spec)</option>
+                                <option value="spec_conflict">Thông số thực tế mâu thuẫn / sai lệch (Spec Conflict)</option>
+                                <option value="substitute_review">Đề xuất xác minh phụ tùng thay thế (Substitute Review)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Từ khóa / Câu hỏi tìm kiếm</label>
+                            <input type="text" class="form-control form-control-sm" t-model="state.requestForm.query" placeholder="Câu hỏi hoặc từ khóa..."/>
+                        </div>
+                        <div t-if="state.requestForm.productName" class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Sản phẩm liên quan</label>
+                            <div class="p-2 bg-light border rounded small">
+                                <strong t-esc="state.requestForm.productCode"/> - <span t-esc="state.requestForm.productName"/>
+                            </div>
+                        </div>
+                        <div t-if="state.requestForm.specsSummary" class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Thông số AI ghi nhận</label>
+                            <div class="p-2 bg-light border rounded small text-dark font-monospace" t-esc="state.requestForm.specsSummary"/>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Ghi chú của bạn</label>
+                            <textarea class="form-control form-control-sm" rows="3" t-model="state.requestForm.notes" placeholder="Nhập thêm nhu cầu khách hàng, mã phụ tùng nghi vấn hoặc thông tin dòng xe..."/>
+                        </div>
+                        <div t-if="state.requestFormError" class="alert alert-danger py-1 px-2 small mb-3">
+                            <t t-esc="state.requestFormError"/>
+                        </div>
+                    </div>
+                    <div class="modal-footer pt-2 border-top d-flex justify-content-end gap-2">
+                        <button class="btn btn-sm btn-secondary" t-on-click="closeRequestModal" t-att-disabled="state.isSubmittingRequest">
+                            Hủy
+                        </button>
+                        <button class="btn btn-sm btn-primary" t-on-click="submitRequest" t-att-disabled="state.isSubmittingRequest">
+                            <span t-if="state.isSubmittingRequest" class="spinner-border spinner-border-sm me-1" role="status"/>
+                            <i t-if="!state.isSubmittingRequest" class="fa fa-paper-plane me-1"/>
+                            Xác nhận gửi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Drawer Header -->
+                <div class="qba-ai-drawer-header d-flex align-items-center justify-content-between p-2 px-3 border-bottom bg-primary text-white">
+                    <div class="d-flex align-items-center me-2 overflow-hidden" style="min-width: 0;">
+                        <i class="fa fa-robot fa-lg me-2 flex-shrink-0"/>
+                        <div class="text-truncate">
+                            <div class="d-flex align-items-center">
+                                <h6 class="mb-0 fw-bold text-truncate" style="font-size: 0.95rem;">Trợ lý QBA AI</h6>
+                                <span t-if="state.conversationState === 'archived'" class="badge bg-secondary ms-2 small" style="font-size: 0.65rem;" title="Hội thoại đã lưu trữ">
+                                    <i class="fa fa-archive me-1"/>Đã lưu trữ
+                                </span>
+                            </div>
+                            <small class="opacity-75 d-block text-truncate" style="max-width: 170px; font-size: 0.75rem;" t-esc="state.conversationName" t-att-title="state.conversationName"/>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                        <button
+                            t-if="state.conversationState === 'archived' and !state.showHistory"
+                            class="btn btn-xs btn-outline-light text-nowrap px-2 py-1"
+                            t-on-click="onRestoreConversation"
+                            title="Khôi phục hội thoại về trạng thái hoạt động"
+                        >
+                            <i class="fa fa-undo"/>
+                            <span class="d-none d-sm-inline ms-1">Khôi phục</span>
+                        </button>
+                        <button
+                            class="btn btn-xs btn-outline-light text-nowrap px-2 py-1"
+                            t-on-click="openAssistantView"
+                            title="Mở giao diện AI Assistant đầy đủ (Tra cứu kỹ thuật &amp; Gửi Admin duyệt)"
+                        >
+                            <i class="fa fa-balance-scale"/>
+                            <span class="d-none d-sm-inline ms-1">Kỹ thuật</span>
+                        </button>
+                        <button
+                            class="btn btn-xs btn-outline-light text-nowrap px-2 py-1"
+                            t-on-click="toggleHistory"
+                            title="Xem lịch sử các cuộc hội thoại cũ"
+                        >
+                            <i class="fa fa-history"/>
+                            <span class="d-none d-sm-inline ms-1" t-if="!state.showHistory">Lịch sử</span>
+                            <span class="d-none d-sm-inline ms-1" t-if="state.showHistory">Quay lại</span>
+                        </button>
+                        <button
+                            class="btn btn-xs btn-outline-light text-nowrap px-2 py-1"
+                            t-on-click="onNewConversation"
+                            title="Tạo phiên hội thoại mới"
+                        >
+                            <i class="fa fa-plus"/>
+                            <span class="d-none d-sm-inline ms-1">Mới</span>
+                        </button>
+                        <!-- <button
+                            t-if="state.conversationId and !state.showHistory"
+                            class="btn btn-xs btn-outline-light text-warning px-2 py-1"
+                            t-on-click="() => this.onDeleteConversation(state.conversationId)"
+                            title="Xóa cuộc hội thoại hiện tại"
+                        >
+                            <i class="fa fa-trash-o"/>
+                        </button> -->
+                        <button
+                            class="btn btn-xs btn-link text-white p-1 ms-1"
+                            t-on-click="closeDrawer"
+                            title="Đóng"
+                        >
+                            <i class="fa fa-times fa-lg"/>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Context Product Banner -->
+                <div
+                    t-if="state.contextProduct and !state.showHistory"
+                    class="qba-ai-context-banner p-2 bg-light border-bottom d-flex align-items-center justify-content-between"
+                >
+                    <div class="d-flex align-items-center text-truncate me-2">
+                        <span class="badge bg-secondary me-2">Sản phẩm ngữ cảnh</span>
+                        <strong class="text-truncate text-dark" t-esc="state.contextProduct.default_code || state.contextProduct.name"/>
+                    </div>
+                    <button
+                        class="btn btn-xs btn-outline-danger py-0 px-2"
+                        t-on-click="onClearContextProduct"
+                        title="Gỡ sản phẩm ngữ cảnh để tìm toàn catalog"
+                    >
+                        Gỡ <i class="fa fa-times"/>
+                    </button>
+                </div>
+
+                <!-- Active Specs & Filters Banner -->
+                <div
+                    t-if="!state.showHistory and state.searchContext and (state.searchContext.active_category_name or state.searchContext.category_name or state.searchContext.specs or state.searchContext.brand)"
+                    class="qba-ai-filters-banner px-3 py-1 bg-white border-bottom d-flex flex-wrap gap-1 align-items-center"
+                >
+                    <small class="text-muted me-1">Bộ lọc:</small>
+                    <span t-if="state.searchContext.active_category_name or state.searchContext.category_name" class="badge bg-info text-dark">
+                        <i class="fa fa-tag me-1"/><t t-esc="state.searchContext.active_category_name or state.searchContext.category_name"/>
+                    </span>
+                    <span t-if="state.searchContext.brand" class="badge bg-secondary">
+                        <i class="fa fa-copyright me-1"/><t t-esc="state.searchContext.brand"/>
+                    </span>
+                    <t t-if="state.searchContext.specs">
+                        <t t-foreach="Object.entries(state.searchContext.specs)" t-as="spec" t-key="spec[0]">
+                            <span class="badge bg-light text-dark border">
+                                <t t-esc="spec[1].spec_name || spec[0]"/>: <strong t-esc="spec[1].value !== undefined ? (spec[1].value + (spec[1].uom ? ' ' + spec[1].uom : '')) : spec[1]"/>
+                            </span>
+                        </t>
+                    </t>
+                </div>
+
+                <!-- Error Alert -->
+                <div t-if="state.errorMessage" class="alert alert-warning py-1 px-3 m-2 mb-0 small alert-dismissible">
+                    <t t-esc="state.errorMessage"/>
+                </div>
+
+                <!-- Conversation History View Panel -->
+                <div t-if="state.showHistory" class="qba-ai-history-panel flex-grow-1 p-3 overflow-auto bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="fa fa-history text-primary me-2"/>Lịch Sử Các Phiên Hội Thoại
+                        </h6>
+                        <button class="btn btn-xs btn-outline-primary" t-on-click="onNewConversation">
+                            <i class="fa fa-plus me-1"/>Hội thoại mới
+                        </button>
+                    </div>
+
+                    <div t-if="state.isLoadingHistory" class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"/>
+                        <span>Đang tải danh sách hội thoại...</span>
+                    </div>
+
+                    <div t-elif="state.historyList.length === 0" class="text-center py-5 text-muted">
+                        <i class="fa fa-comments-o fa-3x opacity-50 mb-2"/>
+                        <p class="small mb-0">Chưa có phiên hội thoại nào trước đó.</p>
+                    </div>
+
+                    <div t-else="" class="d-flex flex-column gap-2">
+                        <div
+                            t-foreach="state.historyList"
+                            t-as="conv"
+                            t-key="conv.id"
+                            class="qba-ai-history-item p-3 bg-white rounded border shadow-sm"
+                            t-att-class="{'border-primary bg-primary bg-opacity-10': conv.id === state.conversationId}"
+                            t-on-click="() => this.onSelectConversation(conv.id)"
+                            style="cursor: pointer; transition: all 0.15s ease;"
+                        >
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong class="text-dark text-truncate me-2" t-esc="conv.name"/>
+                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                    <span t-if="conv.id === state.conversationId" class="badge bg-primary">Đang mở</span>
+                                    <span t-elif="conv.state === 'archived'" class="badge bg-secondary">Đã lưu trữ</span>
+                                    <button
+                                        class="btn btn-xs btn-outline-danger py-0 px-1 border-0"
+                                        t-on-click.stop="() => this.onDeleteConversation(conv.id)"
+                                        title="Xóa cuộc hội thoại này"
+                                    >
+                                        <i class="fa fa-trash-o"/>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center text-muted small mt-2">
+                                <div>
+                                    <i class="fa fa-clock-o me-1"/>
+                                    <span t-esc="conv.last_message_date || conv.create_date"/>
+                                </div>
+                                <div>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fa fa-commenting-o me-1"/><t t-esc="conv.message_count"/> tin nhắn
+                                    </span>
+                                </div>
+                            </div>
+                            <div t-if="conv.context_product_name" class="mt-1 small text-truncate text-secondary">
+                                <i class="fa fa-cube me-1"/><t t-esc="conv.context_product_name"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Stream Area (Active Conversation) -->
+                <div t-if="!state.showHistory" class="qba-ai-drawer-body flex-grow-1 p-3 overflow-auto">
+                    <!-- Welcome Screen when empty -->
+                    <div t-if="state.messages.length === 0" class="qba-ai-welcome text-center my-4 p-3 bg-light rounded border">
+                        <div class="mb-3">
+                            <i class="fa fa-search-plus fa-3x text-primary opacity-50"/>
+                        </div>
+                        <h5 class="fw-bold text-dark">Tìm Kiếm Phụ Tùng Với QBA AI</h5>
+                        <p class="text-muted small">
+                            Hỏi bằng ngôn ngữ tự nhiên: quy cách kỹ thuật, số răng, đường kính moay-ơ, hoặc hỏi phụ tùng thay thế tương đương.
+                        </p>
+                        <div class="d-flex flex-column gap-2 text-start mt-3">
+                            <button
+                                class="btn btn-sm btn-outline-primary text-start"
+                                t-on-click="() => this.onSelectPrompt('Tìm lá côn phi 325 10 răng')"
+                            >
+                                <i class="fa fa-search me-2"/> "Tìm lá côn phi 325 10 răng"
+                            </button>
+                            <button
+                                class="btn btn-sm btn-outline-primary text-start"
+                                t-on-click="() => this.onSelectPrompt('Lá côn 8 lò xo hiệu Antek')"
+                            >
+                                <i class="fa fa-filter me-2"/> "Lá côn 8 lò xo hiệu Antek"
+                            </button>
+                            <button
+                                class="btn btn-sm btn-outline-primary text-start"
+                                t-on-click="() => this.onSelectPrompt('Tìm phụ tùng thay thế')"
+                            >
+                                <i class="fa fa-exchange me-2"/> "Tìm phụ tùng thay thế"
+                            </button>
+                            <button
+                                class="btn btn-sm btn-outline-primary text-start"
+                                t-on-click="() => this.onSelectPrompt('Vòng bi moay ơ')"
+                            >
+                                <i class="fa fa-circle-o-notch me-2"/> "Vòng bi moay ơ"
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages List -->
+                    <div t-foreach="state.messages" t-as="msg" t-key="msg.id" class="qba-ai-message-row mb-3">
+                        <!-- User Message -->
+                        <div t-if="msg.role === 'user'" class="d-flex justify-content-end">
+                            <div class="qba-ai-bubble-user bg-primary text-white p-3 rounded-3 shadow-sm">
+                                <div class="message-text" style="white-space: pre-wrap;" t-esc="msg.content"/>
+                                <div class="text-end mt-1">
+                                    <small class="opacity-75" style="font-size: 0.75rem;" t-esc="msg.create_date"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assistant Message -->
+                        <div t-if="msg.role === 'assistant'" class="d-flex flex-column align-items-start">
+                            <div class="qba-ai-bubble-assistant bg-white border p-3 rounded-3 shadow-sm w-100">
+                                <!-- Message Text -->
+                                <div class="message-text text-dark qba-ai-message-content" t-out="formatAssistantMessage(msg)"/>
+
+                                <!-- Performance timing pill -->
+                                <div t-if="msg.perf_info and msg.perf_info.total_elapsed" class="mt-2">
+                                    <span class="badge bg-light text-muted border font-monospace" style="font-size: 0.7rem;">
+                                        <i class="fa fa-bolt me-1 text-warning"/>
+                                        <t t-esc="msg.perf_info.total_elapsed"/>s
+                                    </span>
+                                </div>
+
+                                <!-- Product Cards Grid -->
+                                <div t-if="msg.matched_products and msg.matched_products.length > 0" class="qba-ai-product-cards-container mt-3 pt-2 border-top">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <small class="fw-bold text-uppercase text-muted">
+                                            <i class="fa fa-boxes me-1"/>Sản phẩm phù hợp (<t t-esc="msg.matched_products.length"/>)
+                                        </small>
+                                    </div>
+                                    <div class="d-flex flex-column gap-2">
+                                        <div
+                                            t-foreach="msg.matched_products"
+                                            t-as="prod"
+                                            t-key="prod.id"
+                                            class="qba-ai-product-card p-2 rounded border bg-light"
+                                        >
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <div>
+                                                    <span class="badge bg-dark me-1" t-if="prod.default_code" t-esc="prod.default_code"/>
+                                                    <span class="fw-bold text-dark" t-esc="prod.name"/>
+                                                </div>
+                                                <!-- Status Badge -->
+                                                <div>
+                                                    <span
+                                                        t-if="prod.match_status === 'exact_match'"
+                                                        class="badge bg-success"
+                                                    >
+                                                        Khớp 100%
+                                                    </span>
+                                                    <span
+                                                        t-elif="prod.match_status === 'partial_match'"
+                                                        class="badge bg-warning text-dark"
+                                                    >
+                                                        Khớp <t t-esc="prod.match_score"/>%
+                                                    </span>
+                                                    <span
+                                                        t-elif="prod.match_status === 'insufficient_data'"
+                                                        class="badge bg-info text-dark"
+                                                    >
+                                                        Chờ duyệt
+                                                    </span>
+                                                    <span
+                                                        t-elif="prod.match_status === 'mismatch'"
+                                                        class="badge bg-danger"
+                                                    >
+                                                        Lệch quy cách
+                                                    </span>
+                                                    <span
+                                                        t-else=""
+                                                        class="badge bg-secondary"
+                                                    >
+                                                        Đề xuất
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Specs Badges -->
+                                            <div t-if="prod.verified_specs and prod.verified_specs.length > 0" class="d-flex flex-wrap gap-1 my-1">
+                                                <t t-foreach="prod.verified_specs" t-as="spec" t-key="spec.name">
+                                                    <span class="badge bg-white text-dark border font-monospace" style="font-size: 0.72rem;">
+                                                        <t t-esc="spec.name"/>: <strong t-esc="spec.value"/>
+                                                    </span>
+                                                </t>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="d-flex gap-2 mt-2 pt-1 border-top">
+                                                <button
+                                                    class="btn btn-xs btn-outline-primary py-0 px-2"
+                                                    t-on-click="() => this.onOpenProductDetail(prod.id)"
+                                                    title="Xem chi tiết sản phẩm"
+                                                >
+                                                    <i class="fa fa-eye me-1"/> Xem
+                                                </button>
+                                                <button
+                                                    class="btn btn-xs btn-outline-secondary py-0 px-2"
+                                                    t-on-click="() => this.onFindSubstitutes(prod)"
+                                                    title="Tìm sản phẩm thay thế tương thích"
+                                                >
+                                                    <i class="fa fa-exchange me-1"/> Tìm thay thế
+                                                </button>
+                                                <button
+                                                    class="btn btn-xs btn-outline-secondary py-0 px-2"
+                                                    t-on-click="() => this.onCompareProduct(prod)"
+                                                    title="So sánh với sản phẩm này"
+                                                >
+                                                    <i class="fa fa-balance-scale me-1"/> So sánh
+                                                </button>
+                                                <button
+                                                    t-if="prod.match_status === 'insufficient_data'"
+                                                    class="btn btn-xs btn-outline-warning py-0 px-2"
+                                                    t-on-click="() => this.openRequestModal({ type: 'missing_spec', product: prod, message: msg })"
+                                                    title="Yêu cầu Admin duyệt hoặc bổ sung thông số"
+                                                >
+                                                    <i class="fa fa-wrench me-1"/> Y/c duyệt
+                                                </button>
+                                                <button
+                                                    class="btn btn-xs btn-outline-danger py-0 px-1"
+                                                    t-on-click="() => this.openRequestModal({ type: 'spec_conflict', product: prod, message: msg })"
+                                                    title="Báo cáo mâu thuẫn hoặc sai lệch thông số"
+                                                >
+                                                    <i class="fa fa-exclamation-triangle me-1"/> Báo sai
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Technical Explanation Accordion -->
+                                <div t-if="msg.explanation_html" class="qba-ai-explanation-box mt-2 pt-2 border-top">
+                                    <button
+                                        class="btn btn-sm btn-link p-0 text-decoration-none text-muted"
+                                        t-on-click="() => this.toggleMessageDetails(msg)"
+                                    >
+                                        <i class="fa fa-table me-1"/>
+                                        <span t-if="!msg.showDetails">Xem bảng đối chiếu kỹ thuật chi tiết ▼</span>
+                                        <span t-if="msg.showDetails">Thu gọn bảng đối chiếu kỹ thuật ▲</span>
+                                    </button>
+                                    <div t-if="msg.showDetails" class="qba-ai-explanation-content mt-2 p-2 bg-light border rounded small overflow-auto">
+                                        <t t-out="getExplanationMarkup(msg)"/>
+                                    </div>
+                                </div>
+
+                                <!-- Request to Admin CTA Box when no products found -->
+                                <div t-if="shouldShowRequestCta(msg)" class="qba-ai-request-cta mt-2 pt-2 border-top d-flex align-items-center justify-content-between bg-light p-2 rounded">
+                                    <small class="text-muted">
+                                        <i class="fa fa-info-circle me-1 text-primary"/>Chưa tìm thấy phụ tùng phù hợp?
+                                    </small>
+                                    <button
+                                        class="btn btn-xs btn-warning py-1 px-2 fw-bold text-dark shadow-sm"
+                                        t-on-click="() => this.openRequestModal({ type: 'missing_product', message: msg })"
+                                        title="Gửi yêu cầu tới Admin để bổ sung danh mục hoặc tra cứu chuyên sâu"
+                                    >
+                                        <i class="fa fa-paper-plane me-1"/>Gửi yêu cầu tới Admin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div t-if="state.isSending" class="qba-ai-typing-indicator d-flex align-items-center p-2 mb-2 bg-white border rounded-3 w-50">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"/>
+                        <small class="text-muted">QBA AI đang phân tích...</small>
+                    </div>
+
+                    <div t-ref="messagesEnd"/>
+                </div>
+
+                <!-- Quick Follow-up Suggestions Bar -->
+                <div t-if="!state.showHistory" class="qba-ai-quick-chips px-3 py-1 bg-light border-top d-flex align-items-center gap-1 overflow-auto text-nowrap flex-shrink-0">
+                    <button
+                        class="btn btn-xs btn-outline-warning rounded-pill py-1 px-2 fw-bold text-nowrap"
+                        t-on-click="() => this.openRequestModal({ type: 'missing_product' })"
+                        title="Gửi yêu cầu hỗ trợ danh mục tới Admin"
+                    >
+                        <i class="fa fa-paper-plane me-1"/> Yêu cầu Admin
+                    </button>
+                    <button
+                        class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2 text-nowrap"
+                        t-on-click="() => this.onSelectPrompt('Thêm 10 răng, 8 lò xo')"
+                    >
+                        + 10 răng, 8 lò xo
+                    </button>
+                    <button
+                        class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2 text-nowrap"
+                        t-on-click="() => this.onSelectPrompt('Chỉ hãng Antek')"
+                    >
+                        Chỉ Antek
+                    </button>
+                    <button
+                        class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2 text-nowrap"
+                        t-on-click="() => this.onSelectPrompt('Có phụ tùng thay thế không?')"
+                    >
+                        Phụ tùng thay thế?
+                    </button>
+                    <button
+                        class="btn btn-xs btn-outline-secondary rounded-pill py-1 px-2 text-nowrap"
+                        t-on-click="() => this.onSelectPrompt('So sánh')"
+                    >
+                        So sánh
+                    </button>
+                </div>
+
+                <!-- Composer Input Area -->
+                <div t-if="!state.showHistory" class="qba-ai-drawer-footer p-2 border-top bg-white flex-shrink-0">
+                    <div class="input-group">
+                        <textarea
+                            class="form-control"
+                            rows="2"
+                            placeholder="Nhập kích thước, số răng, thương hiệu hoặc câu hỏi..."
+                            t-ref="composerInput"
+                            t-model="state.inputValue"
+                            t-on-keydown="onKeyDown"
+                            t-att-disabled="state.isSending"
+                        />
+                        <button
+                            class="btn btn-primary d-flex align-items-center justify-content-center px-3"
+                            type="button"
+                            t-on-click="onSendMessage"
+                            t-att-disabled="state.isSending or !state.inputValue.trim()"
+                        >
+                            <i class="fa fa-paper-plane"/>
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+                        <small class="text-muted" style="font-size: 0.72rem;">Enter để gửi, Shift+Enter xuống dòng</small>
+                        <small class="text-muted font-monospace" style="font-size: 0.72rem;">QBA AI v1.0</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>
+

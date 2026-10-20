@@ -13,7 +13,7 @@
     "version": "1.0",
     "category": "Inventory/Technical",
     "author": "FACT",
-    "depends": ["base", "product", "stock", "qba"],
+    "depends": ["base", "product", "stock", "qba", "mail"],
     "data": [
         "security/qba_ai_security.xml",
         "security/ir.model.access.csv",
@@ -24,7 +24,9 @@
         "views/product_template_views.xml",
         "views/ai_knowledge_views.xml",
         "views/ai_approval_queue_views.xml",
+        "views/ai_request_views.xml",
         "views/ai_assistant_views.xml",
+        "views/ai_conversation_views.xml",
         "views/res_config_settings_views.xml",
         "views/lc_spec_parser_views.xml",
         "views/category_matching_profile_views.xml",
@@ -33,6 +35,9 @@
     "assets": {
         "web.assets_backend": [
             "qba_ai/static/src/css/technical_specs.css",
+            "qba_ai/static/src/css/ai_assistant_drawer.css",
+            "qba_ai/static/src/js/ai_assistant_drawer.js",
+            "qba_ai/static/src/xml/ai_assistant_drawer.xml",
         ],
     },
     "installable": True,

@@ -100,3 +100,32 @@ class ProductTemplate(models.Model):
             "target": "current",
         }
 
+    def action_open_ai_assistant_drawer(self):
+        """Mở bảng chat Trợ lý AI (Drawer) trực tiếp từ chi tiết sản phẩm, nạp context sản phẩm hiện tại."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.client",
+            "tag": "qba_ai_assistant_open",
+            "params": {
+                "product_id": self.id,
+                "product_name": self.name,
+                "default_code": self.default_code or "",
+                "category_name": self.categ_id.complete_name or "",
+            }
+        }
+
+    @api.model
+    def action_open_ai_assistant_general(self):
+        """Mở bảng chat Trợ lý AI ở chế độ tìm kiếm chung toàn bộ catalog sản phẩm."""
+        return {
+            "type": "ir.actions.client",
+            "tag": "qba_ai_assistant_open",
+            "params": {}
+        }
+
+    @api.model
+    def action_open_ai_assistant_general_matching(self):
+        """Mở giao diện Trợ lý AI Assistant (Wizard đầy đủ) để tra cứu / đối chiếu kỹ thuật & gửi duyệt."""
+        return self.env.ref("qba_ai.action_qba_ai_assistant").read()[0]
+
+

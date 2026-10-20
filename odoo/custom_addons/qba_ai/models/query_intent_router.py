@@ -50,7 +50,7 @@ class QbaQueryIntentRouter(models.AbstractModel):
     }
 
     @api.model
-    def route_query(self, query):
+    def route_query(self, query, context_category=None):
         """Phân tích chuỗi truy vấn người dùng và định tuyến sang Intent chính xác.
         Hỗ trợ 7 loại ý định (Generic Intent Types) hoàn toàn không hardcode danh mục LC:
         1. exact_sku: Tra cứu SKU / mã sản phẩm chính xác.
@@ -99,8 +99,12 @@ class QbaQueryIntentRouter(models.AbstractModel):
             )
 
         # C. Kiểm tra Intent 4: Technical Spec Only (Tra cứu theo thông số kỹ thuật)
-        detected_category = self._detect_category(raw_query)
-        extracted_specs = self._extract_technical_specs(raw_query, category=detected_category)
+        detected_category = self._detect_category(raw_query) or context_category
+        extracted_specs, unresolved_numerics, inferred_cat = self._extract_technical_specs(
+            raw_query, category=detected_category, return_details=True
+        )
+        if inferred_cat and not detected_category:
+            detected_category = inferred_cat
         if extracted_specs:
             return self._build_router_result(
                 intent="technical_spec_only",
@@ -108,6 +112,27 @@ class QbaQueryIntentRouter(models.AbstractModel):
                 query=raw_query,
                 target_category=detected_category,
                 extracted_specs=extracted_specs,
+                unresolved_numerics=unresolved_numerics,
+            )
+
+        # C.2 Nếu chưa nhận diện được spec nào nhưng có số chưa phân giải (Unresolved Numerics)
+        # CHỈ kích hoạt ambiguous nếu truy vấn ngắn (dưới 4 từ có nghĩa), ví dụ: '325', '123'
+        # Nếu là câu hỏi đàm thoại dài -> chuyển tiếp sang intent mô tả tự nhiên / AI
+        clean_tokens = self._extract_clean_tokens(raw_query)
+        if unresolved_numerics and not extracted_specs and not self._detect_equipment_context(raw_query) and len(clean_tokens) <= 3:
+            nums_str = ", ".join(str(int(n) if n == int(n) else n) for n in unresolved_numerics)
+            clarification = _(
+                "Hệ thống ghi nhận con số: %s nhưng chưa rõ đây là thông số kỹ thuật nào "
+                "(ví dụ: đường kính ngoài, số răng, hay mã phụ tùng). Vui lòng bổ sung loại phụ tùng "
+                "(lá côn, tăm bua, v.v.) hoặc tên thông số cụ thể."
+            ) % nums_str
+            return self._build_router_result(
+                intent="ambiguous",
+                label=_("Yêu cầu chưa rõ ràng"),
+                query=raw_query,
+                is_ambiguous=True,
+                unresolved_numerics=unresolved_numerics,
+                clarification=clarification,
             )
 
         # D. Kiểm tra Intent 6: Equipment Context (Tra cứu theo model xe / động cơ)
@@ -158,8 +183,11 @@ class QbaQueryIntentRouter(models.AbstractModel):
     def _detect_exact_sku(self, query):
         """Phát hiện nếu chuỗi truy vấn trùng khớp mã SKU/default_code/brand_sku của sản phẩm"""
         clean_q = query.strip()
-        # Loại bỏ các tiền tố như "mã:", "sku:", "code:"
-        clean_q = re.sub(r'^(?:mã|sku|code|part\s*no\.?)\s*[:=]?\s*', '', clean_q, flags=re.I).strip()
+        # Loại bỏ các tiền tố như "mã:", "sku:", "code:", hoặc các tiền tố so sánh "so sánh với"
+        clean_q = re.sub(
+            r'^(?:so\s+sánh\s+(?:với\s+)?|đối\s+chiếu\s+(?:với\s+)?|so\s+với\s+|mã\s*[:=]?\s*|sku\s*[:=]?\s*|code\s*[:=]?\s*|part\s*no\.?\s*[:=]?\s*)',
+            '', clean_q, flags=re.I
+        ).strip()
 
         # Kiểm tra exact match với default_code, brand_sku hoặc barcode
         prod = self.env['product.template'].search([
@@ -183,6 +211,18 @@ class QbaQueryIntentRouter(models.AbstractModel):
             if prod_prefix:
                 return (prod_prefix, clean_q)
 
+        # Tìm token SKU kỹ thuật nằm bên trong câu hỏi (ví dụ: "So sánh với LC.002")
+        for m_sku in re.finditer(r'\b([A-Za-z0-9]+[\.-][A-Za-z0-9\.-]+)\b', query):
+            embedded_code = m_sku.group(1).strip()
+            prod_embedded = self.env['product.template'].search([
+                '|', '|',
+                ('default_code', '=ilike', embedded_code),
+                ('brand_sku', '=ilike', embedded_code),
+                ('barcode', '=ilike', embedded_code),
+            ], limit=1)
+            if prod_embedded:
+                return (prod_embedded, embedded_code)
+
         return (False, False)
 
     @api.model
@@ -193,6 +233,8 @@ class QbaQueryIntentRouter(models.AbstractModel):
             if match:
                 remainder = query[match.end():].strip()
                 remainder = re.sub(r'^(?:cho\s+)?(?:mã\s+|sản\s+phẩm\s+|sp\s+)?', '', remainder, flags=re.I).strip()
+                if re.match(r'^(?:không|ko|nào\s+không|nào\s+ko)\??$', remainder, re.I):
+                    remainder = ""
                 return (True, remainder or query)
         return (False, None)
 
@@ -224,7 +266,7 @@ class QbaQueryIntentRouter(models.AbstractModel):
         q_lower = query.lower()
 
         best_cat = False
-        best_score = -1
+        best_score = 0
 
         for cat in all_cats:
             raw_name = cat.name or ''
@@ -270,6 +312,9 @@ class QbaQueryIntentRouter(models.AbstractModel):
             # 3. Khớp từng phần của tên danh mục
             parts = [p.strip().lower() for p in re.split(r'[-–/(),]', title) if len(p.strip()) >= 3]
             for p in parts:
+                # Bỏ qua nếu từ này đi liền sau số đo thông số (ví dụ: '8 lò xo', '10 răng', '10 lỗ')
+                if re.search(r'\b\d+(?:[.,]\d+)?\s*' + re.escape(p) + r'\b', q_lower):
+                    continue
                 m_part = re.search(r'\b' + re.escape(p) + r'\b', q_lower)
                 if m_part:
                     score = max(score, 70 + len(p))
@@ -291,19 +336,37 @@ class QbaQueryIntentRouter(models.AbstractModel):
         return best_cat
 
     @api.model
-    def _extract_technical_specs(self, query, category=None):
+    def _extract_technical_specs(self, query, category=None, return_details=False):
         """Trích xuất thông số kỹ thuật đa danh mục dựa trên định nghĩa CSDL (Data-Driven).
-        1. Nếu danh mục có Parser đã đăng ký trong Registry -> gọi parser tương ứng.
-        2. Đọc động tất cả Spec Definitions thuộc danh mục (hoặc toàn bộ spec definitions hoạt động).
-        3. Khớp các mẫu thông số: <tên/mã thông số>[:=]? <giá trị> <đơn vị>.
-        4. Khớp các thông số kích thước phổ biến (phi/đường kính/mm, số răng, số lỗ...).
+        1. Thu thập vị trí toàn bộ các token số xuất hiện trong chuỗi.
+        2. Nếu danh mục có Parser đã đăng ký trong Registry -> gọi parser tương ứng.
+        3. Đọc động tất cả Spec Definitions thuộc danh mục (hoặc toàn bộ spec definitions hoạt động).
+        4. Khớp các mẫu thông số kỹ thuật chuẩn:
+           - Răng / Teeth: '10 răng', '10r', '10R', 'rang: 10'
+           - Lò xo / Springs: '8 lò xo', '8 lx', '8LX', 'lo xo: 8'
+           - Kích thước ngoài / Phi / mm: 'phi 325', '325mm', 'đường kính 325', 'ø325'
+           - Số lỗ: '10 lỗ', 'lo: 10'
+           - Chiều cao / Bề dày: 'chiều cao 150', 'dày 20'
+        5. Xác định các token số chưa được gán nhãn (Unresolved Numerics).
+        6. Phân giải an toàn số chưa gán nhãn nếu có bối cảnh danh mục (category/context/các specs khác cùng câu):
+           - Trong danh mục LC (lá côn) hoặc khi có thông số đặc trưng (răng / lò xo):
+             Số từ 150 - 500 mm chưa gán nhãn sẽ được phân giải thành duong_kinh_ngoai (Đường kính ngoài).
+        7. Trả về: (parsed_specs, unresolved_numerics, inferred_category).
         """
         parsed_specs = {}
+        consumed_spans = []
 
-        # 1. Thử gọi parser chuyên dụng từ registry nếu category đã xác định
+        # 1. Thu thập tất cả các token số trong câu hỏi
+        numeric_matches = list(re.finditer(r'\b\d+(?:[.,]\d+)?\b', query))
+
+        # Bảo vệ các mã SKU kỹ thuật (ví dụ LC.002, TBUA.010, HOWO-371) khỏi bị bóc tách thành số trần
+        for m_sku in re.finditer(r'\b[A-Za-z0-9]+[\.-][A-Za-z0-9\.-]+\b', query):
+            consumed_spans.append(m_sku.span())
+
+        # 2. Thử gọi parser chuyên dụng từ registry nếu category đã xác định
         if category and "qba.spec.parser.registry" in self.env:
             parser = self.env["qba.spec.parser.registry"].get_parser_for_category(category)
-            if parser:
+            if parser is not None:
                 parse_fn = getattr(parser, "parse_product_name", None) or getattr(parser, "parse_lc_name", None)
                 if parse_fn:
                     try:
@@ -312,10 +375,16 @@ class QbaQueryIntentRouter(models.AbstractModel):
                             for k, v in p_res.items():
                                 if isinstance(v, dict) and "value" in v:
                                     parsed_specs[k] = v
+                                    for m in numeric_matches:
+                                        try:
+                                            if float(m.group(0).replace(',', '.')) == float(v["value"]):
+                                                consumed_spans.append(m.span())
+                                        except ValueError:
+                                            pass
                     except Exception as e:
                         _logger.debug("Lỗi khi gọi parser chuyên dụng cho %s: %s", category.display_name, e)
 
-        # 2. Quét động các qba.product.spec.definition trong database
+        # 3. Quét động các qba.product.spec.definition trong database
         domain_specs = [('active', '=', True)]
         if category:
             domain_specs.append(('category_ids', 'in', [category.id]))
@@ -329,28 +398,60 @@ class QbaQueryIntentRouter(models.AbstractModel):
             name = spec_def.name.lower()
             uom = spec_def.uom or ""
 
-            # Xây dựng regex tìm tên thông số hoặc mã thông số kèm giá trị số
-            # Ví dụ: "răng: 10", "đường kính 325", "d: 50"
-            pat = r'(?:' + re.escape(name) + r'|' + re.escape(code) + r')\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:' + re.escape(uom) + r')?'
+            # Không cho phép các đơn vị đo lường dùng chung (mm, cái, kg...) tự ý bắt số nếu không kèm tên thông số cụ thể
+            unit_postfix = (
+                r'|' + re.escape(uom)
+                if (uom and uom.lower() not in ('mm', 'cm', 'm', 'kg', 'cái', 'viên', 'bộ', 'con'))
+                else ''
+            )
+            name_postfix = (r'|' + re.escape(name)) if len(name) > 2 else ''
+            allowed_postfix = (unit_postfix + name_postfix).lstrip('|')
+
+            if allowed_postfix:
+                pat = (
+                    r'(?:(?:' + re.escape(name) + r'|' + re.escape(code) + r')\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:' + re.escape(uom) + r')?'
+                    r'|\b(\d+(?:[.,]\d+)?)\s*(?:' + allowed_postfix + r')\b)'
+                )
+            else:
+                pat = r'(?:' + re.escape(name) + r'|' + re.escape(code) + r')\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:' + re.escape(uom) + r')?'
             match = re.search(pat, query, re.I)
             if match:
-                raw_num = match.group(1).replace(',', '.')
+                raw_num = (match.group(1) or match.group(2)).replace(',', '.')
                 val = float(raw_num) if spec_def.data_type == 'float' else int(float(raw_num))
                 parsed_specs[code] = {
                     "value": val,
                     "uom": uom,
                     "spec_name": spec_def.name,
                 }
+                span_to_consume = match.span(1) if match.group(1) else match.span(2)
+                consumed_spans.append(span_to_consume)
 
-        # 3. Quét các mẫu kích thước / thông số dạng phổ biến (Generic Dimensional Patterns)
-        # 3.1. Số răng (teeth)
+        # 4. Quét các mẫu kích thước / thông số dạng phổ biến (Generic Dimensional Patterns)
+        # 4.1. Số răng (teeth): "10 răng", "10R", "10r", "răng 10", "rang: 10"
         if "rang" not in parsed_specs and "teeth" not in parsed_specs:
-            m_teeth = re.search(r'(?:(?:răng|rang|teeth)\s*[:=]?\s*(\d+)|\b(\d+)\s*[rR]\b|\b(\d+)\s*răng\b)', query, re.I)
+            m_teeth = re.search(r'(?:(?:răng|rang|teeth)\s*[:=]?\s*(\d+)|\b(\d+)\s*[rR]\b|\b(\d+)\s*răng\b|\b(\d+)\s*rang\b)', query, re.I)
             if m_teeth:
-                teeth_val = m_teeth.group(1) or m_teeth.group(2) or m_teeth.group(3)
+                teeth_val = m_teeth.group(1) or m_teeth.group(2) or m_teeth.group(3) or m_teeth.group(4)
                 parsed_specs["rang"] = {"value": int(teeth_val), "uom": "răng", "spec_name": _("Số răng")}
+                for g in (1, 2, 3, 4):
+                    if m_teeth.group(g):
+                        consumed_spans.append(m_teeth.span(g))
 
-        # 3.2. Đường kính ngoài / Phi / Kích thước ngoài
+        # 4.2. Số lò xo (springs / lo xo): "8 lò xo", "8 lx", "8LX", "lò xo: 8"
+        if "lo_xo" not in parsed_specs and "springs" not in parsed_specs:
+            m_springs = re.search(r'(?:(?:số\s+lò\s+xo|lò\s+xo|lo\s+xo|springs?)\s*[:=]?\s*(\d+)|\b(\d+)\s*(?:lò\s+xo|lo\s+xo|lx|LX)\b)', query, re.I)
+            if m_springs:
+                spring_val = m_springs.group(1) or m_springs.group(2)
+                parsed_specs["lo_xo"] = {
+                    "value": int(spring_val),
+                    "uom": "cái",
+                    "spec_name": _("Số lò xo")
+                }
+                for g in (1, 2):
+                    if m_springs.group(g):
+                        consumed_spans.append(m_springs.span(g))
+
+        # 4.3. Đường kính ngoài / Phi / Kích thước ngoài: "phi 325", "325mm", "đường kính 325"
         if "duong_kinh_ngoai" not in parsed_specs and "duong_kinh" not in parsed_specs:
             m_diam = re.search(r'(?:(?:đường\s+kính\s+ngoài|đk\s+ngoài|đường\s+kính|phi|ø|diam(?:eter)?)\s*[:=]?\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*mm)\b', query, re.I)
             if m_diam:
@@ -360,14 +461,18 @@ class QbaQueryIntentRouter(models.AbstractModel):
                     "uom": "mm",
                     "spec_name": _("Đường kính ngoài")
                 }
+                for g in (1, 2):
+                    if m_diam.group(g):
+                        consumed_spans.append(m_diam.span(g))
 
-        # 3.3. Số lỗ / Số bulong (phổ biến cho tăm bua, mâm, bánh đà)
+        # 4.4. Số lỗ / Số bulong: "10 lỗ"
         if "so_lo" not in parsed_specs and "so_lo_bulong" not in parsed_specs:
             m_holes = re.search(r'(?:số\s+lỗ|so\s+lo|lỗ\s+bulong|lỗ|holes?)\s*[:=]?\s*(\d+)', query, re.I)
             if m_holes:
                 parsed_specs["so_lo"] = {"value": int(m_holes.group(1)), "uom": "lỗ", "spec_name": _("Số lỗ")}
+                consumed_spans.append(m_holes.span(1))
 
-        # 3.4. Chiều cao / Bề dày
+        # 4.5. Chiều cao / Bề dày
         if "chieu_cao" not in parsed_specs and "do_day" not in parsed_specs:
             m_h = re.search(r'(?:chiều\s+cao|chieu\s+cao|độ\s+dày|do\s+day|height|thick(?:ness)?)\s*[:=]?\s*(\d+(?:[.,]\d+)?)', query, re.I)
             if m_h:
@@ -376,7 +481,59 @@ class QbaQueryIntentRouter(models.AbstractModel):
                     "uom": "mm",
                     "spec_name": _("Chiều cao / Bề dày")
                 }
+                consumed_spans.append(m_h.span(1))
 
+        # 5. Xác định các số chưa được gán nhãn (Unresolved Numerics)
+        unresolved_numerics = []
+        for m in numeric_matches:
+            s_start, s_end = m.span()
+            is_consumed = any(cs[0] <= s_start and s_end <= cs[1] for cs in consumed_spans)
+            if not is_consumed:
+                try:
+                    num_val = float(m.group(0).replace(',', '.'))
+                    unresolved_numerics.append(num_val)
+                except ValueError:
+                    pass
+
+        # 6. Phân giải thông số từ Unresolved Numerics dựa trên ngữ cảnh hoặc các thông số khác trong cùng câu
+        inferred_category = category
+        if not inferred_category and parsed_specs:
+            spec_codes = list(parsed_specs.keys())
+            defs = self.env['qba.product.spec.definition'].search([('code', 'in', spec_codes)])
+            cand_cats = defs.mapped('category_ids')
+            if len(cand_cats) == 1:
+                inferred_category = cand_cats[0]
+
+        resolved_nums = []
+        if inferred_category:
+            cat_name = (inferred_category.name or "").lower()
+            if "lc" in cat_name or "lá côn" in cat_name or "đĩa ly hợp" in cat_name:
+                # Với Lá Côn: nếu chưa có đường kính ngoài, số trong khoảng 150..500 là đường kính ngoài
+                if "duong_kinh_ngoai" not in parsed_specs and "duong_kinh" not in parsed_specs:
+                    for num in unresolved_numerics:
+                        if 150 <= num <= 500:
+                            parsed_specs["duong_kinh_ngoai"] = {
+                                "value": float(num),
+                                "uom": "mm",
+                                "spec_name": _("Đường kính ngoài")
+                            }
+                            resolved_nums.append(num)
+                            break
+                # Nếu chưa có răng, số nguyên 8..30 là số răng
+                if "rang" not in parsed_specs and "teeth" not in parsed_specs:
+                    for num in unresolved_numerics:
+                        if num not in resolved_nums and num == int(num) and 8 <= num <= 30:
+                            parsed_specs["rang"] = {
+                                "value": int(num),
+                                "uom": "răng",
+                                "spec_name": _("Số răng")
+                            }
+                            resolved_nums.append(num)
+                            break
+
+        unresolved_numerics = [n for n in unresolved_numerics if n not in resolved_nums]
+        if return_details:
+            return parsed_specs, unresolved_numerics, inferred_category
         return parsed_specs
 
     @api.model
@@ -434,7 +591,8 @@ class QbaQueryIntentRouter(models.AbstractModel):
     @api.model
     def _build_router_result(self, intent, label, query, target_sku=None, target_product=None,
                              target_category=None, extracted_specs=None, equipment_terms=None,
-                             clean_terms=None, clean_query=None, is_ambiguous=False, clarification=None):
+                             clean_terms=None, clean_query=None, is_ambiguous=False, clarification=None,
+                             unresolved_numerics=None, confidence="high", product_category_terms=None):
         """Đóng gói kết quả điều hướng intent chuẩn hóa"""
         badge_classes = {
             "exact_sku": "bg-primary text-white",
@@ -448,6 +606,10 @@ class QbaQueryIntentRouter(models.AbstractModel):
         badge_class = badge_classes.get(intent, "bg-secondary text-white")
         badge_html = f"<span class='badge {badge_class}'><i class='fa fa-compass me-1'></i>{html_escape(label)}</span>"
 
+        cat_terms = product_category_terms or []
+        if not cat_terms and target_category:
+            cat_terms = [target_category.name]
+
         return {
             "intent": intent,
             "intent_label": label,
@@ -456,7 +618,10 @@ class QbaQueryIntentRouter(models.AbstractModel):
             "target_sku": target_sku,
             "target_product": target_product,
             "target_category": target_category,
+            "product_category_terms": cat_terms,
             "extracted_specs": extracted_specs or {},
+            "unresolved_numerics": unresolved_numerics or [],
+            "confidence": confidence,
             "equipment_terms": equipment_terms or [],
             "clean_terms": clean_terms or [],
             "clean_query": clean_query or query,

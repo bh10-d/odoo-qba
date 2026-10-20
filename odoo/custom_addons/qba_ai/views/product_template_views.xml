@@ -6,6 +6,20 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_find_matching_substitutes"
+                        string="Đối Chiếu Kỹ Thuật (AI Assistant)"
+                        type="object"
+                        class="btn btn-outline-info"
+                        icon="fa-balance-scale"
+                        title="Mở giao diện AI Assistant đối chiếu thông số kỹ thuật chi tiết &amp; phê duyệt"/>
+                <!-- <button name="action_open_ai_assistant_drawer"
+                        string="Trợ Lý QBA AI"
+                        type="object"
+                        class="btn btn-outline-primary"
+                        icon="fa-magic"
+                        title="Mở bảng chat Trợ lý AI để tra cứu thông số hoặc tìm phụ tùng thay thế"/> -->
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Thông Số Kỹ Thuật" name="tech_specs">
                     <!-- Huong dan ky thuat va So do do tu danh muc -->
@@ -28,20 +42,26 @@
                             </span>
                         </div>
                         <div class="d-flex gap-2">
+                            <!-- <button name="action_open_ai_assistant_drawer"
+                                    type="object"
+                                    string="Chat Với QBA AI"
+                                    icon="fa-comments"
+                                    class="btn btn-sm btn-primary"
+                                    title="Mở bảng chat đàm thoại Trợ lý AI cho sản phẩm này"/> -->
                             <button name="action_find_matching_substitutes"
                                     type="object"
-                                    string="Đối chiếu phụ tùng thay thế (Matching)"
+                                    string="Đối Chiếu Kỹ Thuật (AI Assistant)"
                                     icon="fa-balance-scale"
                                     class="btn btn-sm btn-outline-info"
-                                    title="Đối chiếu thông số kỹ thuật để tìm phụ tùng thay thế trong kho qua Generic Matching Engine"/>
+                                    title="Mở giao diện AI Assistant đối chiếu thông số kỹ thuật chi tiết &amp; phê duyệt"/>
                             <button name="action_populate_category_specs"
                                     type="object"
-                                    string="Tải mẫu thông số từ danh mục"
+                                    string="Tải mẫu thông số"
                                     class="btn btn-sm btn-outline-primary"
                                     title="Tự động tải danh sách các thông số kỹ thuật được cấu hình cho danh mục sản phẩm này"/>
                             <button name="action_open_spec_parser_wizard"
                                     type="object"
-                                    string="Trích xuất từ tên (AI)"
+                                    string="Trích xuất từ tên"
                                     icon="fa-magic"
                                     class="btn btn-sm btn-outline-success"
                                     title="Trích xuất các thông số kỹ thuật từ tên sản phẩm để xem trước và phê duyệt"
@@ -86,4 +106,56 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Ke Thua List View San Pham: Nut Tro Ly AI Tim Phu Tung tren header -->
+    <record id="view_product_template_tree_ai_entry" model="ir.ui.view">
+        <field name="name">product.template.tree.ai.entry</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_ai_assistant_general"
+                        string="QBA AI Tìm Phụ Tùng"
+                        type="object"
+                        class="btn-primary"
+                        icon="fa-magic"/>
+                <button name="action_open_ai_assistant_general_matching"
+                        string="AI Assistant Tra Cứu &amp; Đối Chiếu"
+                        type="object"
+                        class="btn-outline-info"
+                        icon="fa-balance-scale"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Server Action 1: Mo Tro Ly AI Drawer tren ca form va list -->
+    <record id="action_server_open_ai_assistant" model="ir.actions.server">
+        <field name="name">QBA AI Tìm Kiếm Phụ Tùng</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records and len(records) == 1:
+    action = records[0].action_open_ai_assistant_drawer()
+else:
+    action = model.action_open_ai_assistant_general()
+        </field>
+    </record>
+
+    <!-- Server Action 2: Mo Giao dien AI Assistant Kỹ Thuật & Duyệt -->
+    <record id="action_server_open_tech_matching" model="ir.actions.server">
+        <field name="name">Đối Chiếu Kỹ Thuật &amp; Duyệt (AI Assistant)</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records and len(records) == 1:
+    action = records[0].action_find_matching_substitutes()
+else:
+    action = model.action_open_ai_assistant_general_matching()
+        </field>
+    </record>
 </odoo>
+

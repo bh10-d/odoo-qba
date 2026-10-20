@@ -327,7 +327,8 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
                 'question': query,
                 'suggested_answer': response_html,
                 'reason': 'no_product_found' if not matched_products else 'low_confidence',
-                'state': 'pending'
+                'state': 'pending',
+                'user_id': self.env.user.id,
             })
 
         if matching_html:
@@ -405,7 +406,8 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
             'question': self.user_query,
             'suggested_answer': self.ai_response,
             'reason': 'manual_flag',
-            'state': 'pending'
+            'state': 'pending',
+            'user_id': self.env.user.id,
         })
         self.status_message = "Đã gửi lên Hàng chờ Admin phê duyệt thành công!"
         return {

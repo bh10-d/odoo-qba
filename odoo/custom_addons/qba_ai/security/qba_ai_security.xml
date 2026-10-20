@@ -20,5 +20,65 @@
         <field name="implied_ids" eval="[(4, ref('group_qba_ai_user'))]"/>
         <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
+
+    <!-- 3. Record Rules: Bảo mật và cách ly phiên hội thoại giữa các người dùng -->
+    <record id="rule_qba_ai_conversation_user" model="ir.rule">
+        <field name="name">Người dùng chỉ xem phiên hội thoại AI của chính mình</field>
+        <field name="model_id" ref="model_qba_ai_conversation"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('user_id', '=', False)]</field>
+    </record>
+
+    <record id="rule_qba_ai_conversation_manager" model="ir.rule">
+        <field name="name">Quản trị viên AI xem toàn bộ phiên hội thoại</field>
+        <field name="model_id" ref="model_qba_ai_conversation"/>
+        <field name="groups" eval="[(4, ref('group_qba_ai_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_qba_ai_message_user" model="ir.rule">
+        <field name="name">Người dùng chỉ xem tin nhắn trong hội thoại của chính mình</field>
+        <field name="model_id" ref="model_qba_ai_message"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">['|', ('conversation_id.user_id', '=', user.id), ('conversation_id.user_id', '=', False)]</field>
+    </record>
+
+    <record id="rule_qba_ai_message_manager" model="ir.rule">
+        <field name="name">Quản trị viên AI xem toàn bộ tin nhắn</field>
+        <field name="model_id" ref="model_qba_ai_message"/>
+        <field name="groups" eval="[(4, ref('group_qba_ai_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- 4. Record Rules: Bảo mật hàng chờ phê duyệt kiến thức AI -->
+    <record id="rule_qba_ai_approval_queue_user" model="ir.rule">
+        <field name="name">Người dùng chỉ xem yêu cầu phê duyệt do mình tạo</field>
+        <field name="model_id" ref="model_qba_ai_approval_queue"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('create_uid', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_qba_ai_approval_queue_manager" model="ir.rule">
+        <field name="name">Quản trị viên AI xem toàn bộ yêu cầu phê duyệt</field>
+        <field name="model_id" ref="model_qba_ai_approval_queue"/>
+        <field name="groups" eval="[(4, ref('group_qba_ai_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <!-- 5. Record Rules: Bảo mật yêu cầu hỗ trợ dữ liệu sản phẩm AI (qba.ai.request) -->
+    <record id="rule_qba_ai_request_user" model="ir.rule">
+        <field name="name">Người dùng chỉ xem yêu cầu hỗ trợ do mình tạo</field>
+        <field name="model_id" ref="model_qba_ai_request"/>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="domain_force">['|', ('user_id', '=', user.id), ('create_uid', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_qba_ai_request_manager" model="ir.rule">
+        <field name="name">Quản trị viên AI xem toàn bộ yêu cầu hỗ trợ</field>
+        <field name="model_id" ref="model_qba_ai_request"/>
+        <field name="groups" eval="[(4, ref('group_qba_ai_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
 </odoo>
+
 

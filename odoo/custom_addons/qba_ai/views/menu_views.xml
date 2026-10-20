@@ -24,22 +24,47 @@
 
     <!-- 3. Các Menu Con Cấp 2: Chức Năng AI -->
     <menuitem id="menu_qba_ai_assistant_nav"
-              name="Trợ Lý Tra Cứu AI"
+              name="Trợ Lý Tra Cứu &amp; Đối Chiếu (AI Assistant)"
               parent="menu_qba_ai_main_category"
               action="action_qba_ai_assistant"
               sequence="1"/>
 
-    <menuitem id="menu_qba_ai_knowledge_nav"
-              name="Thư Viện Hướng Dẫn Đo"
+    <menuitem id="menu_qba_ai_drawer"
+              name="Mở Trợ Lý AI (Tìm Kiếm Chat)"
               parent="menu_qba_ai_main_category"
-              action="action_qba_ai_knowledge"
+              action="action_open_qba_ai_drawer"
               sequence="2"/>
+
+    <menuitem id="menu_qba_ai_conversation_history"
+              name="Lịch Sử Hội Thoại QBA AI"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_conversation_history"
+              sequence="3"/>
+
+    <menuitem id="menu_qba_ai_request_my"
+              name="Yêu Cầu Của Tôi"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_request_my"
+              sequence="4"/>
+
+    <menuitem id="menu_qba_ai_request_admin"
+              name="Quản Lý Yêu Cầu Hỗ Trợ"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_request_admin"
+              groups="qba_ai.group_qba_ai_manager"
+              sequence="5"/>
 
     <menuitem id="menu_qba_ai_approval_queue_nav"
               name="Hàng Chờ Admin Phê Duyệt"
               parent="menu_qba_ai_main_category"
               action="action_qba_ai_approval_queue"
-              sequence="3"/>
+              sequence="6"/>
+
+    <menuitem id="menu_qba_ai_knowledge_nav"
+              name="Thư Viện Hướng Dẫn Đo"
+              parent="menu_qba_ai_main_category"
+              action="action_qba_ai_knowledge"
+              sequence="7"/>
 
     <!-- 4. Các Menu Con Cấp 2: Quản Lý Thông Số Kỹ Thuật -->
     <menuitem id="menu_qba_ai_spec_value_review"
@@ -73,13 +98,6 @@
               groups="qba_ai.group_qba_ai_manager"
               sequence="5"/>
 
-    <menuitem id="menu_qba_ai_lc_parser_nav"
-              name="Công Cụ Trích Xuất LC (Lá Côn)"
-              parent="menu_qba_ai_specs_category"
-              action="action_qba_lc_spec_parser_wizard"
-              groups="qba_ai.group_qba_ai_manager"
-              sequence="10"/>
-
     <!-- 5. Các Menu Con Cấp 2: Cấu Hình -->
     <menuitem id="menu_qba_ai_settings_nav"
               name="Cấu Hình Gemini API"
@@ -87,18 +105,18 @@
               action="action_qba_ai_config_settings"
               sequence="1"/>
 
-    <menuitem id="menu_qba_ai_spec_definition_cfg"
+    <!-- <menuitem id="menu_qba_ai_spec_definition_cfg"
               name="Định Nghĩa Thông Số Kỹ Thuật"
               parent="menu_qba_ai_config_category"
               action="action_qba_product_spec_definition"
-              sequence="2"/>
+              sequence="2"/> -->
 
-    <menuitem id="menu_qba_ai_matching_profile_cfg"
+    <!-- <menuitem id="menu_qba_ai_matching_profile_cfg"
               name="Hồ Sơ So Khớp (Profiles)"
               parent="menu_qba_ai_config_category"
               action="action_qba_category_matching_profile"
               groups="qba_ai.group_qba_ai_manager"
-              sequence="3"/>
+              sequence="3"/> -->
 
     <!-- 6. Phím tắt liên kết trong Bán Hàng & Kho -->
     <menuitem id="menu_qba_ai_assistant_sale"

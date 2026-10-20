@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View Yêu Cầu Hỗ Trợ AI (Odoo 18 <list>) -->
+    <record id="view_qba_ai_request_tree" model="ir.ui.view">
+        <field name="name">qba.ai.request.list</field>
+        <field name="model">qba.ai.request</field>
+        <field name="arch" type="xml">
+            <list string="Yêu Cầu Hỗ Trợ AI"
+                  decoration-info="state == 'submitted'"
+                  decoration-warning="state == 'in_progress'"
+                  decoration-success="state == 'resolved'"
+                  decoration-danger="state == 'rejected'">
+                <field name="name"/>
+                <field name="create_date" string="Thời gian"/>
+                <field name="request_type"/>
+                <field name="user_id" string="Người gửi" widget="many2one_avatar_user"/>
+                <field name="product_id" string="Sản phẩm"/>
+                <field name="raw_query" string="Câu hỏi / Từ khóa"/>
+                <field name="handler_id" string="Admin phụ trách" widget="many2one_avatar_user" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-success="state == 'resolved'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban View Yêu Cầu Hỗ Trợ AI -->
+    <record id="view_qba_ai_request_kanban" model="ir.ui.view">
+        <field name="name">qba.ai.request.kanban</field>
+        <field name="model">qba.ai.request</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" sample="1">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="request_type"/>
+                <field name="state"/>
+                <field name="user_id"/>
+                <field name="handler_id"/>
+                <field name="raw_query"/>
+                <field name="product_name"/>
+                <field name="product_code"/>
+                <field name="create_date"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <strong class="text-primary"><field name="name"/></strong>
+                            <field name="request_type" widget="badge"/>
+                        </div>
+                        <div class="text-truncate mb-1" t-if="record.raw_query.value">
+                            <i class="fa fa-search text-muted me-1" title="Tìm kiếm"/>
+                            <field name="raw_query"/>
+                        </div>
+                        <div class="text-truncate mb-1" t-if="record.product_name.value">
+                            <i class="fa fa-cube text-muted me-1" title="Sản phẩm"/>
+                            <field name="product_code"/> - <field name="product_name"/>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center text-muted small mt-2">
+                            <span><field name="create_date"/></span>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form View Yêu Cầu Hỗ Trợ AI -->
+    <record id="view_qba_ai_request_form" model="ir.ui.view">
+        <field name="name">qba.ai.request.form</field>
+        <field name="model">qba.ai.request</field>
+        <field name="arch" type="xml">
+            <form string="Yêu Cầu Hỗ Trợ AI">
+                <header>
+                    <button name="action_assign_to_me" string="Tiếp nhận" type="object" class="btn-primary" invisible="state not in ('submitted', 'in_progress')" groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_start_progress" string="Bắt đầu xử lý" type="object" invisible="state != 'submitted'" groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_resolve" string="Hoàn tất xử lý" type="object" class="btn-success" invisible="state != 'in_progress'" groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_reject" string="Từ chối" type="object" class="btn-secondary" invisible="state not in ('submitted', 'in_progress')" groups="qba_ai.group_qba_ai_manager"/>
+                    <button name="action_open_conversation" string="Xem hội thoại QBA AI" type="object" invisible="not conversation_id"/>
+                    <field name="state" widget="statusbar" statusbar_visible="submitted,in_progress,resolved,rejected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Mã yêu cầu"/>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin yêu cầu">
+                            <field name="request_type" readonly="state != 'submitted'"/>
+                            <field name="user_id" widget="many2one_avatar_user" readonly="1"/>
+                            <field name="create_date" string="Thời gian gửi" readonly="1"/>
+                            <field name="handler_id" widget="many2one_avatar_user" readonly="1"/>
+                        </group>
+                        <group string="Ngữ cảnh liên kết">
+                            <field name="product_id" readonly="state != 'submitted'"/>
+                            <field name="conversation_id" readonly="1"/>
+                            <field name="message_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Nội dung yêu cầu" name="request_details">
+                            <group>
+                                <field name="raw_query" readonly="1"/>
+                                <field name="user_notes" readonly="state != 'submitted'" placeholder="Ghi chú thêm về yêu cầu phụ tùng..."/>
+                            </group>
+                            <group string="Thông số kỹ thuật AI ghi nhận (JSON)">
+                                <field name="extracted_specs_json" readonly="1"/>
+                            </group>
+                        </page>
+                        <page string="Phản hồi từ Admin" name="admin_feedback_page">
+                            <group>
+                                <field name="admin_feedback" placeholder="Admin phản hồi kết quả: đã tạo sản phẩm, đã bổ sung thông số hoặc hướng dẫn phụ tùng..."/>
+                                <field name="rejection_reason" placeholder="Lý do từ chối (nếu từ chối yêu cầu)..."/>
+                            </group>
+                        </page>
+                        <page string="Tệp đính kèm" name="attachments">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View Yêu Cầu Hỗ Trợ AI -->
+    <record id="view_qba_ai_request_search" model="ir.ui.view">
+        <field name="name">qba.ai.request.search</field>
+        <field name="model">qba.ai.request</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm yêu cầu">
+                <field name="name" string="Mã yêu cầu"/>
+                <field name="raw_query" string="Từ khóa / Câu hỏi"/>
+                <field name="product_id" string="Sản phẩm"/>
+                <field name="user_id" string="Người gửi"/>
+                <field name="handler_id" string="Admin phụ trách"/>
+                <filter name="filter_my_requests" string="Của tôi" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="filter_submitted" string="Chờ xử lý" domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_in_progress" string="Đang xử lý" domain="[('state', '=', 'in_progress')]"/>
+                <filter name="filter_resolved" string="Đã xử lý" domain="[('state', '=', 'resolved')]"/>
+                <filter name="filter_rejected" string="Từ chối" domain="[('state', '=', 'rejected')]"/>
+                <group expand="0" string="Gom nhóm theo">
+                    <filter name="group_by_state" string="Trạng thái" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_type" string="Loại yêu cầu" context="{'group_by': 'request_type'}"/>
+                    <filter name="group_by_user" string="Người gửi" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_by_handler" string="Admin phụ trách" context="{'group_by': 'handler_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions Window -->
+    <record id="action_qba_ai_request_admin" model="ir.actions.act_window">
+        <field name="name">Quản Lý Yêu Cầu Hỗ Trợ AI</field>
+        <field name="res_model">qba.ai.request</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_qba_ai_request_search"/>
+        <field name="context">{'search_default_filter_submitted': 1, 'search_default_filter_in_progress': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có yêu cầu hỗ trợ nào từ nhân viên!
+            </p>
+            <p>
+                Khi nhân viên tìm kiếm không thấy phụ tùng hoặc thiếu thông số kỹ thuật trong Trợ lý QBA AI, yêu cầu sẽ được chuyển về đây để Admin xử lý.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_qba_ai_request_my" model="ir.actions.act_window">
+        <field name="name">Yêu Cầu Của Tôi</field>
+        <field name="res_model">qba.ai.request</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('user_id', '=', uid)]</field>
+        <field name="search_view_id" ref="view_qba_ai_request_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Bạn chưa gửi yêu cầu hỗ trợ nào!
+            </p>
+            <p>
+                Khi tìm kiếm phụ tùng trên Trợ lý QBA AI, bạn có thể bấm nút "Gửi yêu cầu tới Admin" để nhờ bổ sung danh mục hoặc kiểm tra thông số.
+            </p>
+        </field>
+    </record>
+</odoo>
