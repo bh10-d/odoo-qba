@@ -24,6 +24,10 @@ class QbaGearbox(models.Model):
     )
     product_count = fields.Integer(string="Số sản phẩm", compute="_compute_product_count")
 
+    # Hình ảnh và mô tả
+    image_1920 = fields.Image(string="Hình ảnh", max_width=1920, max_height=1920)
+    description = fields.Html(string="Mô tả", translate=True, sanitize=False)
+
     brand = fields.Char(string="Nhãn hiệu")
     ratio = fields.Char(string="Ratio")
     category = fields.Char(string="Chủng loại")
@@ -40,17 +44,21 @@ class QbaGearbox(models.Model):
 
     def _compute_product_count(self):
         for rec in self:
-            rec.product_count = len(rec.product_tmpl_ids)
+            descendant_ids = self.search([('id', 'child_of', rec.ids)]).ids
+            rec.product_count = self.env['product.template'].search_count([
+                ('gearbox_ids', 'in', descendant_ids)
+            ])
 
     def action_view_products(self):
         self.ensure_one()
+        descendant_ids = self.search([('id', 'child_of', self.ids)]).ids
         return {
             "name": f"Sản phẩm: {self.complete_name}",
             "type": "ir.actions.act_window",
             "res_model": "product.template",
             "view_mode": "kanban,list,form",
             "views": [(False, "kanban"), (False, "list"), (False, "form")],
-            "domain": [("gearbox_ids", "in", [self.id])],
+            "domain": [("gearbox_ids", "in", descendant_ids)],
             "context": {"default_gearbox_ids": [(4, self.id)]},
         }
 

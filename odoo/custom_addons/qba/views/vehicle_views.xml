@@ -4,7 +4,7 @@
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
             <list>
-                <field name="complete_name" string="Dòng xe (Cây phân cấp mẹ / con)"/>
+                <field name="complete_name" string="Dòng xe"/>
                 <field name="name"/>
                 <field name="parent_id"/>
                 <field name="product_count" string="Số sản phẩm"/>
@@ -42,6 +42,14 @@
                             <field name="gearbox_id"/>
                             <field name="axle"/>
                             <field name="note"/>
+                        </group>
+                    </group>
+                    <group name="vehicle_media">
+                        <group string="Mô tả dòng xe">
+                            <field name="description" nolabel="1" placeholder="Nhập thông tin mô tả kỹ thuật, hướng dẫn hoặc lưu ý của dòng xe..."/>
+                        </group>
+                        <group string="Hình ảnh xe">
+                            <field name="image_1920" widget="image" nolabel="1" class="oe_avatar" style="max-width: 320px; max-height: 320px; border: 1px solid #dee2e6; border-radius: 8px; padding: 4px;"/>
                         </group>
                     </group>
                 </sheet>

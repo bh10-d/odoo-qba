@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_category_form_view_inherit_qba" model="ir.ui.view">
+        <field name="name">product.category.form.inherit.qba</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Thay thế nút xem sản phẩm cũ (vốn kích hoạt Group by khiến vỡ cột) thành action xem danh sách sản phẩm chuẩn -->
+            <xpath expr="//div[@name='button_box']/button" position="replace">
+                <button class="oe_stat_button" name="action_view_products" icon="fa-cubes" type="object">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value"><field name="product_count"/></span>
+                        <span class="o_stat_text"> Sản phẩm</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <xpath expr="//group[@name='first']" position="after">
+                <group name="category_info">
+                    <group string="Mô tả danh mục">
+                        <field name="description" nolabel="1" placeholder="Nhập mô tả chi tiết, hướng dẫn kỹ thuật hoặc thông tin đặc trưng của danh mục phụ tùng này..."/>
+                    </group>
+                    <group string="Hình ảnh danh mục">
+                        <field name="image_1920" widget="image" nolabel="1" class="oe_avatar" style="max-width: 320px; max-height: 320px; border: 1px solid #dee2e6; border-radius: 8px; padding: 4px;"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
