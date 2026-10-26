@@ -494,9 +494,51 @@
     }
 
     // =========================================================================
-    // 4. LẮNG NGHE SỰ KIỆN TƯƠNG TÁC
+    // 4. MỞ RỘNG / THU GỌN MÔ TẢ KỸ THUẬT (TECHNICAL SPECS) TỐI ĐA 3 DÒNG
+    // =========================================================================
+    function checkTechSpecsOverflow(container) {
+        if (!container) return;
+        const lineEl = container.querySelector('.qba-tech-specs-line');
+        const toggleWrapper = container.querySelector('.qba-tech-specs-toggle-wrapper');
+        if (!lineEl || !toggleWrapper) return;
+
+        // Nếu người dùng đã mở rộng thì luôn giữ nút "Thu gọn"
+        if (lineEl.classList.contains('qba-tech-specs-expanded')) {
+            toggleWrapper.classList.remove('d-none');
+            return;
+        }
+
+        // Kiểm tra xem nội dung có bị tràn quá 3 dòng không
+        if (lineEl.clientHeight > 0) {
+            const isOverflowing = (lineEl.scrollHeight - lineEl.clientHeight) > 2;
+            if (isOverflowing) {
+                toggleWrapper.classList.remove('d-none');
+            } else {
+                toggleWrapper.classList.add('d-none');
+            }
+        }
+    }
+
+    function updateTechSpecsToggles() {
+        const containers = document.querySelectorAll('.qba-tech-specs-container');
+        containers.forEach(checkTechSpecsOverflow);
+    }
+
+    let techSpecsRaf = null;
+    function scheduleTechSpecsCheck() {
+        if (techSpecsRaf) cancelAnimationFrame(techSpecsRaf);
+        techSpecsRaf = requestAnimationFrame(updateTechSpecsToggles);
+    }
+
+    // =========================================================================
+    // 5. LẮNG NGHE SỰ KIỆN TƯƠNG TÁC
     // =========================================================================
     document.addEventListener('mouseover', function (e) {
+        const techContainer = e.target.closest('.qba-tech-specs-container');
+        if (techContainer) {
+            checkTechSpecsOverflow(techContainer);
+        }
+
         const trigger = e.target.closest('.qba-img-hover-scale, .qba-img-hover-box img, .qba-form-avatar-zoom img');
         if (trigger) {
             showHoverPreview(trigger);
@@ -526,6 +568,34 @@
 
     document.addEventListener('click', function (e) {
         hideHoverPreview();
+
+        // Nút Xem thêm / Thu gọn mô tả kỹ thuật SP (Technical Specs) trong Kanban
+        const techToggle = e.target.closest('.qba-tech-specs-toggle, .qba-tech-specs-toggle-wrapper');
+        if (techToggle) {
+            e.preventDefault();
+            e.stopPropagation();
+            const container = techToggle.closest('.qba-tech-specs-container');
+            if (container) {
+                const lineEl = container.querySelector('.qba-tech-specs-line');
+                const moreBtn = container.querySelector('.qba-btn-more');
+                const lessBtn = container.querySelector('.qba-btn-less');
+                if (lineEl) {
+                    const isExpanded = lineEl.classList.contains('qba-tech-specs-expanded');
+                    if (isExpanded) {
+                        lineEl.classList.remove('qba-tech-specs-expanded');
+                        lineEl.classList.add('qba-tech-specs-collapsed');
+                        if (moreBtn) moreBtn.classList.remove('d-none');
+                        if (lessBtn) lessBtn.classList.add('d-none');
+                    } else {
+                        lineEl.classList.remove('qba-tech-specs-collapsed');
+                        lineEl.classList.add('qba-tech-specs-expanded');
+                        if (moreBtn) moreBtn.classList.add('d-none');
+                        if (lessBtn) lessBtn.classList.remove('d-none');
+                    }
+                }
+            }
+            return;
+        }
 
         // Nút Prev slider trong modal so sánh
         const sliderPrev = e.target.closest('.qba-slider-prev');
@@ -567,17 +637,29 @@
         }
 
         // =====================================================================
-        // Click ảnh xem Lightbox & Toàn bộ ảnh sản phẩm
+        // Click ảnh xem Lightbox & Toàn bộ ảnh sản phẩm / danh mục
         // =====================================================================
+        // Bỏ qua nếu người dùng click vào nút chỉnh sửa / tải lên / xóa ảnh của Odoo
+        if (e.target.closest('.o_select_file_button, .o_clear_file_button, button, input[type="file"], .note-popover, .o-we-toolbar')) {
+            return;
+        }
+
         const targetEl = e.target.closest(
             '.qba-compare-wrapper img, .qba-lightbox-trigger, .qba-img-hover-box, .qba-img-hover-scale, ' +
             '.o_kanban_record .qba-img-container img, .o_list_table .qba-lightbox-trigger, ' +
             '.o_list_table [name="image_128"] img, [name="extra_image_ids"] img, [name="label_image"] img, ' +
+            '.qba-category-large-img img, .qba-category-measure-img img, .qba-category-html-desc img, ' +
             '.qba-extra-badge'
         );
         if (!targetEl) return;
 
         if (targetEl.closest('.qba-simple-image-viewer') || targetEl.closest('.qba-slider-thumb')) return;
+
+        // Không mở lightbox nếu đang sửa nội dung trực tiếp trong trình soạn thảo HTML
+        const editableArea = targetEl.closest('.odoo-editor-editable');
+        if (editableArea && editableArea.getAttribute('contenteditable') === 'true') {
+            return;
+        }
 
         // Nếu click vào container hoặc badge, lấy ảnh bên trong
         let img = targetEl.tagName === 'IMG' ? targetEl : targetEl.querySelector('img');
@@ -594,6 +676,33 @@
 
         e.preventDefault();
         e.stopPropagation();
+
+        // 0. Nếu đang ở trong Form Danh mục (.qba-fullwidth-category-form) -> Gom tất cả ảnh sơ đồ đo & ảnh danh mục để xem dạng Gallery
+        const categoryForm = targetEl.closest('.qba-fullwidth-category-form');
+        if (categoryForm) {
+            const catImgs = Array.from(categoryForm.querySelectorAll('.qba-category-measure-img img, .qba-category-large-img img, .qba-category-html-desc img')).filter(i => {
+                const s = i.getAttribute('data-zoom-src') || i.currentSrc || i.src;
+                return s && !s.includes('placeholder');
+            });
+            if (catImgs.length > 0) {
+                const catName = document.querySelector('.o_form_view .oe_title h1')?.textContent?.trim() || 'Danh mục';
+                const items = catImgs.map(i => {
+                    let itemTitle = catName;
+                    if (i.closest('.qba-category-measure-img')) {
+                        itemTitle = `${catName} - Sơ đồ cách đo`;
+                    } else if (i.closest('.qba-category-large-img')) {
+                        itemTitle = `${catName} - Hình ảnh danh mục`;
+                    }
+                    return {
+                        src: i.getAttribute('data-zoom-src') || i.currentSrc || i.src,
+                        title: itemTitle
+                    };
+                });
+                const clickedIdx = catImgs.indexOf(img);
+                openViewer(items, clickedIdx >= 0 ? clickedIdx : 0);
+                return;
+            }
+        }
 
         // 1. Nếu đang ở trong tab Ảnh Phụ (extra_image_ids) -> Gom toàn bộ ảnh trong tab thành album
         const extraContainer = targetEl.closest('[name="extra_image_ids"]');
@@ -664,4 +773,32 @@
                 });
         }
     }, true);
+
+    // =========================================================================
+    // 6. KHỞI TẠO VÀ THEO DÕI NỘI DUNG DOM ĐỂ CẬP NHẬT NÚT XEM THÊM
+    // =========================================================================
+    try {
+        const techSpecsObserver = new MutationObserver(function (mutations) {
+            for (let i = 0; i < mutations.length; i++) {
+                if (mutations[i].addedNodes.length > 0) {
+                    scheduleTechSpecsCheck();
+                    break;
+                }
+            }
+        });
+        if (document.body) {
+            techSpecsObserver.observe(document.body, { childList: true, subtree: true });
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                techSpecsObserver.observe(document.body, { childList: true, subtree: true });
+                scheduleTechSpecsCheck();
+            });
+        }
+    } catch (err) {
+        console.warn("MutationObserver init error:", err);
+    }
+
+    window.addEventListener('resize', scheduleTechSpecsCheck);
+    window.addEventListener('load', scheduleTechSpecsCheck);
+    scheduleTechSpecsCheck();
 })();

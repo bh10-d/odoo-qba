@@ -43,14 +43,23 @@
                             <field name="note"/>
                         </group>
                     </group>
-                    <group name="axle_media">
-                        <group string="Mô tả cầu xe">
-                            <field name="description" nolabel="1" placeholder="Nhập thông tin mô tả kỹ thuật, thông số hoặc lưu ý của cầu xe..."/>
-                        </group>
-                        <group string="Hình ảnh cầu xe">
-                            <field name="image_1920" widget="image" nolabel="1" class="oe_avatar" style="max-width: 320px; max-height: 320px; border: 1px solid #dee2e6; border-radius: 8px; padding: 4px;"/>
-                        </group>
-                    </group>
+                    <div class="qba-fullwidth-category-form row g-4 mt-2 mb-3">
+                        <div class="col-12 col-lg-7">
+                            <div class="fw-bold mb-2" style="font-size: 0.95rem; color: #5b21b6;">Mô tả cầu xe</div>
+                            <div class="qba-category-desc-box">
+                                <field name="description" nolabel="1" class="qba-category-html-desc" placeholder="Nhập thông tin mô tả kỹ thuật, thông số hoặc lưu ý của cầu xe..."/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-5">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="fw-bold" style="font-size: 0.95rem; color: #b91c1c;">Hình ảnh cầu xe</span>
+                                <span class="text-muted small" style="font-size: 0.76rem;"><i class="fa fa-search-plus me-1"/>Click vào ảnh để phóng to</span>
+                            </div>
+                            <div class="qba-category-image-box text-center">
+                                <field name="image_1920" widget="image" nolabel="1" class="qba-category-large-img qba-lightbox-trigger"/>
+                            </div>
+                        </div>
+                    </div>
                 </sheet>
             </form>
         </field>
