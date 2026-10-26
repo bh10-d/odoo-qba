@@ -1,0 +1,70 @@
+<odoo>
+    <record id="view_qba_axle_list" model="ir.ui.view">
+        <field name="name">qba.axle.list</field>
+        <field name="model">qba.axle</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="complete_name" string="Cầu xe"/>
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="product_count" string="Số sản phẩm"/>
+                <field name="brand" optional="hide"/>
+                <field name="category" optional="hide"/>
+                <field name="ratio" optional="hide"/>
+                <field name="tonnage" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_qba_axle_form" model="ir.ui.view">
+        <field name="name">qba.axle.form</field>
+        <field name="model">qba.axle</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_products" type="object" class="oe_stat_button" icon="fa-cubes">
+                            <field name="product_count" widget="statinfo" string="Sản phẩm"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" string="Tên cầu / Cấp phân loại"/>
+                        <h1><field name="name" placeholder="Ví dụ: MAN, MCY13, Cầu láp 13T..."/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="parent_id" placeholder="Chọn danh mục cha (VD: MAN / MCY13)"/>
+                            <field name="brand"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="ratio"/>
+                            <field name="tonnage"/>
+                            <field name="note"/>
+                        </group>
+                    </group>
+                    <group name="axle_media">
+                        <group string="Mô tả cầu xe">
+                            <field name="description" nolabel="1" placeholder="Nhập thông tin mô tả kỹ thuật, thông số hoặc lưu ý của cầu xe..."/>
+                        </group>
+                        <group string="Hình ảnh cầu xe">
+                            <field name="image_1920" widget="image" nolabel="1" class="oe_avatar" style="max-width: 320px; max-height: 320px; border: 1px solid #dee2e6; border-radius: 8px; padding: 4px;"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_qba_axle" model="ir.actions.act_window">
+        <field name="name">Cầu xe</field>
+        <field name="res_model">qba.axle</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_qba_axle"
+              name="Cầu xe"
+              parent="sale.product_menu_catalog"
+              action="action_qba_axle"
+              sequence="105"/>
+</odoo>

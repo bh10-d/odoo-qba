@@ -4,7 +4,7 @@
         <field name="model">qba.gearbox</field>
         <field name="arch" type="xml">
             <list>
-                <field name="complete_name" string="Hộp số (Cây phân cấp mẹ / con)"/>
+                <field name="complete_name" string="Hộp số"/>
                 <field name="name"/>
                 <field name="parent_id"/>
                 <field name="product_count" string="Số sản phẩm"/>
@@ -39,6 +39,14 @@
                             <field name="category"/>
                             <field name="vehicle_models"/>
                             <field name="note"/>
+                        </group>
+                    </group>
+                    <group name="gearbox_media">
+                        <group string="Mô tả hộp số">
+                            <field name="description" nolabel="1" placeholder="Nhập thông tin mô tả kỹ thuật, thông số hoặc lưu ý của hộp số..."/>
+                        </group>
+                        <group string="Hình ảnh hộp số">
+                            <field name="image_1920" widget="image" nolabel="1" class="oe_avatar" style="max-width: 320px; max-height: 320px; border: 1px solid #dee2e6; border-radius: 8px; padding: 4px;"/>
                         </group>
                     </group>
                 </sheet>

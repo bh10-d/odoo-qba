@@ -45,7 +45,223 @@
     height: auto !important;
 }
 
-/* 2. Tiện ích văn bản 2 dòng */
+/* 2. Tên sản phẩm & Phân bổ 3 khu vực hiển thị (Cột thông tin SP - Cột Áp dụng 4 dòng - Cột Tác vụ) */
+.qba-product-card-body {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+    gap: 16px !important;
+}
+
+/* Cột 1: Tên sản phẩm, Kích thước (dưới tên), Brand + Bảo hành, Mã OE */
+.qba-product-main-col {
+    width: 440px !important;
+    max-width: 460px !important;
+    min-width: 0 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    overflow: hidden !important;
+}
+
+.qba-product-title-box {
+    width: 100% !important;
+    max-width: 460px !important;
+    min-width: 0 !important;
+}
+
+.qba-product-title {
+    display: inline-block;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.38 !important;
+    font-size: 0.92rem !important;
+    color: #000000 !important;
+}
+
+.qba-tech-specs-line {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.35 !important;
+    font-size: 0.8rem !important;
+    color: #1e293b !important;
+}
+
+/* Cột 2: Khu vực Áp dụng (Dư địa còn rộng -> 4 dòng riêng biệt [Xe], [Động cơ], [Hộp số], [Cầu], CHỮ ĐEN HOÀN TOÀN) */
+.qba-product-compat-col {
+    flex: 1 1 auto !important;
+    min-width: 220px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 3px !important;
+    padding: 0 8px !important;
+}
+
+.qba-compat-line {
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+    color: #000000 !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 0 !important;
+    width: 100% !important;
+}
+
+.qba-compat-tag,
+.qba-compat-label {
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+    width: 68px !important;
+    min-width: 68px !important;
+    max-width: 68px !important;
+}
+
+.qba-compat-colon {
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    flex-shrink: 0 !important;
+    display: inline-block !important;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+    width: 10px !important;
+    min-width: 10px !important;
+    text-align: left !important;
+    margin-right: 4px !important;
+}
+
+.qba-compat-val {
+    font-weight: 500 !important;
+    color: #000000 !important;
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: 0.8rem !important;
+    line-height: 1.4 !important;
+    white-space: pre-line !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Cột 3: Giá bán (to, đỏ), SL Tồn kho, Danh mục, Lịch sử Toa nhập/Báo giá & Nút So sánh */
+.qba-product-meta-col {
+    width: 320px !important;
+    min-width: 290px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+}
+
+@media (max-width: 1200px) {
+    .qba-product-main-col {
+        width: 330px !important;
+        max-width: 350px !important;
+    }
+    .qba-product-meta-col {
+        width: 295px !important;
+        min-width: 270px !important;
+    }
+}
+
+@media (max-width: 991px) {
+    .qba-product-card-body {
+        flex-wrap: wrap !important;
+    }
+    .qba-product-main-col {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .qba-product-compat-col {
+        width: 100% !important;
+        padding: 4px 0 !important;
+    }
+    .qba-product-meta-col {
+        width: 100% !important;
+        align-items: flex-start !important;
+    }
+}
+
+/* ==========================================================================
+   TƯƠNG THÍCH KHI KANBAN Ở CHẾ ĐỘ NHÓM CỘT (GROUPED KANBAN)
+   Khi người dùng gom nhóm theo Danh mục, Hãng xe, v.v..., các cột sẽ hẹp (~260-320px).
+   Thẻ sản phẩm tự động chuyển sang layout xếp dọc (vertical stack) để không bị tràn vỡ layout hoặc đè chữ lên nhau.
+   ========================================================================== */
+.o_kanban_grouped .o_kanban_record.qba-product-card,
+.o_kanban_group .o_kanban_record.qba-product-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 8px 10px !important;
+    overflow: hidden !important;
+}
+
+.o_kanban_grouped .o_kanban_record.qba-product-card .qba-product-card-body,
+.o_kanban_group .o_kanban_record.qba-product-card .qba-product-card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.o_kanban_grouped .o_kanban_record.qba-product-card .qba-product-main-col,
+.o_kanban_group .o_kanban_record.qba-product-card .qba-product-main-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+.o_kanban_grouped .o_kanban_record.qba-product-card .qba-product-title-box,
+.o_kanban_group .o_kanban_record.qba-product-card .qba-product-title-box {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+.o_kanban_grouped .o_kanban_record.qba-product-card .qba-product-compat-col,
+.o_kanban_group .o_kanban_record.qba-product-card .qba-product-compat-col {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 4px 0 !important;
+    border-top: 1px dashed #e2e8f0;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.o_kanban_grouped .o_kanban_record.qba-product-card .qba-product-meta-col,
+.o_kanban_group .o_kanban_record.qba-product-card .qba-product-meta-col {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    align-items: flex-start !important;
+}
+
+/* Trong List / Tree View: Cố định độ rộng cột tên sản phẩm, vượt quá tự xuống dòng */
+.o_list_table td.o_data_cell[name="name"],
+.o_list_table .qba-list-product-name {
+    max-width: 420px !important;
+    min-width: 280px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.38 !important;
+}
+
 .text-truncate-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -107,10 +323,13 @@
     font-family: monospace;
     font-weight: 500;
     color: #1e293b;
-    padding: 1px 7px;
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
+    padding: 2px 7px;
+    display: inline-block !important;
+    max-width: 100% !important;
+    white-space: pre-line !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.4 !important;
 }
 
 /* 5. Cột ảnh Thumbnail: Cố định tuyệt đối 72x72px, chống tràn ảnh dọc/ngang */
@@ -239,5 +458,72 @@
 
 .qba-slider-thumb:hover {
     opacity: 1 !important;
+}
+
+/* 9. THUMBNAIL ẢNH PHỤ ĐÍNH KÈM & HOVER SCALE X4 SẮC NÉT TRÊN FORM VIEW */
+.qba-attachment-strip-wrapper {
+    overflow: visible !important;
+}
+
+.qba-attachment-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end; /* Căn lề phải để gọn gàng ngay dưới ảnh đại diện */
+    position: relative;
+    z-index: 10;
+    overflow: visible !important;
+}
+
+.qba-thumb-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 3px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: visible !important;
+    position: relative;
+}
+
+.qba-thumb-box:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    z-index: 99999 !important;
+}
+
+.qba-thumb-wrapper {
+    position: relative;
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    border-radius: 4px;
+    overflow: visible !important;
+}
+
+.qba-img-hover-scale-4x {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease;
+    transform-origin: top right; /* Neo góc trên-phải để khi phóng to sẽ mở rộng sang TRÁI và XUỐNG DƯỚI, không bao giờ bị cắt mép phải và trên */
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.qba-img-hover-scale-4x:hover {
+    /* Scale 3.8x và tịnh tiến nhẹ sang trái & xuống dưới để không bao giờ bị cắt bởi mép phải (Chatter) hoặc mép trên (Header) */
+    transform: scale(3.8) translate(-6px, 6px);
+    transform-origin: top right !important;
+    z-index: 999999 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 0 2px #3b82f6 !important;
+    background-color: #ffffff;
+    border-radius: 6px;
 }
 

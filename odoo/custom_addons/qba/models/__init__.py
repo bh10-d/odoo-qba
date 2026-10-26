@@ -6,6 +6,8 @@ from . import product_template
 from . import vehicle
 from . import engine
 from . import gearbox
+from . import axle
+from . import product_category
 from . import product_supplierinfo
 from . import product_label_wizard
 from . import product_compare_wizard
@@ -14,3 +16,4 @@ from . import product_web_batch_sync_wizard
 from . import product_web_batch_unlink_wizard
 from . import res_config_settings
 from . import api_utils
+from . import sale_order
