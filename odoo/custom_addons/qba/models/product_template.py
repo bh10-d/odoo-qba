@@ -59,6 +59,11 @@ class ProductTemplate(models.Model):
 
     barcode = fields.Char(string="Mã vạch", related="default_code", readonly=True)
     label_image = fields.Binary("Tem sản phẩm", attachment=True)
+    supplier_code = fields.Char(
+        string="Mã nhà cung cấp",
+        compute="_compute_supplier_code",
+        store=True,
+    )
 
     # 5. Liên kết Website SEO (Next.js / Express.js)
     website_product_url = fields.Char(
@@ -494,7 +499,6 @@ class ProductTemplate(models.Model):
 
     def write(self, vals):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
-
         # KHÓA BẢO VỆ 1: Chặn tuyệt đối người dùng không phải Admin can thiệp vào is_storable hoặc uom_id
         if not is_admin:
             for field_name in ('is_storable', 'uom_id', 'uom_po_id'):
@@ -740,6 +744,8 @@ class ProductTemplate(models.Model):
 
     def open_label_wizard(self):
         self.ensure_one()
+        first_seller = self.seller_ids.filtered(lambda s: s.product_code)[:1]
+        uom_str = f"1 {self.uom_id.name}".strip() if self.uom_id else "1 Cái"
         return {
             'name': 'Tạo tem sản phẩm',
             'type': 'ir.actions.act_window',
@@ -749,16 +755,19 @@ class ProductTemplate(models.Model):
             'target': 'new',
             'context': {
                 'default_product_id': self.id,
+                'default_custom_name': self.name,
+                'default_supplier_product_code': first_seller.id if first_seller else False,
+                'default_supplier_code': first_seller.product_code if first_seller else '',
+                'default_nhap_date': self.last_purchase_date or fields.Date.context_today(self),
+                'default_dinh_luong': uom_str,
             },
         }
 
+    @api.depends("seller_ids.product_code")
     def _compute_supplier_code(self):
         for rec in self:
-            supplierinfo = self.env['product.supplierinfo'].search([
-                ('product_tmpl_id', '=', rec.id),
-                ('product_code', '!=', False)
-            ], limit=1)
-            rec.supplier_code = supplierinfo.product_code or ''
+            first_seller = rec.seller_ids.filtered(lambda s: s.product_code)[:1]
+            rec.supplier_code = first_seller.product_code or ''
 
     @api.depends("website_product_url", "website_product_id")
     def _compute_is_website_linked(self):

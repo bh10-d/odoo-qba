@@ -83,12 +83,63 @@
     color: #000000 !important;
 }
 
+/* Container & dòng mô tả sản phẩm (Technical Specs) trong Kanban */
+.qba-tech-specs-container {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 .qba-tech-specs-line {
     word-break: break-word !important;
     overflow-wrap: break-word !important;
     line-height: 1.35 !important;
     font-size: 0.8rem !important;
     color: #1e293b !important;
+    white-space: pre-line !important;
+}
+
+.qba-tech-specs-line * {
+    white-space: pre-line !important;
+    line-height: inherit !important;
+}
+
+/* Khi thu gọn: Tối đa 3 dòng */
+.qba-tech-specs-line.qba-tech-specs-collapsed {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* Khi mở rộng: Hiển thị đầy đủ mọi dòng như gốc */
+.qba-tech-specs-line.qba-tech-specs-expanded {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+/* Nút Xem thêm / Thu gọn */
+.qba-tech-specs-toggle-wrapper {
+    margin-top: 1px !important;
+    line-height: 1.2 !important;
+}
+
+.qba-tech-specs-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 0.75rem !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    color: #2563eb !important;
+    padding: 1px 0 !important;
+    transition: color 0.15s ease;
+}
+
+.qba-tech-specs-toggle:hover {
+    color: #1d4ed8 !important;
+    text-decoration: underline !important;
 }
 
 /* Cột 2: Khu vực Áp dụng (Dư địa còn rộng -> 4 dòng riêng biệt [Xe], [Động cơ], [Hộp số], [Cầu], CHỮ ĐEN HOÀN TOÀN) */
@@ -526,4 +577,150 @@
     background-color: #ffffff;
     border-radius: 6px;
 }
+
+/* ==========================================================================
+   9. GIAO DIỆN FORM DANH MỤC SẢN PHẨM & XE / ĐỘNG CƠ / HỘP SỐ / CẦU (FULL-WIDTH)
+   ========================================================================== */
+
+/* Mở rộng Form Sheet sang toàn màn hình và đẩy Chatter xuống dưới khi có .qba-fullwidth-category-form */
+.o_form_view .o_form_view_container:has(.qba-fullwidth-category-form),
+.o_form_view .o_form_renderer:has(.qba-fullwidth-category-form) {
+    flex-direction: column !important;
+}
+
+.o_form_view .o_form_sheet_bg:has(.qba-fullwidth-category-form) {
+    max-width: 100% !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+}
+
+.o_form_view .o_form_sheet:has(.qba-fullwidth-category-form) {
+    max-width: 98% !important;
+    width: 98% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.o_form_view .o_form_renderer:has(.qba-fullwidth-category-form) > .o-mail-Form-chatter {
+    width: 100% !important;
+    max-width: 98% !important;
+    margin: 0 auto !important;
+    border-left: none !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+/* Khung bao Mô tả danh mục (Cột trái: Công dụng + Cách đặt tên + Cách đo + Sơ đồ cách đo) */
+.qba-category-desc-box {
+    border: 1.5px solid #6366f1;
+    border-radius: 8px;
+    padding: 14px 16px;
+    background-color: #ffffff;
+    min-height: 360px;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.06);
+}
+
+.qba-category-html-desc {
+    font-size: 0.94rem;
+    line-height: 1.6;
+    color: #1e293b;
+}
+
+.qba-category-html-desc img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qba-category-html-desc img:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* Khung ảnh sơ đồ cách đo bên phải phần mô tả */
+.qba-category-measure-box {
+    background: #fcfcfd;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.qba-category-measure-img {
+    display: inline-block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: center;
+}
+
+.qba-category-measure-img > div,
+.qba-category-measure-img .o_field_image {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.qba-category-measure-img img {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 340px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 6px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qba-category-measure-img img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+}
+
+/* Khung bao Hình ảnh danh mục lớn (Cột phải: Bảng tra cứu / Hình ảnh danh mục) */
+.qba-category-image-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    background-color: #ffffff;
+    min-height: 360px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.qba-category-large-img {
+    display: inline-block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: center;
+}
+
+.qba-category-large-img > div,
+.qba-category-large-img .o_field_image {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+.qba-category-large-img img {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 600px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 8px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qba-category-large-img img:hover {
+    transform: scale(1.015);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
 
