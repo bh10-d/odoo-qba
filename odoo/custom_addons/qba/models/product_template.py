@@ -1,7 +1,7 @@
 import math
 from datetime import datetime, date, time
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, AccessError
 from .api_utils import get_odoo_api_headers
 
 
@@ -472,24 +472,67 @@ class ProductTemplate(models.Model):
                     vals['website_link_date'] = fields.Datetime.now()
         return super().create(vals_list)
 
+    def action_open_bulk_edit_wizard(self):
+        """Mở wizard cập nhật thuộc tính hàng loạt (chỉ dành cho Admin)"""
+        if not (self.env.is_admin() or self.env.user.has_group('base.group_system')):
+            raise UserError(_("Chức năng chỉnh sửa thuộc tính hàng loạt chỉ dành riêng cho Quản trị viên hệ thống (Admin)."))
+        active_domain = self.env.context.get('active_domain')
+        return {
+            'name': _("Cập nhật thuộc tính sản phẩm hàng loạt (Admin)"),
+            'type': 'ir.actions.act_window',
+            'res_model': 'qba.product.bulk.edit.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_model': 'product.template',
+                'active_ids': self.ids,
+                'default_product_tmpl_ids': [(6, 0, self.ids)],
+                'default_filter_domain_repr': str(active_domain) if active_domain else False,
+                'default_scope': 'selected' if self.ids else 'all',
+            }
+        }
+
     def write(self, vals):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
-        if is_admin and 'is_storable' in vals:
-            target_storable = vals.pop('is_storable')
-            res = super().write(vals)
-            self.env.cr.execute(
-                "UPDATE product_template SET is_storable = %s WHERE id IN %s",
-                (target_storable, tuple(self.ids))
-            )
-            self.invalidate_recordset(['is_storable'])
-            variant_ids = self.with_context(active_test=False).mapped('product_variant_ids').ids
-            if variant_ids:
-                self.env.cr.execute(
-                    "UPDATE product_product SET is_storable = %s WHERE id IN %s",
-                    (target_storable, tuple(variant_ids))
-                )
-                self.env['product.product'].browse(variant_ids).invalidate_recordset(['is_storable'])
-            return res
+
+        # KHÓA BẢO VỆ 1: Chặn tuyệt đối người dùng không phải Admin can thiệp vào is_storable hoặc uom_id
+        if not is_admin:
+            for field_name in ('is_storable', 'uom_id', 'uom_po_id'):
+                if field_name in vals:
+                    raise AccessError(_("BẢO VỆ PHÂN QUYỀN HỆ THỐNG:\n\nChỉ Quản trị viên hệ thống (Admin) mới có đặc quyền thay đổi tính chất tồn kho hoặc đơn vị tính của sản phẩm!"))
+
+        target_storable = None
+        target_uom_id = None
+        target_uom_po_id = None
+
+        if is_admin:
+            if 'is_storable' in vals:
+                target_storable = vals.pop('is_storable')
+                # Chặn tắt theo dõi tồn kho nếu sản phẩm đang có số lượng tồn khác 0
+                if target_storable is False:
+                    for tmpl in self:
+                        if tmpl.is_storable and tmpl.qty_available != 0:
+                            raise UserError(_("CẢNH BÁO BẢO VỆ TỒN KHO:\n\nKhông thể tắt 'Theo dõi tồn kho' cho sản phẩm '%s' vì số lượng tồn kho hiện tại đang là %s. Vui lòng kiểm kê xuất kho về 0 trước khi tắt.") % (tmpl.display_name, tmpl.qty_available))
+
+            if 'uom_id' in vals:
+                target_uom_id = vals.pop('uom_id')
+                # Chặn đổi ĐVT sang nhóm khác nếu đã có dịch chuyển kho
+                if target_uom_id:
+                    new_uom = self.env['uom.uom'].browse(target_uom_id)
+                    for tmpl in self:
+                        if tmpl.uom_id and tmpl.uom_id.category_id != new_uom.category_id:
+                            has_moves = self.env['stock.move'].sudo().search_count([
+                                ('product_id', 'in', tmpl.with_context(active_test=False).mapped('product_variant_ids').ids)
+                            ])
+                            if has_moves > 0:
+                                raise UserError(_(
+                                    "NGHIÊM CẤM ĐỔI ĐƠN VỊ TÍNH SAI NHÓM:\n\n"
+                                    "Không thể đổi Đơn vị tính từ nhóm '%s' sang nhóm '%s' cho sản phẩm '%s' "
+                                    "vì đã phát sinh lịch sử dịch chuyển kho!"
+                                ) % (tmpl.uom_id.category_id.name, new_uom.category_id.name, tmpl.display_name))
+
+            if 'uom_po_id' in vals:
+                target_uom_po_id = vals.pop('uom_po_id')
 
         # Tự động trích xuất hoặc dọn dẹp liên kết Web khi cập nhật website_product_url
         if 'website_product_url' in vals:
@@ -508,7 +551,51 @@ class ProductTemplate(models.Model):
                 vals.setdefault('website_product_slug', False)
                 vals.setdefault('website_link_date', False)
 
-        return super().write(vals)
+        res = super().write(vals)
+
+        # Cập nhật an toàn các trường bị Odoo khóa cứng cho Admin
+        if is_admin and (target_storable is not None or target_uom_id is not None or target_uom_po_id is not None):
+            for tmpl in self:
+                updates = []
+                params = []
+                if target_storable is not None:
+                    updates.append("is_storable = %s")
+                    params.append(bool(target_storable))
+                if target_uom_id is not None:
+                    updates.append("uom_id = %s")
+                    params.append(target_uom_id)
+                    # Đồng bộ uom_po_id nếu cần để không vi phạm ràng buộc nhóm đơn vị tính
+                    if target_uom_po_id is not None:
+                        updates.append("uom_po_id = %s")
+                        params.append(target_uom_po_id)
+                    else:
+                        new_uom = self.env['uom.uom'].browse(target_uom_id)
+                        if not tmpl.uom_po_id or tmpl.uom_po_id.category_id != new_uom.category_id:
+                            updates.append("uom_po_id = %s")
+                            params.append(target_uom_id)
+                elif target_uom_po_id is not None:
+                    updates.append("uom_po_id = %s")
+                    params.append(target_uom_po_id)
+
+                if updates:
+                    params.append(tmpl.id)
+                    query = f"UPDATE product_template SET {', '.join(updates)} WHERE id = %s"
+                    self.env.cr.execute(query, tuple(params))
+
+            # Invalidate cache sau khi cập nhật SQL trực tiếp
+            fnames_to_invalidate = []
+            if target_storable is not None:
+                fnames_to_invalidate.append('is_storable')
+            if target_uom_id is not None or target_uom_po_id is not None:
+                fnames_to_invalidate.extend(['uom_id', 'uom_po_id', 'uom_name'])
+
+            if fnames_to_invalidate:
+                self.invalidate_recordset(fnames_to_invalidate)
+                variants = self.with_context(active_test=False).mapped('product_variant_ids')
+                if variants:
+                    variants.invalidate_recordset([f for f in fnames_to_invalidate if f in variants._fields])
+
+        return res
 
     def _register_hook(self):
         """Tự động đồng bộ mô tả sang Mô tả SP, chuẩn hóa bảo hành, mã OE và migrate ảnh phụ sang ir.attachment"""

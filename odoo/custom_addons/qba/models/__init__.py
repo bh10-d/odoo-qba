@@ -17,3 +17,4 @@ from . import product_web_batch_unlink_wizard
 from . import res_config_settings
 from . import api_utils
 from . import sale_order
+from . import product_bulk_edit_wizard

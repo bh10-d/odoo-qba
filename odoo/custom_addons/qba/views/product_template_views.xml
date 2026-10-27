@@ -14,9 +14,17 @@
                 <field name="is_system_admin" invisible="1"/>
             </xpath>
 
-            <!-- Mở khóa Theo dõi hàng tồn kho cho Admin -->
+            <!-- Mở khóa Theo dõi hàng tồn kho & Đơn vị tính cho Admin -->
             <xpath expr="//field[@name='is_storable']" position="attributes">
                 <attribute name="readonly">not is_system_admin</attribute>
+                <attribute name="help">Đặc quyền Quản trị viên: Sau khi bật theo dõi kho, số tồn ban đầu sẽ hiển thị là 0. Bắt buộc bấm 'Cập nhật số lượng' hoặc làm phiếu Kiểm kê kho để ghi nhận số tồn thực tế.</attribute>
+            </xpath>
+            <xpath expr="//field[@name='uom_id']" position="attributes">
+                <attribute name="readonly">not is_system_admin</attribute>
+                <attribute name="help">Đặc quyền Quản trị viên: Chỉ đổi Đơn vị tính khi kế toán tạo nhầm. Nếu đã có phiếu kho, bắt buộc kiểm kê lại số lượng theo đơn vị mới.</attribute>
+            </xpath>
+            <xpath expr="//span[@name='uom_span']" position="attributes">
+                <attribute name="groups"></attribute>
             </xpath>
 
             <!-- Ảnh đại diện: Rê chuột phóng to scale x3 + Thumbnail ảnh phụ đính kèm (Hover Scale x4) bên dưới -->
