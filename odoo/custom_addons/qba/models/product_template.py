@@ -489,10 +489,6 @@ class ProductTemplate(models.Model):
             self.invalidate_recordset(['is_storable'])
             variant_ids = self.with_context(active_test=False).mapped('product_variant_ids').ids
             if variant_ids:
-                self.env.cr.execute(
-                    "UPDATE product_product SET is_storable = %s WHERE id IN %s",
-                    (target_storable, tuple(variant_ids))
-                )
                 self.env['product.product'].browse(variant_ids).invalidate_recordset(['is_storable'])
             return res
 

@@ -311,9 +311,17 @@
                                 </span>
                             </div>
 
-                            <!-- Dòng 2: Mô tả SP / Kích thước (Technical Specs) nằm dưới tên -->
-                            <div t-if="record.technical_specs.value" class="qba-tech-specs-line text-dark fw-medium small pt-1" style="font-size: 0.8rem; line-height: 1.35; color: #1e293b !important;" title="Mô tả sản phẩm">
-                                <field name="technical_specs"/>
+                            <!-- Dòng 2: Mô tả SP / Kích thước (Technical Specs) nằm dưới tên: Tối đa 3 dòng, nút Xem thêm -->
+                            <div t-if="record.technical_specs.value" class="qba-tech-specs-container pt-1">
+                                <div class="qba-tech-specs-line qba-tech-specs-collapsed text-dark fw-medium small" title="Mô tả sản phẩm">
+                                    <field name="technical_specs"/>
+                                </div>
+                                <div class="qba-tech-specs-toggle-wrapper d-none">
+                                    <span class="qba-tech-specs-toggle text-primary fw-semibold" role="button" title="Bấm để mở rộng / thu gọn mô tả">
+                                        <span class="qba-btn-more"><i class="fa fa-angle-down me-1"/>Xem thêm</span>
+                                        <span class="qba-btn-less d-none"><i class="fa fa-angle-up me-1"/>Thu gọn</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Dòng 3: [Web SEO] + [Thương hiệu] + [Bảo hành] -->
