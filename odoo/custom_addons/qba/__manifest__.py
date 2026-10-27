@@ -3,7 +3,7 @@
     "version": "1.0",
     "author": "coregy",
     "category": "Inventory",
-    "depends": ["base", "product", "stock", "purchase", "sale_management"],
+    "depends": ["base", "product", "stock", "purchase", "sale_management", "point_of_sale"],
     "data": [
         "security/ir.model.access.csv",
         "views/product_category_views.xml",
@@ -21,6 +21,7 @@
         "views/product_image_wizard_views.xml",
         "views/product_web_batch_sync_wizard_views.xml",
         "views/product_web_batch_unlink_wizard_views.xml",
+        "views/product_bulk_edit_wizard_views.xml",
         "views/res_config_settings_views.xml",
         "views/sale_order_views.xml"
     ],
