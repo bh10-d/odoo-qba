@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_product_label_vector" model="ir.actions.report">
+        <field name="name">In tem sản phẩm (Vector Direct Print)</field>
+        <field name="model">qba.product.label.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">qba.report_product_label_vector_template</field>
+        <field name="report_file">qba.report_product_label_vector_template</field>
+        <field name="print_report_name">'Tem_' + (object.product_id.default_code or object.product_id.name or 'SP')</field>
+    </record>
+
+    <template id="report_product_label_vector_template">
+        <t t-call="web.html_container">
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+            <meta charset="utf-8"/>
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="fmt" t-value="doc.format_id"/>
+                <t t-set="logo_uri" t-value="doc.get_logo_data()"/>
+                <t t-set="supp_code" t-value="(doc.supplier_code or '').strip()"/>
+                <t t-set="sku_code" t-value="(doc.default_code or (doc.product_id.default_code if doc.product_id else '') or '').strip()"/>
+                <t t-set="prod_name" t-value="doc.custom_name or (doc.product_id.name if doc.product_id else '')"/>
+                <t t-set="brand_name" t-value="doc.product_id.brand_id.name if doc.product_id and doc.product_id.brand_id else ''"/>
+                <t t-set="nhap_date_str" t-value="doc.nhap_date.strftime('%d/%m/%Y') if doc.nhap_date else ''"/>
+                <t t-set="dl_str" t-value="doc.dinh_luong or ''"/>
+
+                <style>
+                    @page {
+                        margin: 0;
+                        size: auto;
+                    }
+                    html, body, .container, .article, main {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        background: #ffffff !important;
+                        font-family: Arial, "DejaVu Sans", "Helvetica Neue", sans-serif;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .label-page {
+                        box-sizing: border-box;
+                        page-break-after: always;
+                        overflow: hidden;
+                        position: relative;
+                        width: 100%;
+                        height: 100%;
+                    }
+                    .label-page:last-child {
+                        page-break-after: avoid;
+                    }
+                    .label-card {
+                        position: relative;
+                        width: 100%;
+                        height: 100%;
+                        box-sizing: border-box;
+                        overflow: hidden;
+                        background: #ffffff;
+                    }
+                    .layout-table {
+                        width: 100%;
+                        height: 100%;
+                        border-collapse: collapse;
+                        border-spacing: 0;
+                    }
+                    .row-top {
+                        vertical-align: top;
+                        height: 50%;
+                    }
+                    .row-middle {
+                        vertical-align: top;
+                        height: 18%;
+                    }
+                    .row-bottom {
+                        vertical-align: middle;
+                        text-align: center;
+                        height: 32%;
+                    }
+                    .header-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        border-spacing: 0;
+                    }
+                    .header-table td {
+                        padding: 0;
+                        vertical-align: middle;
+                    }
+                    .product-name-block {
+                        width: 100%;
+                        margin-top: 0.8mm;
+                        line-height: 1.25;
+                        color: #000000;
+                        word-break: break-word;
+                        overflow: hidden;
+                        display: -webkit-box;
+                        -webkit-box-orient: vertical;
+                    }
+                    .separator-line {
+                        width: 100%;
+                        margin-bottom: 0.8mm;
+                    }
+                    .meta-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        border-spacing: 0;
+                        color: #000000;
+                    }
+                    .meta-table td {
+                        padding: 0;
+                        vertical-align: top;
+                    }
+                    .sku-text {
+                        font-weight: bold;
+                        letter-spacing: 0.5px;
+                        margin-top: 0.3mm;
+                        color: #000000;
+                    }
+                </style>
+
+                <!-- Outer Border Style Calculation -->
+                <t t-set="border_css" t-value="''"/>
+                <t t-if="fmt.border_style == 'rounded'">
+                    <t t-set="border_css" t-value="'border: ' + str(fmt.border_width_mm) + 'mm solid ' + str(fmt.border_color) + '; border-radius: ' + str(fmt.border_radius_mm) + 'mm;'"/>
+                </t>
+                <t t-elif="fmt.border_style == 'square'">
+                    <t t-set="border_css" t-value="'border: ' + str(fmt.border_width_mm) + 'mm solid ' + str(fmt.border_color) + '; border-radius: 0;'"/>
+                </t>
+
+                <t t-set="pad_mm" t-value="0.8 if fmt.width_mm &lt;= 35.0 else (1.2 if fmt.width_mm &lt;= 50.0 else (1.8 if fmt.width_mm &lt;= 75.0 else 2.2))"/>
+
+                <t t-foreach="range(doc.qty_to_print or 1)" t-as="copy_num">
+                    <div class="label-page" t-attf-style="width: #{fmt.width_mm}mm; height: #{fmt.height_mm}mm;">
+                        <div class="label-card" t-att-style="border_css + ' width: ' + str(fmt.width_mm) + 'mm; height: ' + str(fmt.height_mm) + 'mm; padding: ' + str(pad_mm) + 'mm;'">
+                            <table class="layout-table">
+                                <!-- 1. TOP ROW (50% height): Header & Product Name -->
+                                <tr class="row-top">
+                                    <td style="vertical-align: top;">
+                                        <table class="header-table">
+                                            <tr>
+                                                <td style="text-align: left; vertical-align: middle;">
+                                                    <t t-if="fmt.show_logo and logo_uri">
+                                                        <img t-att-src="logo_uri" t-attf-style="height: #{fmt.logo_height_mm}mm; max-width: 100%; object-fit: contain;" alt="Logo"/>
+                                                    </t>
+                                                </td>
+                                                <td style="text-align: right; vertical-align: middle;">
+                                                    <t t-if="fmt.show_supplier_code and supp_code">
+                                                        <t t-if="fmt.supplier_code_display in ('barcode_and_text', 'barcode_only')">
+                                                            <table align="right" style="margin-left: auto; border-collapse: collapse;">
+                                                                <tr>
+                                                                    <td style="text-align: center; vertical-align: middle;">
+                                                                        <div t-attf-style="height: #{fmt.supplier_barcode_height_mm}mm; display: inline-block;">
+                                                                            <t t-out="doc.get_barcode_svg(supp_code, fmt.supplier_barcode_height_mm, fmt.width_mm * 0.42, False)"/>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <t t-if="fmt.supplier_code_display == 'barcode_and_text'">
+                                                                    <tr>
+                                                                        <td t-attf-style="text-align: center; font-size: #{fmt.supplier_font_size_pt}pt; font-weight: 600; line-height: 1.1; margin-top: 0.2mm; color: #000000;">
+                                                                            <t t-out="supp_code"/>
+                                                                        </td>
+                                                                    </tr>
+                                                                </t>
+                                                            </table>
+                                                        </t>
+                                                        <t t-elif="fmt.supplier_code_display == 'text_only'">
+                                                            <div t-attf-style="font-size: #{fmt.supplier_font_size_pt}pt; font-weight: bold; color: #000000; line-height: 1.1;">
+                                                                Mã NCC: <t t-out="supp_code"/>
+                                                            </div>
+                                                        </t>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- PRODUCT NAME -->
+                                        <t t-if="fmt.show_product_name and prod_name">
+                                            <div class="product-name-block"
+                                                 t-attf-style="font-size: #{fmt.product_name_font_size_pt}pt; font-weight: #{'bold' if fmt.product_name_bold else 'normal'}; text-align: #{fmt.product_name_align}; line-height: 1.25; -webkit-line-clamp: #{fmt.product_name_max_lines}; max-height: #{fmt.product_name_max_lines * 1.25}em;">
+                                                <t t-out="prod_name"/>
+                                            </div>
+                                        </t>
+                                    </td>
+                                </tr>
+
+                                <!-- 2. MIDDLE ROW (18% height): Separator line & Meta Details -->
+                                <tr class="row-middle">
+                                    <td style="vertical-align: top;">
+                                        <t t-if="fmt.show_separator_line">
+                                            <div class="separator-line"
+                                                 t-attf-style="height: #{fmt.separator_thickness_mm}mm; background-color: #{fmt.separator_color};"/>
+                                        </t>
+                                        <t t-if="fmt.show_brand or fmt.show_nhap_date or fmt.show_dinh_luong">
+                                            <table class="meta-table">
+                                                <tr>
+                                                    <td style="width: 50%; text-align: left; vertical-align: middle;">
+                                                        <t t-if="fmt.show_brand and brand_name">
+                                                            <div t-attf-style="font-size: #{fmt.brand_font_size_pt}pt; color: #000000;">
+                                                                Hãng: <b><t t-out="brand_name"/></b>
+                                                            </div>
+                                                        </t>
+                                                    </td>
+                                                    <td style="width: 50%; text-align: right; vertical-align: middle; line-height: 1.2;">
+                                                        <t t-if="fmt.height_mm &lt;= 35.0">
+                                                            <div t-attf-style="font-size: #{fmt.nhap_date_font_size_pt}pt; color: #000000; white-space: nowrap;">
+                                                                <t t-if="fmt.show_nhap_date and nhap_date_str">
+                                                                    <t t-out="nhap_date_str"/>
+                                                                </t>
+                                                                <t t-if="fmt.show_nhap_date and nhap_date_str and fmt.show_dinh_luong and dl_str"> | </t>
+                                                                <t t-if="fmt.show_dinh_luong and dl_str">
+                                                                    ĐL: <b><t t-out="dl_str"/></b>
+                                                                </t>
+                                                            </div>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-if="fmt.show_nhap_date and nhap_date_str">
+                                                                <div t-attf-style="font-size: #{fmt.nhap_date_font_size_pt}pt; color: #000000;">
+                                                                    <t t-out="nhap_date_str"/>
+                                                                </div>
+                                                            </t>
+                                                            <t t-if="fmt.show_dinh_luong and dl_str">
+                                                                <div t-attf-style="font-size: #{fmt.dinh_luong_font_size_pt}pt; color: #000000;">
+                                                                    ĐL: <b><t t-out="dl_str"/></b>
+                                                                </div>
+                                                            </t>
+                                                        </t>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </t>
+                                    </td>
+                                </tr>
+
+                                <!-- 3. BOTTOM ROW (32% height): SKU Barcode centered -->
+                                <tr class="row-bottom">
+                                    <td style="vertical-align: middle; text-align: center;">
+                                        <t t-if="fmt.show_sku_barcode and sku_code">
+                                            <div style="display: inline-block; text-align: center;">
+                                                <t t-out="doc.get_barcode_svg(sku_code, fmt.sku_barcode_height_mm, fmt.width_mm * 0.65, False)"/>
+                                            </div>
+                                            <div class="sku-text" t-attf-style="font-size: #{fmt.sku_font_size_pt}pt;">
+                                                <t t-out="sku_code"/>
+                                            </div>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

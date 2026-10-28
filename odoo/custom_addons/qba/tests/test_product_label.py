@@ -61,3 +61,62 @@ class TestProductLabelWizard(TransactionCase):
         decoded = base64.b64decode(self.product.label_image)
         img = Image.open(BytesIO(decoded))
         self.assertEqual(img.size, (1000, 700))
+
+    def test_vector_svg_barcode_generation(self):
+        """Test pure vector SVG barcode generator"""
+        from odoo.addons.qba.models.barcode_svg import generate_barcode_svg_string
+        svg = generate_barcode_svg_string('BOM.TEST.001', height_mm=10.0, show_text=True)
+        self.assertIsNotNone(svg)
+        self.assertIn('<svg', svg)
+        self.assertIn('<rect', svg)
+        self.assertIn('BOM.TEST.001', svg)
+
+    def test_vector_direct_print_pdf_action(self):
+        """Test action_print_pdf generating vector report action and dynamic paperformat"""
+        default_fmt = self.env['qba.product.label.format'].search([('is_default', '=', True)], limit=1)
+        action = self.product.open_label_wizard()
+        wizard = self.env['qba.product.label.wizard'].with_context(action.get('context')).create({
+            'format_id': default_fmt.id,
+            'qty_to_print': 2,
+        })
+        print_res = wizard.action_print_pdf()
+        self.assertEqual(print_res.get('type'), 'ir.actions.report')
+        self.assertEqual(print_res.get('report_name'), 'qba.report_product_label_vector_template')
+
+        # Check paperformat synchronization
+        pf = default_fmt.paperformat_id
+        self.assertTrue(bool(pf))
+        self.assertEqual(pf.page_width, default_fmt.width_mm)
+        self.assertEqual(pf.page_height, default_fmt.height_mm)
+
+    def test_action_save_to_product(self):
+        """Test action_save_to_product saving label directly to product.template.label_image and returning client reload"""
+        action = self.product.open_label_wizard()
+        wizard = self.env['qba.product.label.wizard'].with_context(action.get('context')).create({})
+        res = wizard.action_save_to_product()
+        self.assertEqual(res.get('type'), 'ir.actions.client')
+        self.assertEqual(res.get('tag'), 'display_notification')
+        self.assertEqual(res.get('params', {}).get('next', {}).get('tag'), 'reload')
+        self.assertTrue(bool(self.product.label_image))
+
+    def test_preview_html_live_wysiwyg(self):
+        """Test preview_html contains exact millimeter dimensions and WYSIWYG elements"""
+        action = self.product.open_label_wizard()
+        wizard = self.env['qba.product.label.wizard'].with_context(action.get('context')).create({})
+        self.assertTrue(bool(wizard.preview_html))
+        self.assertIn(f"{wizard.format_id.width_mm:.1f}mm", wizard.preview_html)
+        self.assertIn(f"{wizard.format_id.height_mm:.1f}mm", wizard.preview_html)
+        self.assertIn('BOM.TEST.001', wizard.preview_html)
+
+    def test_action_save_format_settings(self):
+        """Test saving format layout customizations directly from the wizard"""
+        action = self.product.open_label_wizard()
+        wizard = self.env['qba.product.label.wizard'].with_context(action.get('context')).create({
+            'format_product_name_font_size_pt': 14.0,
+            'format_product_name_bold': False,
+        })
+        wizard.action_save_format_settings()
+        self.assertEqual(wizard.format_id.product_name_font_size_pt, 14.0)
+        self.assertFalse(wizard.format_id.product_name_bold)
+
+

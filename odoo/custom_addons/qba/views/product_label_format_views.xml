@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_product_label_format_tree" model="ir.ui.view">
+        <field name="name">qba.product.label.format.list</field>
+        <field name="model">qba.product.label.format</field>
+        <field name="arch" type="xml">
+            <list string="Mẫu in tem sản phẩm">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="width_mm"/>
+                <field name="height_mm"/>
+                <field name="orientation"/>
+                <field name="is_default" widget="boolean_toggle"/>
+                <field name="border_style"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_product_label_format_form" model="ir.ui.view">
+        <field name="name">qba.product.label.format.form</field>
+        <field name="model">qba.product.label.format</field>
+        <field name="arch" type="xml">
+            <form string="Cấu hình Mẫu in tem">
+                <header>
+                    <button name="action_set_as_default" string="Đặt làm Mặc định" type="object" class="btn-primary" invisible="is_default"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box"/>
+                    <widget name="web_ribbon" title="Mặc định" bg_color="text-bg-success" invisible="not is_default"/>
+                    <div class="oe_title">
+                        <label for="name" string="Tên mẫu in tem"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Tem chuẩn 100x70 mm"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Kích thước vật lý khổ in">
+                            <field name="width_mm"/>
+                            <field name="height_mm"/>
+                            <field name="orientation"/>
+                            <label for="margin_top_mm" string="Lề (mm)"/>
+                            <div class="o_row">
+                                <span>Trên:</span> <field name="margin_top_mm" class="oe_inline"/>
+                                <span>Dưới:</span> <field name="margin_bottom_mm" class="oe_inline"/>
+                                <span>Trái:</span> <field name="margin_left_mm" class="oe_inline"/>
+                                <span>Phải:</span> <field name="margin_right_mm" class="oe_inline"/>
+                            </div>
+                        </group>
+                        <group string="Cấu hình chung">
+                            <field name="code" placeholder="Mã gợi nhớ (VD: 100x70)"/>
+                            <field name="is_default" readonly="1"/>
+                            <field name="active"/>
+                            <field name="paperformat_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab 1: Logo & NCC -->
+                        <page string="1. Logo &amp; Mã NCC">
+                            <group>
+                                <group string="Phần Logo QBA">
+                                    <field name="show_logo"/>
+                                    <field name="logo_position" invisible="not show_logo"/>
+                                    <field name="logo_height_mm" invisible="not show_logo"/>
+                                    <field name="custom_logo" widget="image" invisible="not show_logo" help="Để trống sẽ dùng logo QBA mặc định"/>
+                                </group>
+                                <group string="Phần Mã Nhà Cung Cấp">
+                                    <field name="show_supplier_code"/>
+                                    <field name="supplier_code_position" invisible="not show_supplier_code"/>
+                                    <field name="supplier_code_display" invisible="not show_supplier_code"/>
+                                    <field name="supplier_barcode_height_mm" invisible="not show_supplier_code or supplier_code_display == 'text_only'"/>
+                                    <field name="supplier_font_size_pt" invisible="not show_supplier_code or supplier_code_display == 'barcode_only'"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 2: Tên sản phẩm & Chi tiết -->
+                        <page string="2. Tên Sản Phẩm &amp; Chi tiết">
+                            <group>
+                                <group string="Tên Sản Phẩm (Giữa tem)">
+                                    <field name="show_product_name"/>
+                                    <field name="product_name_font_size_pt" invisible="not show_product_name"/>
+                                    <field name="product_name_bold" invisible="not show_product_name"/>
+                                    <field name="product_name_align" invisible="not show_product_name"/>
+                                    <field name="product_name_max_lines" invisible="not show_product_name"/>
+                                </group>
+                                <group string="Đường kẻ ngăn cách">
+                                    <field name="show_separator_line"/>
+                                    <field name="separator_color" widget="color" invisible="not show_separator_line"/>
+                                    <field name="separator_thickness_mm" invisible="not show_separator_line"/>
+                                </group>
+                            </group>
+                            <group string="Thông tin bổ sung dưới đường kẻ">
+                                <group>
+                                    <field name="show_brand"/>
+                                    <field name="brand_font_size_pt" invisible="not show_brand"/>
+                                </group>
+                                <group>
+                                    <field name="show_nhap_date"/>
+                                    <field name="nhap_date_font_size_pt" invisible="not show_nhap_date"/>
+                                    <field name="show_dinh_luong"/>
+                                    <field name="dinh_luong_font_size_pt" invisible="not show_dinh_luong"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 3: Mã SKU & Khung viền -->
+                        <page string="3. Mã Vạch SKU &amp; Khung Viền">
+                            <group>
+                                <group string="Mã vạch SKU sản phẩm (Dưới cùng)">
+                                    <field name="show_sku_barcode"/>
+                                    <field name="sku_barcode_position" invisible="not show_sku_barcode"/>
+                                    <field name="sku_barcode_height_mm" invisible="not show_sku_barcode"/>
+                                    <field name="sku_font_size_pt" invisible="not show_sku_barcode"/>
+                                </group>
+                                <group string="Kiểu viền khung tem">
+                                    <field name="border_style"/>
+                                    <field name="border_color" widget="color" invisible="border_style == 'none'"/>
+                                    <field name="border_width_mm" invisible="border_style == 'none'"/>
+                                    <field name="border_radius_mm" invisible="border_style != 'rounded'"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- Tab 4: Tùy biến CSS nâng cao -->
+                        <page string="4. Tùy Biến CSS &amp; Ghi Chú">
+                            <group>
+                                <field name="custom_css" placeholder="/* Ví dụ: .sku-text { letter-spacing: 1px; } */"/>
+                                <field name="description" placeholder="Ghi chú thêm về máy in hoặc dòng tem sử dụng..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_product_label_format" model="ir.actions.act_window">
+        <field name="name">Mẫu in tem sản phẩm</field>
+        <field name="res_model">qba.product.label.format</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo mẫu in tem sản phẩm mới
+            </p>
+            <p>
+                Quản trị viên có thể tùy biến kích thước, vị trí các ô chữ, cỡ chữ, mã vạch và màu viền phù hợp với từng khổ giấy máy in nhiệt.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Items under Inventory, Purchase, and Sales for easy access before printing -->
+    <menuitem id="menu_product_label_format_stock"
+              name="Mẫu in tem sản phẩm"
+              parent="stock.menu_stock_inventory_control"
+              action="action_product_label_format"
+              sequence="120"/>
+
+    <menuitem id="menu_product_label_format_purchase"
+              name="Mẫu in tem sản phẩm"
+              parent="purchase.menu_purchase_products"
+              action="action_product_label_format"
+              sequence="120"/>
+
+    <menuitem id="menu_product_label_format_sale"
+              name="Mẫu in tem sản phẩm"
+              parent="sale.product_menu_catalog"
+              action="action_product_label_format"
+              sequence="120"/>
+</odoo>
