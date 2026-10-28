@@ -746,6 +746,9 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         first_seller = self.seller_ids.filtered(lambda s: s.product_code)[:1]
         uom_str = f"1 {self.uom_id.name}".strip() if self.uom_id else "1 Cái"
+        default_fmt = self.env['qba.product.label.format'].search([('is_default', '=', True)], limit=1)
+        if not default_fmt:
+            default_fmt = self.env['qba.product.label.format'].search([], limit=1)
         return {
             'name': 'Tạo tem sản phẩm',
             'type': 'ir.actions.act_window',
@@ -760,8 +763,10 @@ class ProductTemplate(models.Model):
                 'default_supplier_code': first_seller.product_code if first_seller else '',
                 'default_nhap_date': self.last_purchase_date or fields.Date.context_today(self),
                 'default_dinh_luong': uom_str,
+                'default_format_id': default_fmt.id if default_fmt else False,
             },
         }
+
 
     @api.depends("seller_ids.product_code")
     def _compute_supplier_code(self):

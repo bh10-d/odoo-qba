@@ -14,4 +14,7 @@ access_qba_product_web_link_candidate_user,qba.product.web.link.candidate.user,m
 access_qba_product_web_batch_sync_wizard_user,qba.product.web.batch.sync.wizard.user,model_qba_product_web_batch_sync_wizard,base.group_user,1,1,1,1
 access_qba_product_web_batch_sync_line_user,qba.product.web.batch.sync.line.user,model_qba_product_web_batch_sync_line,base.group_user,1,1,1,1
 access_qba_product_web_batch_unlink_wizard_user,qba.product.web.batch.unlink.wizard.user,model_qba_product_web_batch_unlink_wizard,base.group_user,1,1,1,1
-access_qba_product_bulk_edit_wizard_system,qba.product.bulk.edit.wizard.system,model_qba_product_bulk_edit_wizard,base.group_system,1,1,1,1
+access_qba_product_bulk_edit_wizard_system,qba.product.bulk.edit.wizard.system,model_qba_product_bulk_edit_wizard,base.group_system,1,1,1,1
+access_qba_product_label_format_user,qba.product.label.format.user,model_qba_product_label_format,base.group_user,1,1,1,1
+access_qba_product_label_format_system,qba.product.label.format.system,model_qba_product_label_format,base.group_system,1,1,1,1
+

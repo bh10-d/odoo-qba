@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+    <!-- Preset 1: 100x70mm (Mặc định - Dán thùng/hộp lớn) -->
+    <record id="format_preset_100x70" model="qba.product.label.format">
+        <field name="name">Tem chuẩn 100x70 mm (Thùng / Hộp)</field>
+        <field name="code">100x70</field>
+        <field name="is_default">True</field>
+        <field name="width_mm">100.0</field>
+        <field name="height_mm">70.0</field>
+        <field name="margin_top_mm">1.0</field>
+        <field name="margin_bottom_mm">1.0</field>
+        <field name="margin_left_mm">1.0</field>
+        <field name="margin_right_mm">1.0</field>
+        <field name="orientation">Landscape</field>
+        <field name="show_logo">True</field>
+        <field name="logo_position">left</field>
+        <field name="logo_height_mm">10.0</field>
+        <field name="show_supplier_code">True</field>
+        <field name="supplier_code_position">right</field>
+        <field name="supplier_code_display">barcode_and_text</field>
+        <field name="supplier_barcode_height_mm">8.0</field>
+        <field name="supplier_font_size_pt">8.0</field>
+        <field name="show_product_name">True</field>
+        <field name="product_name_font_size_pt">9.5</field>
+        <field name="product_name_bold">False</field>
+        <field name="product_name_align">left</field>
+        <field name="product_name_max_lines">3</field>
+        <field name="show_separator_line">True</field>
+        <field name="separator_color">#e43c24</field>
+        <field name="separator_thickness_mm">0.6</field>
+        <field name="show_brand">True</field>
+        <field name="brand_font_size_pt">8.0</field>
+        <field name="show_nhap_date">True</field>
+        <field name="nhap_date_font_size_pt">8.0</field>
+        <field name="show_dinh_luong">True</field>
+        <field name="dinh_luong_font_size_pt">8.0</field>
+        <field name="show_sku_barcode">True</field>
+        <field name="sku_barcode_position">bottom_center</field>
+        <field name="sku_barcode_height_mm">10.0</field>
+        <field name="sku_font_size_pt">8.5</field>
+        <field name="border_style">rounded</field>
+        <field name="border_color">#e43c24</field>
+        <field name="border_width_mm">0.6</field>
+        <field name="border_radius_mm">2.5</field>
+        <field name="description">Kích thước chuẩn cho tem dán hộp, thùng linh kiện phụ tùng QBA.</field>
+    </record>
+
+    <!-- Preset 2: 75x50mm -->
+    <record id="format_preset_75x50" model="qba.product.label.format">
+        <field name="name">Tem trung 75x50 mm</field>
+        <field name="code">75x50</field>
+        <field name="is_default">False</field>
+        <field name="width_mm">75.0</field>
+        <field name="height_mm">50.0</field>
+        <field name="margin_top_mm">1.0</field>
+        <field name="margin_bottom_mm">1.0</field>
+        <field name="margin_left_mm">1.0</field>
+        <field name="margin_right_mm">1.0</field>
+        <field name="orientation">Landscape</field>
+        <field name="show_logo">True</field>
+        <field name="logo_position">left</field>
+        <field name="logo_height_mm">8.0</field>
+        <field name="show_supplier_code">True</field>
+        <field name="supplier_code_position">right</field>
+        <field name="supplier_code_display">barcode_and_text</field>
+        <field name="supplier_barcode_height_mm">6.5</field>
+        <field name="supplier_font_size_pt">7.0</field>
+        <field name="show_product_name">True</field>
+        <field name="product_name_font_size_pt">8.5</field>
+        <field name="product_name_bold">False</field>
+        <field name="product_name_align">left</field>
+        <field name="product_name_max_lines">3</field>
+        <field name="show_separator_line">True</field>
+        <field name="separator_color">#e43c24</field>
+        <field name="separator_thickness_mm">0.5</field>
+        <field name="show_brand">True</field>
+        <field name="brand_font_size_pt">7.0</field>
+        <field name="show_nhap_date">True</field>
+        <field name="nhap_date_font_size_pt">7.0</field>
+        <field name="show_dinh_luong">True</field>
+        <field name="dinh_luong_font_size_pt">7.0</field>
+        <field name="show_sku_barcode">True</field>
+        <field name="sku_barcode_position">bottom_center</field>
+        <field name="sku_barcode_height_mm">8.0</field>
+        <field name="sku_font_size_pt">7.5</field>
+        <field name="border_style">rounded</field>
+        <field name="border_color">#e43c24</field>
+        <field name="border_width_mm">0.5</field>
+        <field name="border_radius_mm">2.0</field>
+        <field name="description">Kích thước trung bình, phù hợp với các loại hộp phụ tùng vừa và nhỏ.</field>
+    </record>
+
+    <!-- Preset 3: 50x30mm (Phổ biến máy in nhiệt Xprinter / TSC) -->
+    <record id="format_preset_50x30" model="qba.product.label.format">
+        <field name="name">Tem nhỏ 50x30 mm (Phổ biến máy in nhiệt)</field>
+        <field name="code">50x30</field>
+        <field name="is_default">False</field>
+        <field name="width_mm">50.0</field>
+        <field name="height_mm">30.0</field>
+        <field name="margin_top_mm">0.6</field>
+        <field name="margin_bottom_mm">0.6</field>
+        <field name="margin_left_mm">0.6</field>
+        <field name="margin_right_mm">0.6</field>
+        <field name="orientation">Landscape</field>
+        <field name="show_logo">True</field>
+        <field name="logo_position">left</field>
+        <field name="logo_height_mm">4.5</field>
+        <field name="show_supplier_code">True</field>
+        <field name="supplier_code_position">right</field>
+        <field name="supplier_code_display">barcode_and_text</field>
+        <field name="supplier_barcode_height_mm">4.5</field>
+        <field name="supplier_font_size_pt">5.8</field>
+        <field name="show_product_name">True</field>
+        <field name="product_name_font_size_pt">6.2</field>
+        <field name="product_name_bold">False</field>
+        <field name="product_name_align">left</field>
+        <field name="product_name_max_lines">3</field>
+        <field name="show_separator_line">True</field>
+        <field name="separator_color">#e43c24</field>
+        <field name="separator_thickness_mm">0.4</field>
+        <field name="show_brand">True</field>
+        <field name="brand_font_size_pt">5.8</field>
+        <field name="show_nhap_date">True</field>
+        <field name="nhap_date_font_size_pt">5.8</field>
+        <field name="show_dinh_luong">True</field>
+        <field name="dinh_luong_font_size_pt">5.8</field>
+        <field name="show_sku_barcode">True</field>
+        <field name="sku_barcode_position">bottom_center</field>
+        <field name="sku_barcode_height_mm">5.0</field>
+        <field name="sku_font_size_pt">6.2</field>
+        <field name="border_style">rounded</field>
+        <field name="border_color">#e43c24</field>
+        <field name="border_width_mm">0.4</field>
+        <field name="border_radius_mm">1.5</field>
+        <field name="description">Kích thước 50x30mm chuẩn máy in nhiệt Xprinter, TSC. Bố cục tối ưu, thoáng và không bị o ép.</field>
+    </record>
+
+    <!-- Preset 4: 35x22mm (Tem mini linh kiện nhỏ, gioăng phốt ốc vít) -->
+    <record id="format_preset_35x22" model="qba.product.label.format">
+        <field name="name">Tem mini 35x22 mm (Linh kiện nhỏ)</field>
+        <field name="code">35x22</field>
+        <field name="is_default">False</field>
+        <field name="width_mm">35.0</field>
+        <field name="height_mm">22.0</field>
+        <field name="margin_top_mm">0.6</field>
+        <field name="margin_bottom_mm">0.6</field>
+        <field name="margin_left_mm">0.6</field>
+        <field name="margin_right_mm">0.6</field>
+        <field name="orientation">Landscape</field>
+        <field name="show_logo">False</field>
+        <field name="logo_position">left</field>
+        <field name="logo_height_mm">0.0</field>
+        <field name="show_supplier_code">True</field>
+        <field name="supplier_code_position">right</field>
+        <field name="supplier_code_display">text_only</field>
+        <field name="supplier_barcode_height_mm">4.0</field>
+        <field name="supplier_font_size_pt">5.5</field>
+        <field name="show_product_name">True</field>
+        <field name="product_name_font_size_pt">5.6</field>
+        <field name="product_name_bold">False</field>
+        <field name="product_name_align">left</field>
+        <field name="product_name_max_lines">2</field>
+        <field name="show_separator_line">True</field>
+        <field name="separator_color">#e43c24</field>
+        <field name="separator_thickness_mm">0.3</field>
+        <field name="show_brand">False</field>
+        <field name="brand_font_size_pt">5.0</field>
+        <field name="show_nhap_date">True</field>
+        <field name="nhap_date_font_size_pt">5.5</field>
+        <field name="show_dinh_luong">False</field>
+        <field name="dinh_luong_font_size_pt">5.0</field>
+        <field name="show_sku_barcode">True</field>
+        <field name="sku_barcode_position">bottom_center</field>
+        <field name="sku_barcode_height_mm">4.5</field>
+        <field name="sku_font_size_pt">5.8</field>
+        <field name="border_style">rounded</field>
+        <field name="border_color">#e43c24</field>
+        <field name="border_width_mm">0.3</field>
+        <field name="border_radius_mm">1.2</field>
+        <field name="description">Kích thước 35x22mm tinh gọn tối đa, lược bỏ các thông tin rườm rà để không bị o ép, mã vạch và thông tin sắc nét rõ ràng.</field>
+    </record>
+</odoo>

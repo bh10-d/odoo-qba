@@ -9,6 +9,8 @@ from . import gearbox
 from . import axle
 from . import product_category
 from . import product_supplierinfo
+from . import barcode_svg
+from . import product_label_format
 from . import product_label_wizard
 from . import product_compare_wizard
 from . import product_web_link_wizard

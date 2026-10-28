@@ -110,7 +110,17 @@
                 </div>
                 <field name="technical_specs" string="Mô tả SP" placeholder="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm..."/>
                 <field name="axle_info" placeholder="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T"/>
-                <field name="label_image" widget="image"/>
+                <label for="label_image" string="Tem sản phẩm"/>
+                <div class="d-flex align-items-start gap-3">
+                    <field name="label_image" widget="image" style="max-width: 260px; max-height: 180px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 6px; padding: 2px;"/>
+                    <div class="d-flex flex-column gap-2 mt-1">
+                        <button name="open_label_wizard"
+                                type="object"
+                                string="Tạo / In tem"
+                                class="btn btn-sm btn-outline-primary"
+                                icon="fa-barcode"/>
+                    </div>
+                </div>
             </xpath>
 
             <xpath expr="//notebook" position="inside">
