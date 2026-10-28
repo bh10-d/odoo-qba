@@ -57,6 +57,7 @@ class QbaAxle(models.Model):
             "type": "ir.actions.act_window",
             "res_model": "product.template",
             "view_mode": "kanban,list,form",
+            "views": [(False, "kanban"), (False, "list"), (False, "form")],
             "domain": [("axle_ids", "in", descendant_ids)],
             "context": {"default_axle_ids": [(4, self.id)]},
         }

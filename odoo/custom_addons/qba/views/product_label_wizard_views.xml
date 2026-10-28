@@ -1,21 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="view_product_label_wizard_form" model="ir.ui.view">
         <field name="name">qba.product.label.wizard.form</field>
         <field name="model">qba.product.label.wizard</field>
         <field name="arch" type="xml">
-            <form string="Tạo tem sản phẩm">
-                <group>
-                    <field name="product_id" readonly="1"/>
-                    <field name="supplier_product_code"/>
-                    <field name="custom_name"/>
-                    <field name="nhap_date"/>
-                    <field name="dinh_luong"/>
-                </group>
+            <form string="Tạo &amp; In tem sản phẩm (Vector Direct Print)">
+                <div class="alert alert-info py-2 px-3 mb-2 d-flex align-items-center justify-content-between" role="status">
+                    <div>
+                        <i class="fa fa-print me-2 text-primary"/>
+                        <span>Tem Vector PDF chuẩn in nhiệt: kết nối trực tiếp máy in nhiệt, kích thước chuẩn xác từng milimet, không vỡ hạt pixel.</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button name="action_open_format_settings"
+                                string="Tùy biến mẫu tem"
+                                type="object"
+                                class="btn btn-sm btn-outline-primary"
+                                icon="fa-sliders"
+                                title="Mở form chi tiết cấu hình mẫu tem"/>
+                        <button name="action_create_new_format"
+                                string="Tạo khổ mới"
+                                type="object"
+                                class="btn btn-sm btn-outline-success"
+                                icon="fa-plus"
+                                title="Thêm khổ in / mẫu tem mới"/>
+                    </div>
+                </div>
+
+                <div class="card mb-3 p-3 bg-light border-0 rounded-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <label for="format_id" class="form-label fw-bold mb-1">Mẫu &amp; Khổ in tem</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="format_id" options="{'no_create': True}" class="flex-grow-1"/>
+                                <span class="badge text-bg-secondary px-2 py-2">
+                                    <field name="format_width_mm" readonly="1" class="d-inline"/> x <field name="format_height_mm" readonly="1" class="d-inline"/> mm
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="qty_to_print" class="form-label fw-bold mb-1">Số lượng tem in</label>
+                            <div class="d-flex align-items-center">
+                                <field name="qty_to_print" class="form-control" style="max-width: 120px;"/>
+                                <span class="text-muted ms-2 small">bản in</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <notebook>
+                    <!-- TAB 1: THÔNG TIN TEM IN -->
+                    <page string="Thông tin tem in" name="info">
+                        <group>
+                            <group string="Thông tin sản phẩm">
+                                <field name="product_id" readonly="1" options="{'no_open': True}"/>
+                                <field name="default_code" readonly="1"/>
+                                <field name="custom_name" placeholder="Tên in trên tem (mặc định lấy theo sản phẩm)"/>
+                            </group>
+                            <group string="Thông tin bổ sung in trên tem">
+                                <field name="supplier_product_code" options="{'no_create': True, 'no_open': True}"/>
+                                <field name="supplier_code" placeholder="Mã NCC / Mã vạch phụ (góc trên phải)"/>
+                                <field name="nhap_date"/>
+                                <field name="dinh_luong" placeholder="Ví dụ: 1 Cái, 1 Bộ..."/>
+                            </group>
+                        </group>
+                    </page>
+
+                    <!-- TAB 2: XEM TRƯỚC TEM (LIVE PREVIEW) -->
+                    <page string="Xem trước tem (Live Preview 100% chuẩn in)" name="preview">
+                        <field name="preview_html" widget="html" nolabel="1" readonly="1"/>
+                    </page>
+
+                    <!-- TAB 3: TÙY BIẾN NHANH MẪU TEM (LAYOUT EDITOR) -->
+                    <page string="Tùy biến nhanh mẫu tem (Layout)" name="layout">
+                        <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 px-3 mb-3" role="status">
+                            <span class="small text-muted">
+                                <i class="fa fa-info-circle me-1"/>Bạn có thể điều chỉnh trực tiếp các ô chữ, cỡ chữ, viền của mẫu tem này. Sau khi chỉnh sửa, nhấn "Lưu cấu hình mẫu tem" để lưu lại cho các lần in sau.
+                            </span>
+                            <button name="action_save_format_settings"
+                                    type="object"
+                                    string="Lưu cấu hình mẫu tem"
+                                    class="btn btn-sm btn-primary"/>
+                        </div>
+                        <group>
+                            <group string="Kích thước vật lý (mm)">
+                                <field name="format_name"/>
+                                <field name="format_width_mm"/>
+                                <field name="format_height_mm"/>
+                            </group>
+                            <group string="Phần Đầu: Logo &amp; Mã NCC">
+                                <field name="format_show_logo"/>
+                                <field name="format_logo_height_mm" invisible="not format_show_logo"/>
+                                <field name="format_show_supplier_code"/>
+                                <field name="format_supplier_code_display" invisible="not format_show_supplier_code"/>
+                                <field name="format_supplier_barcode_height_mm" invisible="not format_show_supplier_code or format_supplier_code_display == 'text_only'"/>
+                                <field name="format_supplier_font_size_pt" invisible="not format_show_supplier_code or format_supplier_code_display == 'barcode_only'"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Tên Sản Phẩm (Giữa tem)">
+                                <field name="format_show_product_name"/>
+                                <field name="format_product_name_font_size_pt" invisible="not format_show_product_name"/>
+                                <field name="format_product_name_bold" invisible="not format_show_product_name"/>
+                                <field name="format_product_name_align" invisible="not format_show_product_name"/>
+                                <field name="format_product_name_max_lines" invisible="not format_show_product_name"/>
+                            </group>
+                            <group string="Đường kẻ &amp; Thông tin phụ">
+                                <field name="format_show_separator_line"/>
+                                <field name="format_separator_color" widget="color" invisible="not format_show_separator_line"/>
+                                <field name="format_separator_thickness_mm" invisible="not format_show_separator_line"/>
+                                <field name="format_show_brand"/>
+                                <field name="format_brand_font_size_pt" invisible="not format_show_brand"/>
+                                <field name="format_show_nhap_date"/>
+                                <field name="format_nhap_date_font_size_pt" invisible="not format_show_nhap_date"/>
+                                <field name="format_show_dinh_luong"/>
+                                <field name="format_dinh_luong_font_size_pt" invisible="not format_show_dinh_luong"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Mã vạch SKU sản phẩm (Dưới cùng)">
+                                <field name="format_show_sku_barcode"/>
+                                <field name="format_sku_barcode_height_mm" invisible="not format_show_sku_barcode"/>
+                                <field name="format_sku_font_size_pt" invisible="not format_show_sku_barcode"/>
+                            </group>
+                            <group string="Khung viền tem">
+                                <field name="format_border_style"/>
+                                <field name="format_border_color" widget="color" invisible="format_border_style == 'none'"/>
+                                <field name="format_border_width_mm" invisible="format_border_style == 'none'"/>
+                                <field name="format_border_radius_mm" invisible="format_border_style != 'rounded'"/>
+                            </group>
+                        </group>
+                    </page>
+                </notebook>
+
                 <footer>
-                    <button string="Tạo tem" type="object" name="action_generate_label" class="btn-primary"/>
-                    <button string="Hủy" class="btn-secondary" special="cancel"/>
+                    <button string="In tem (Máy in nhiệt - Vector PDF)" type="object" name="action_print_pdf" class="btn-primary" icon="fa-print"/>
+                    <button string="Lưu tem vào sản phẩm" type="object" name="action_save_to_product" class="btn-success" icon="fa-save"/>
+                    <button string="Đóng" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
     </record>
-</odoo> 
+</odoo>

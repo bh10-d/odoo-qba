@@ -14,9 +14,17 @@
                 <field name="is_system_admin" invisible="1"/>
             </xpath>
 
-            <!-- Mở khóa Theo dõi hàng tồn kho cho Admin -->
+            <!-- Mở khóa Theo dõi hàng tồn kho & Đơn vị tính cho Admin -->
             <xpath expr="//field[@name='is_storable']" position="attributes">
                 <attribute name="readonly">not is_system_admin</attribute>
+                <attribute name="help">Đặc quyền Quản trị viên: Sau khi bật theo dõi kho, số tồn ban đầu sẽ hiển thị là 0. Bắt buộc bấm 'Cập nhật số lượng' hoặc làm phiếu Kiểm kê kho để ghi nhận số tồn thực tế.</attribute>
+            </xpath>
+            <xpath expr="//field[@name='uom_id']" position="attributes">
+                <attribute name="readonly">not is_system_admin</attribute>
+                <attribute name="help">Đặc quyền Quản trị viên: Chỉ đổi Đơn vị tính khi kế toán tạo nhầm. Nếu đã có phiếu kho, bắt buộc kiểm kê lại số lượng theo đơn vị mới.</attribute>
+            </xpath>
+            <xpath expr="//span[@name='uom_span']" position="attributes">
+                <attribute name="groups"></attribute>
             </xpath>
 
             <!-- Ảnh đại diện: Rê chuột phóng to scale x3 + Thumbnail ảnh phụ đính kèm (Hover Scale x4) bên dưới -->
@@ -102,7 +110,17 @@
                 </div>
                 <field name="technical_specs" string="Mô tả SP" placeholder="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm..."/>
                 <field name="axle_info" placeholder="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T"/>
-                <field name="label_image" widget="image"/>
+                <label for="label_image" string="Tem sản phẩm"/>
+                <div class="d-flex align-items-start gap-3">
+                    <field name="label_image" widget="image" style="max-width: 260px; max-height: 180px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 6px; padding: 2px;"/>
+                    <div class="d-flex flex-column gap-2 mt-1">
+                        <button name="open_label_wizard"
+                                type="object"
+                                string="Tạo / In tem"
+                                class="btn btn-sm btn-outline-primary"
+                                icon="fa-barcode"/>
+                    </div>
+                </div>
             </xpath>
 
             <xpath expr="//notebook" position="inside">
@@ -311,9 +329,17 @@
                                 </span>
                             </div>
 
-                            <!-- Dòng 2: Mô tả SP / Kích thước (Technical Specs) nằm dưới tên -->
-                            <div t-if="record.technical_specs.value" class="qba-tech-specs-line text-dark fw-medium small pt-1" style="font-size: 0.8rem; line-height: 1.35; color: #1e293b !important;" title="Mô tả sản phẩm">
-                                <field name="technical_specs"/>
+                            <!-- Dòng 2: Mô tả SP / Kích thước (Technical Specs) nằm dưới tên: Tối đa 3 dòng, nút Xem thêm -->
+                            <div t-if="record.technical_specs.value" class="qba-tech-specs-container pt-1">
+                                <div class="qba-tech-specs-line qba-tech-specs-collapsed text-dark fw-medium small" title="Mô tả sản phẩm">
+                                    <field name="technical_specs"/>
+                                </div>
+                                <div class="qba-tech-specs-toggle-wrapper d-none">
+                                    <span class="qba-tech-specs-toggle text-primary fw-semibold" role="button" title="Bấm để mở rộng / thu gọn mô tả">
+                                        <span class="qba-btn-more"><i class="fa fa-angle-down me-1"/>Xem thêm</span>
+                                        <span class="qba-btn-less d-none"><i class="fa fa-angle-up me-1"/>Thu gọn</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Dòng 3: [Web SEO] + [Thương hiệu] + [Bảo hành] -->
