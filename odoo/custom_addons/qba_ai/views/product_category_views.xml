@@ -1,52 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Ke Thua Form View Danh Muc San Pham: Thiet Ke Chuan Theo Mau Mockup -->
+    <!-- Kế thừa Form View Danh Mục Sản Phẩm: Giao diện kết hợp chuẩn UI và cấu hình kỹ thuật AI -->
     <record id="view_product_category_tech_specs_form" model="ir.ui.view">
         <field name="name">product.category.tech.specs.form</field>
         <field name="model">product.category</field>
         <field name="inherit_id" ref="product.product_category_form_view"/>
         <field name="arch" type="xml">
-            <!-- 0. Gan class dinh danh rieng cho form view Danh muc ky thuat -->
+            <!-- 0. Gán class định danh cho form view Danh mục kỹ thuật -->
             <xpath expr="//form" position="attributes">
                 <attribute name="class" add="qba-category-specs-form" separator=" "/>
             </xpath>
 
-            <!-- 1. Chen 3 cot truc quan (Van ban huong dan - Anh so do do - Hinh anh danh muc) ngay duoi Danh muc chinh -->
+            <!-- 1. Cụm 2 khối thiết kế UI: Mô tả danh mục (Trái ~60%) & Hình ảnh catalog (Phải ~40%) -->
             <xpath expr="//group[@name='first']" position="after">
-                <div class="row align-items-start my-3">
-                    <!-- Cot 1: Mo ta danh muc, Cach dat ten, Cach do -->
-                    <div class="col-12 col-lg-5 pe-lg-3">
-                        <div class="mb-3">
-                            <label for="tech_introduction" string="Mô tả danh mục" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
-                            <field name="tech_introduction" widget="html" nolabel="1" placeholder="Nhập mô tả danh mục..."/>
+                <div class="qba-fullwidth-category-form row g-4 mt-2 mb-3 align-items-stretch">
+                    <!-- CỘT TRÁI: MÔ TẢ DANH MỤC & SƠ ĐỒ ĐO (~60% chiều ngang) -->
+                    <div class="col-12 col-lg-7 col-xl-7 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold" style="font-size: 0.95rem; color: #5b21b6;">Mô tả danh mục</span>
+                            <button name="action_insert_description_template"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-primary py-0 px-2"
+                                    style="font-size: 0.78rem;"
+                                    title="Chèn nhanh cấu trúc mẫu: Công dụng, Cách đặt tên, Cách đo">
+                                <i class="fa fa-magic me-1"/>Chèn mẫu hướng dẫn đo
+                            </button>
                         </div>
+                        <div class="qba-category-desc-box flex-grow-1 d-flex flex-column justify-content-center">
+                            <div class="row g-3 align-items-center">
+                                <!-- Cột con trái: Các trường mô tả văn bản -->
+                                <div class="col-12 col-md-5">
+                                    <div class="mb-3">
+                                        <label for="tech_introduction" string="Mô tả danh mục" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="tech_introduction" widget="html" nolabel="1" placeholder="Nhập mô tả danh mục..."/>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label for="naming_convention" string="Cách đặt tên:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
-                            <field name="naming_convention" widget="html" nolabel="1" placeholder="Nhập quy ước đặt tên sản phẩm..."/>
-                        </div>
+                                    <div class="mb-3">
+                                        <label for="naming_convention" string="Cách đặt tên:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="naming_convention" widget="html" nolabel="1" placeholder="Nhập quy ước đặt tên sản phẩm..."/>
+                                    </div>
 
-                        <div class="mb-3">
-                            <label for="measurement_instructions" string="Cách đo:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 15px;"/>
-                            <field name="measurement_instructions" widget="html" nolabel="1" placeholder="A: Đo thông số 1&#10;B: Đo thông số 2..."/>
+                                    <div class="mb-2">
+                                        <label for="measurement_instructions" string="Cách đo:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="measurement_instructions" widget="html" nolabel="1" placeholder="A: Đo thông số 1&#10;B: Đo thông số 2..."/>
+                                    </div>
+                                </div>
+
+                                <!-- Cột con phải: Sơ đồ đo tham chiếu -->
+                                <div class="col-12 col-md-7 text-center">
+                                    <div class="small fw-semibold mb-2" style="color: #64748b;">Bản vẽ / Sơ đồ cách đo (A, B, C, D)</div>
+                                    <field name="measurement_diagram" widget="image" nolabel="1" class="qba-category-measure-img qba-lightbox-trigger"/>
+                                    <field name="measurement_diagram_filename" invisible="1"/>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Cot 2: Anh huong dan cach do san pham (So do A, B, C, D...) -->
-                    <div class="col-12 col-md-6 col-lg-4 text-center px-lg-2">
-                        <field name="measurement_diagram" widget="image" options="{'size': [0, 420]}" class="w-100 object-fit-contain" style="max-height: 450px;" nolabel="1"/>
-                        <field name="measurement_diagram_filename" invisible="1"/>
-                    </div>
-
-                    <!-- Cot 3: Khung anh danh muc (Ti le ngang 3 : cao 4) -->
-                    <div class="col-12 col-md-6 col-lg-3 text-center ps-lg-2">
-                        <field name="category_image" widget="image" options="{'size': [0, 420]}" class="w-100 object-fit-contain" style="max-height: 450px;" nolabel="1"/>
-                        <field name="category_image_filename" invisible="1"/>
+                    <!-- CỘT PHẢI: HÌNH ẢNH DANH MỤC & CATALOG (~40% chiều ngang chuẩn cân đối) -->
+                    <div class="col-12 col-lg-5 col-xl-5 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold" style="font-size: 0.95rem; color: #b91c1c;">Hình ảnh danh mục</span>
+                            <span class="text-muted small" style="font-size: 0.76rem;"><i class="fa fa-search-plus me-1"/>Click phóng to</span>
+                        </div>
+                        <div class="qba-category-image-box flex-grow-1 d-flex flex-column justify-content-center text-center">
+                            <field name="category_image" widget="image" nolabel="1" class="qba-category-large-img qba-lightbox-trigger"/>
+                            <field name="category_image_filename" invisible="1"/>
+                        </div>
                     </div>
                 </div>
             </xpath>
 
-            <!-- 2. Chen Bang cau hinh thong so ky thuat dong va Luu y AI o duoi cung cua Form Sheet -->
+            <!-- 2. Bảng cấu hình thông số kỹ thuật động và Lưu ý AI ở dưới cùng của Form Sheet -->
             <xpath expr="//sheet" position="inside">
                 <notebook class="mt-4">
                     <!-- Tab 1: Cấu hình thông số kỹ thuật -->
@@ -108,26 +132,26 @@
                         <field name="tech_notes" placeholder="Ghi chú về sai số cho phép, lưu ý nhận diện phụ tùng cho AI gợi ý..."/>
                     </page>
 
-                    <!-- Tab 3: Tab trong de chua Logistics & Dinh gia kho -->
+                    <!-- Tab 3: Tab trống để chứa Logistics & Định giá kho -->
                     <page string="Kho &amp; Định giá" name="stock_valuation_tab"/>
                 </notebook>
 
-                <!-- 3. Dua Chatter (Gui tin, Ghi chu) truc tiep vao trong Sheet de khong bi day sang cot ben phai (o-aside) -->
+                <!-- 3. Đưa Chatter (Gửi tin, Ghi chú) trực tiếp vào trong Sheet -->
                 <chatter class="mt-5 pt-3 border-top"/>
             </xpath>
 
-            <!-- 4. Di chuyen nhom Logistics, Dinh gia ton kho va Tai khoan vao Tab 'Kho & Dinh gia' -->
+            <!-- 4. Di chuyển nhóm Logistics, Định giá tồn kho và Tài khoản vào Tab 'Kho & Định giá' -->
             <xpath expr="//page[@name='stock_valuation_tab']" position="inside">
                 <xpath expr="//group[@name='logistics']/.." position="move"/>
                 <xpath expr="//group[@name='account_property']" position="move"/>
             </xpath>
 
-            <!-- Xoa chatter o vi tri ben phai de tranh ep hep khung form -->
+            <!-- Xóa chatter ở vị trí bên phải để tránh ép hẹp khung form -->
             <xpath expr="//form/chatter" position="replace"/>
         </field>
     </record>
 
-    <!-- Action Truy Cap Danh Muc & Huong Dan Do Luong Tu Menu AI -->
+    <!-- Action Truy Cập Danh Mục & Hướng Dẫn Đo Lường Từ Menu AI -->
     <record id="action_qba_category_tech_info" model="ir.actions.act_window">
         <field name="name">Danh Mục &amp; Hướng Dẫn Đo Lường</field>
         <field name="res_model">product.category</field>

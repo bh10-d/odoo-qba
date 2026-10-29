@@ -72,11 +72,6 @@
                         string="Link Web SEO"
                         class="btn-outline-primary"
                         icon="fa-globe"/>
-                <button name="action_open_ai_assistant"
-                        type="object"
-                        string="Cách Lấy Thông Số SP (AI)"
-                        class="btn-info"
-                        icon="fa-magic"/>
                 <button name="action_open_compare_wizard"
                         type="object"
                         string="So Sánh Sản Phẩm"

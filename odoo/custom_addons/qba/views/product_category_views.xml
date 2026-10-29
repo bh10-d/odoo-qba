@@ -5,7 +5,7 @@
         <field name="model">product.category</field>
         <field name="inherit_id" ref="product.product_category_form_view"/>
         <field name="arch" type="xml">
-            <!-- Thay thế nút xem sản phẩm cũ (vốn kích hoạt Group by khiến vỡ cột) thành action xem danh sách sản phẩm chuẩn -->
+            <!-- Thay the nut xem san pham cu thanh action xem danh sach san pham chuan -->
             <xpath expr="//div[@name='button_box']/button" position="replace">
                 <button class="oe_stat_button" name="action_view_products" icon="fa-cubes" type="object">
                     <div class="o_field_widget o_stat_info">
@@ -13,48 +13,6 @@
                         <span class="o_stat_text"> Sản phẩm</span>
                     </div>
                 </button>
-            </xpath>
-
-            <xpath expr="//group[@name='first']" position="after">
-                <div class="qba-fullwidth-category-form row g-4 mt-2 mb-3">
-                    <!-- CỘT TRÁI: MÔ TẢ DANH MỤC (Công dụng, Cách đặt tên, Cách đo + Bản vẽ hướng dẫn đo) -->
-                    <div class="col-12 col-lg-7">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-bold" style="font-size: 0.95rem; color: #5b21b6;">Mô tả danh mục</span>
-                            <button name="action_insert_description_template"
-                                    type="object"
-                                    class="btn btn-sm btn-outline-primary py-0 px-2"
-                                    style="font-size: 0.78rem;"
-                                    title="Chèn nhanh cấu trúc mẫu: Công dụng, Cách đặt tên, Cách đo">
-                                <i class="fa fa-magic me-1"/>Chèn mẫu hướng dẫn đo
-                            </button>
-                        </div>
-                        <div class="qba-category-desc-box">
-                            <div class="row g-3 align-items-start">
-                                <div class="col-12 col-md-7">
-                                    <field name="description" nolabel="1"
-                                           class="qba-category-html-desc"
-                                           placeholder="Nhập mô tả chi tiết cho danh mục:&#10;- Công dụng &amp; Dấu hiệu hư hỏng...&#10;- Cách đặt tên: VD: Lá côn ØA/B nia ØC/ØD&#10;- Cách đo:&#10;  + A: Đo Ø ngoài...&#10;  + B: số nia, C: Đo Ø trong...&#10;  + D: Đo vòng sắt giữa..."/>
-                                </div>
-                                <div class="col-12 col-md-5 text-center">
-                                    <div class="small fw-semibold mb-1" style="color: #64748b;">Bản vẽ / Sơ đồ cách đo (A, B, C, D)</div>
-                                    <field name="measurement_image" widget="image" nolabel="1" class="qba-category-measure-img qba-lightbox-trigger"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CỘT PHẢI: HÌNH ẢNH DANH MỤC (Ảnh Catalog / Bảng tra cứu trực quan kích thước lớn) -->
-                    <div class="col-12 col-lg-5">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="fw-bold" style="font-size: 0.95rem; color: #b91c1c;">Hình ảnh danh mục</span>
-                            <span class="text-muted small" style="font-size: 0.76rem;"><i class="fa fa-search-plus me-1"/>Click vào ảnh để phóng to</span>
-                        </div>
-                        <div class="qba-category-image-box text-center">
-                            <field name="image_1920" widget="image" nolabel="1" class="qba-category-large-img qba-lightbox-trigger"/>
-                        </div>
-                    </div>
-                </div>
             </xpath>
         </field>
     </record>
