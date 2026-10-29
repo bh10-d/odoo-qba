@@ -1,0 +1,88 @@
+/* ==========================================================================
+   QBA AI - TECHNICAL SPECIFICATIONS SCOPED LAYOUT
+   ========================================================================== */
+
+/* Mở rộng Form Sheet 100% chiều ngang cho Form Danh mục kỹ thuật */
+.o_form_view.qba-category-specs-form .o_form_sheet_bg {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+.o_form_view.qba-category-specs-form .o_form_sheet {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Đồng bộ chiều cao 2 khối Mô tả danh mục (~60%) & Hình ảnh danh mục (~40%) */
+.o_form_view.qba-category-specs-form .qba-category-desc-box {
+    border: 1.5px solid #6366f1;
+    border-radius: 8px;
+    padding: 16px 18px;
+    background-color: #ffffff;
+    min-height: 460px;
+    height: 100%;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.06);
+}
+
+/* Bản vẽ / Sơ đồ cách đo bên trong cột trái */
+.o_form_view.qba-category-specs-form .qba-category-measure-img {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
+.o_form_view.qba-category-specs-form .qba-category-measure-img img {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 430px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 6px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.o_form_view.qba-category-specs-form .qba-category-measure-img img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Khung ảnh danh mục bên phải: ~40% chiều ngang, cân đối giữa ảnh dọc và ảnh ngang */
+.o_form_view.qba-category-specs-form .qba-category-image-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    background-color: #ffffff;
+    min-height: 460px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.o_form_view.qba-category-specs-form .qba-category-large-img {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.o_form_view.qba-category-specs-form .qba-category-large-img img {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 540px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 8px;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.o_form_view.qba-category-specs-form .qba-category-large-img img:hover {
+    transform: scale(1.015);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}

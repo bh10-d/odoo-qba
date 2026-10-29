@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Kế Thừa Form View Sản Phẩm: Bổ sung Tab Thông Số Kỹ Thuật Động -->
+    <record id="view_product_template_tech_specs_form" model="ir.ui.view">
+        <field name="name">product.template.tech.specs.form</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_find_matching_substitutes"
+                        string="Đối Chiếu Kỹ Thuật (AI)"
+                        type="object"
+                        class="btn btn-outline-info"
+                        icon="fa-balance-scale"
+                        title="Mở giao diện AI Assistant tra cứu thông số &amp; đối chiếu phụ tùng thay thế"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Thông Số Kỹ Thuật" name="tech_specs">
+                    <!-- Hướng dẫn kỹ thuật và Sơ đồ đo từ danh mục -->
+                    <div class="row align-items-start mb-3 pb-3 border-bottom" invisible="not spec_category_diagram and not spec_category_instructions">
+                        <div class="col-12 col-lg-7 pe-lg-3" invisible="not spec_category_instructions">
+                            <label for="spec_category_instructions" string="Hướng dẫn đo từ danh mục:" class="fw-bold mb-1 d-block" style="color: #615675;"/>
+                            <field name="spec_category_instructions" readonly="1"/>
+                        </div>
+                        <div class="col-12 col-lg-5 text-center ps-lg-3" invisible="not spec_category_diagram">
+                            <label for="spec_category_diagram" string="Sơ đồ đo tham chiếu (A, B, C, D...):" class="fw-bold mb-1 d-block" style="color: #615675;"/>
+                            <field name="spec_category_diagram" widget="image" options="{'size': [0, 220]}" class="w-100 object-fit-contain" style="max-height: 220px;" readonly="1"/>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div>
+                            <span class="fw-bold text-dark fs-6">Bảng thông số kỹ thuật động</span>
+                            <span class="text-muted small ms-2">
+                                (<field name="spec_verified_count" class="text-success fw-bold"/> / <field name="spec_value_count"/> thông số đã duyệt)
+                            </span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button name="action_populate_category_specs"
+                                    type="object"
+                                    string="Tải mẫu thông số"
+                                    class="btn btn-sm btn-outline-primary"
+                                    title="Tự động tải danh sách các thông số kỹ thuật được cấu hình cho danh mục sản phẩm này"/>
+                            <button name="action_open_spec_parser_wizard"
+                                    type="object"
+                                    string="Trích xuất từ tên"
+                                    icon="fa-magic"
+                                    class="btn btn-sm btn-outline-success"
+                                    title="Trích xuất các thông số kỹ thuật từ tên sản phẩm để xem trước và phê duyệt"
+                                    groups="qba_ai.group_qba_ai_manager"/>
+                        </div>
+                    </div>
+
+                    <field name="spec_value_ids" context="{'default_product_tmpl_id': id}">
+                        <list editable="bottom"
+                               decoration-success="validation_status == 'verified'"
+                               decoration-warning="validation_status == 'unverified'"
+                               decoration-danger="validation_status == 'conflicted'">
+                            <field name="spec_definition_id"
+                                   domain="['|', ('category_ids', '=', False), ('category_ids', 'parent_of', parent.categ_id)]"
+                                   options="{'no_create_edit': False}"/>
+                            <field name="spec_code" optional="show"/>
+                            <field name="value_display" string="Giá trị" placeholder="Nhập giá trị..."/>
+                            <field name="uom" optional="show"/>
+                            <field name="data_type" optional="show"/>
+                            <field name="is_critical" optional="show" widget="boolean_toggle"/>
+                            <field name="validation_status" widget="badge"
+                                   decoration-success="validation_status == 'verified'"
+                                   decoration-warning="validation_status == 'unverified'"
+                                   decoration-danger="validation_status == 'conflicted'"/>
+                            <field name="source" optional="hide"/>
+                            <field name="notes" optional="show" placeholder="Ghi chú..."/>
+                            <button name="action_verify" type="object" string="Duyệt" icon="fa-check"
+                                    title="Quản trị viên AI duyệt thông số chính thức"
+                                    invisible="validation_status == 'verified'"
+                                    groups="qba_ai.group_qba_ai_manager"/>
+                            <button name="action_reject" type="object" string="Báo lỗi" icon="fa-exclamation-triangle"
+                                    title="Báo xung đột hoặc sai thông số"
+                                    invisible="validation_status == 'conflicted'"
+                                    groups="qba_ai.group_qba_ai_manager"/>
+                            <button name="action_reset_unverified" type="object" string="Hủy duyệt" icon="fa-undo"
+                                    title="Thu hồi về trạng thái chưa duyệt"
+                                    invisible="validation_status == 'unverified'"
+                                    groups="qba_ai.group_qba_ai_manager"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Kế Thừa List View Sản Phẩm: Nút Trợ Lý AI Tìm Phụ Tùng trên header -->
+    <record id="view_product_template_tree_ai_entry" model="ir.ui.view">
+        <field name="name">product.template.tree.ai.entry</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_ai_assistant_general"
+                        string="QBA AI Tìm Phụ Tùng"
+                        type="object"
+                        class="btn-primary"
+                        icon="fa-magic"/>
+                <button name="action_open_ai_assistant_general_matching"
+                        string="AI Assistant Tra Cứu &amp; Đối Chiếu"
+                        type="object"
+                        class="btn-outline-info"
+                        icon="fa-balance-scale"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Server Action 1: Mở Trợ Lý AI Drawer trên cả form và list -->
+    <record id="action_server_open_ai_assistant" model="ir.actions.server">
+        <field name="name">QBA AI Tìm Kiếm Phụ Tùng</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records and len(records) == 1:
+    action = records[0].action_open_ai_assistant_drawer()
+else:
+    action = model.action_open_ai_assistant_general()
+        </field>
+    </record>
+
+    <!-- Server Action 2: Mở Giao diện AI Assistant Kỹ Thuật & Duyệt -->
+    <record id="action_server_open_tech_matching" model="ir.actions.server">
+        <field name="name">Đối Chiếu Kỹ Thuật &amp; Duyệt (AI Assistant)</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="state">code</field>
+        <field name="code">
+if records and len(records) == 1:
+    action = records[0].action_find_matching_substitutes()
+else:
+    action = model.action_open_ai_assistant_general_matching()
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View Hồ Sơ So Khớp (Odoo 18 <list>) -->
+    <record id="view_qba_category_matching_profile_list" model="ir.ui.view">
+        <field name="name">qba.category.matching.profile.list</field>
+        <field name="model">qba.category.matching.profile</field>
+        <field name="arch" type="xml">
+            <list string="Hồ Sơ So Khớp Danh Mục" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="category_id"/>
+                <field name="min_score_threshold" string="Ngưỡng điểm (%)"/>
+                <field name="allow_partial_match" widget="boolean_toggle"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Hồ Sơ So Khớp -->
+    <record id="view_qba_category_matching_profile_form" model="ir.ui.view">
+        <field name="name">qba.category.matching.profile.form</field>
+        <field name="model">qba.category.matching.profile</field>
+        <field name="arch" type="xml">
+            <form string="Hồ Sơ Cấu Hình So Khớp Danh Mục">
+                <sheet>
+                    <widget name="web_ribbon" title="Lưu trữ" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Tên hồ sơ so khớp"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Hồ sơ so khớp Lá Côn, Hồ sơ so khớp Tăm Bua..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Phạm vi danh mục &amp; Chính sách">
+                            <field name="category_id"/>
+                            <field name="active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Tiêu chuẩn kỹ thuật">
+                            <field name="min_score_threshold"/>
+                            <field name="allow_partial_match" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Quy Tắc So Khớp &amp; Dung Sai (Matching Rules)" name="rules">
+                            <field name="rule_ids">
+                                <list editable="bottom" decoration-muted="not active">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="spec_definition_id" domain="['|', ('category_ids', '=', False), ('category_ids', 'parent_of', parent.category_id)]"/>
+                                    <field name="spec_code" readonly="1" optional="show"/>
+                                    <field name="data_type" readonly="1" optional="show"/>
+                                    <field name="uom" readonly="1" optional="show"/>
+                                    <field name="match_type"/>
+                                    <field name="is_hard_constraint" widget="boolean_toggle" string="Bắt buộc (Hard)"/>
+                                    <field name="tolerance_type" optional="show"/>
+                                    <field name="tolerance_plus" string="Dung sai (+)"/>
+                                    <field name="tolerance_minus" string="Dung sai (-)"/>
+                                    <field name="weight" string="Trọng số"/>
+                                    <field name="active" widget="boolean_toggle" optional="show"/>
+                                    <field name="allow_substitute" widget="boolean_toggle" optional="hide"/>
+                                    <field name="substitute_values" optional="hide" placeholder="38, 38.5..."/>
+                                    <field name="substitute_note" optional="hide" placeholder="Lý do kỹ thuật..."/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ghi Chú Kỹ Thuật" name="notes">
+                            <field name="notes" placeholder="Mô tả các lưu ý tiêu chuẩn kỹ thuật hoặc dung sai lắp ráp..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Mở Hồ Sơ So Khớp -->
+    <record id="action_qba_category_matching_profile" model="ir.actions.act_window">
+        <field name="name">Hồ Sơ So Khớp Kỹ Thuật (Profiles)</field>
+        <field name="res_model">qba.category.matching.profile</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo hồ sơ cấu hình quy tắc và dung sai so khớp phụ tùng cho từng danh mục!
+            </p>
+        </field>
+    </record>
+</odoo>
+

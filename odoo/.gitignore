@@ -46,3 +46,7 @@ sessions/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Tài liệu audit AI nội bộ
+docs/ai-audit/
+

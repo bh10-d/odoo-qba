@@ -4,4 +4,16 @@ from . import ai_knowledge
 from . import ai_approval_queue
 from . import ai_service
 from . import ai_assistant
+from . import ai_message
+from . import ai_conversation
 from . import res_config_settings
+from . import product_spec_definition
+from . import product_spec_value
+from . import product_category
+from . import product_template
+from . import spec_parser_registry
+from . import lc_spec_parser
+from . import ai_request
+from . import category_matching_profile
+from . import spec_matching_engine
+from . import query_intent_router

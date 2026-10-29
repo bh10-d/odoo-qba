@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Kế thừa Form View Danh Mục Sản Phẩm: Giao diện kết hợp chuẩn UI và cấu hình kỹ thuật AI -->
+    <record id="view_product_category_tech_specs_form" model="ir.ui.view">
+        <field name="name">product.category.tech.specs.form</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <!-- 0. Gán class định danh cho form view Danh mục kỹ thuật -->
+            <xpath expr="//form" position="attributes">
+                <attribute name="class" add="qba-category-specs-form" separator=" "/>
+            </xpath>
+
+            <!-- 1. Cụm 2 khối thiết kế UI: Mô tả danh mục (Trái ~60%) & Hình ảnh catalog (Phải ~40%) -->
+            <xpath expr="//group[@name='first']" position="after">
+                <div class="qba-fullwidth-category-form row g-4 mt-2 mb-3 align-items-stretch">
+                    <!-- CỘT TRÁI: MÔ TẢ DANH MỤC & SƠ ĐỒ ĐO (~60% chiều ngang) -->
+                    <div class="col-12 col-lg-7 col-xl-7 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold" style="font-size: 0.95rem; color: #5b21b6;">Mô tả danh mục</span>
+                            <button name="action_insert_description_template"
+                                    type="object"
+                                    class="btn btn-sm btn-outline-primary py-0 px-2"
+                                    style="font-size: 0.78rem;"
+                                    title="Chèn nhanh cấu trúc mẫu: Công dụng, Cách đặt tên, Cách đo">
+                                <i class="fa fa-magic me-1"/>Chèn mẫu hướng dẫn đo
+                            </button>
+                        </div>
+                        <div class="qba-category-desc-box flex-grow-1 d-flex flex-column justify-content-center">
+                            <div class="row g-3 align-items-center">
+                                <!-- Cột con trái: Các trường mô tả văn bản -->
+                                <div class="col-12 col-md-5">
+                                    <div class="mb-3">
+                                        <label for="tech_introduction" string="Mô tả danh mục" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="tech_introduction" widget="html" nolabel="1" placeholder="Nhập mô tả danh mục..."/>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="naming_convention" string="Cách đặt tên:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="naming_convention" widget="html" nolabel="1" placeholder="Nhập quy ước đặt tên sản phẩm..."/>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label for="measurement_instructions" string="Cách đo:" class="fw-bold d-block mb-1" style="color: #615675; font-size: 14px;"/>
+                                        <field name="measurement_instructions" widget="html" nolabel="1" placeholder="A: Đo thông số 1&#10;B: Đo thông số 2..."/>
+                                    </div>
+                                </div>
+
+                                <!-- Cột con phải: Sơ đồ đo tham chiếu -->
+                                <div class="col-12 col-md-7 text-center">
+                                    <div class="small fw-semibold mb-2" style="color: #64748b;">Bản vẽ / Sơ đồ cách đo (A, B, C, D)</div>
+                                    <field name="measurement_diagram" widget="image" nolabel="1" class="qba-category-measure-img qba-lightbox-trigger"/>
+                                    <field name="measurement_diagram_filename" invisible="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CỘT PHẢI: HÌNH ẢNH DANH MỤC & CATALOG (~40% chiều ngang chuẩn cân đối) -->
+                    <div class="col-12 col-lg-5 col-xl-5 d-flex flex-column">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold" style="font-size: 0.95rem; color: #b91c1c;">Hình ảnh danh mục</span>
+                            <span class="text-muted small" style="font-size: 0.76rem;"><i class="fa fa-search-plus me-1"/>Click phóng to</span>
+                        </div>
+                        <div class="qba-category-image-box flex-grow-1 d-flex flex-column justify-content-center text-center">
+                            <field name="category_image" widget="image" nolabel="1" class="qba-category-large-img qba-lightbox-trigger"/>
+                            <field name="category_image_filename" invisible="1"/>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+
+            <!-- 2. Bảng cấu hình thông số kỹ thuật động và Lưu ý AI ở dưới cùng của Form Sheet -->
+            <xpath expr="//sheet" position="inside">
+                <notebook class="mt-4">
+                    <!-- Tab 1: Cấu hình thông số kỹ thuật -->
+                    <page string="Cấu hình thông số kỹ thuật (A, B, C, D...)" name="spec_defs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="text-muted small">
+                                Bấm biểu tượng cây bút để xem/sửa chi tiết (mô tả, cách đo, tùy chọn selection) của thông số đã tạo.
+                            </span>
+                            <div class="d-flex gap-2">
+                                <button name="action_create_new_spec"
+                                        type="object"
+                                        string="Tạo thông số chi tiết (Modal)"
+                                        icon="fa-plus-circle"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Mở popup tạo mới thông số kỹ thuật với đầy đủ cấu hình chi tiết (Hướng dẫn đo, Tùy chọn selection...)"
+                                        groups="qba_ai.group_qba_ai_manager,base.group_system"/>
+                                <button name="action_open_spec_parser_wizard"
+                                        type="object"
+                                        string="Trích xuất từ tên sản phẩm (AI)"
+                                        icon="fa-magic"
+                                        class="btn btn-sm btn-outline-success"
+                                        title="Chạy công cụ trích xuất thông số từ tên sản phẩm thuộc danh mục này"
+                                        groups="qba_ai.group_qba_ai_manager"/>
+                            </div>
+                        </div>
+                        <field name="tech_spec_definition_ids" context="{'active_test': False, 'default_category_ids': [(4, id)], 'current_category_id': id}">
+                            <list editable="bottom" open_form_view="True" decoration-muted="not active">
+                                <field name="sequence" widget="handle"/>
+                                <field name="name" string="Tên thông số (Ký hiệu A, B, C...)"/>
+                                <field name="code" string="Mã kỹ thuật"/>
+                                <field name="data_type" string="Kiểu dữ liệu"/>
+                                <field name="uom" string="Đơn vị tính"/>
+                                <field name="is_critical" string="Thông số cốt lõi" widget="boolean_toggle"/>
+                                <field name="is_required" string="Bắt buộc" widget="boolean_toggle"/>
+                                <field name="is_searchable" string="Tìm kiếm" widget="boolean_toggle" optional="show"/>
+                                <field name="active" widget="boolean_toggle"/>
+                                <button name="action_open_spec_form"
+                                        type="object"
+                                        string="Chi tiết"
+                                        icon="fa-pencil"
+                                        class="btn-link text-primary"
+                                        title="Mở modal cấu hình chi tiết thông số (Hướng dẫn đo, Tùy chọn selection, v.v.)"
+                                        invisible="not id"/>
+                                <button name="action_delete_spec_definition"
+                                        type="object"
+                                        string="Xóa hẳn"
+                                        icon="fa-trash"
+                                        class="btn-link text-danger"
+                                        title="Xóa vĩnh viễn thông số này khỏi toàn bộ hệ thống"
+                                        confirm="Bạn có chắc chắn muốn XÓA VĨNH VIỄN thông số kỹ thuật này khỏi hệ thống không? Dữ liệu thông số này trên các sản phẩm (nếu có) cũng sẽ bị xóa hoàn toàn."
+                                        groups="qba_ai.group_qba_ai_manager,base.group_system"
+                                        invisible="not id"/>
+                            </list>
+                        </field>
+                    </page>
+
+                    <!-- Tab 2: Lưu ý kỹ thuật & Gợi ý AI -->
+                    <page string="Lưu ý kỹ thuật &amp; Gợi ý AI" name="tech_notes">
+                        <field name="tech_notes" placeholder="Ghi chú về sai số cho phép, lưu ý nhận diện phụ tùng cho AI gợi ý..."/>
+                    </page>
+
+                    <!-- Tab 3: Tab trống để chứa Logistics & Định giá kho -->
+                    <page string="Kho &amp; Định giá" name="stock_valuation_tab"/>
+                </notebook>
+
+                <!-- 3. Đưa Chatter (Gửi tin, Ghi chú) trực tiếp vào trong Sheet -->
+                <chatter class="mt-5 pt-3 border-top"/>
+            </xpath>
+
+            <!-- 4. Di chuyển nhóm Logistics, Định giá tồn kho và Tài khoản vào Tab 'Kho & Định giá' -->
+            <xpath expr="//page[@name='stock_valuation_tab']" position="inside">
+                <xpath expr="//group[@name='logistics']/.." position="move"/>
+                <xpath expr="//group[@name='account_property']" position="move"/>
+            </xpath>
+
+            <!-- Xóa chatter ở vị trí bên phải để tránh ép hẹp khung form -->
+            <xpath expr="//form/chatter" position="replace"/>
+        </field>
+    </record>
+
+    <!-- Action Truy Cập Danh Mục & Hướng Dẫn Đo Lường Từ Menu AI -->
+    <record id="action_qba_category_tech_info" model="ir.actions.act_window">
+        <field name="name">Danh Mục &amp; Hướng Dẫn Đo Lường</field>
+        <field name="res_model">product.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="product.product_category_list_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chọn danh mục để xem hoặc cấu hình hướng dẫn kỹ thuật!
+            </p>
+        </field>
+    </record>
+</odoo>

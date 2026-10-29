@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List / Tree View Phiên Hội Thoại -->
+    <record id="view_qba_ai_conversation_list" model="ir.ui.view">
+        <field name="name">qba.ai.conversation.list</field>
+        <field name="model">qba.ai.conversation</field>
+        <field name="arch" type="xml">
+            <list string="Lịch Sử Hội Thoại QBA AI" decoration-muted="state == 'archived'" decoration-bf="is_active">
+                <field name="name" string="Tiêu đề hội thoại"/>
+                <button name="action_open_in_drawer"
+                        string="Mở Trợ lý AI"
+                        type="object"
+                        icon="fa-comments"
+                        class="btn-primary btn-sm"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="context_product_id" optional="show"/>
+                <field name="message_count" string="Số tin nhắn"/>
+                <field name="last_message_date" string="Tin nhắn cuối"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-muted="state == 'archived'"/>
+                <field name="is_active" widget="boolean_toggle" string="Đang mở"/>
+                <button name="action_archive"
+                        string="Lưu trữ"
+                        type="object"
+                        icon="fa-archive"
+                        class="btn-outline-secondary btn-sm"
+                        invisible="state == 'archived'"/>
+                <button name="action_restore"
+                        string="Khôi phục"
+                        type="object"
+                        icon="fa-undo text-success"
+                        class="btn-outline-success btn-sm"
+                        invisible="state != 'archived'"/>
+                <button name="unlink"
+                        string="Xóa"
+                        type="object"
+                        icon="fa-trash text-danger"
+                        class="btn-outline-danger btn-sm"
+                        confirm="Bạn có chắc chắn muốn xóa vĩnh viễn cuộc hội thoại này?"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Phiên Hội Thoại -->
+    <record id="view_qba_ai_conversation_form" model="ir.ui.view">
+        <field name="name">qba.ai.conversation.form</field>
+        <field name="model">qba.ai.conversation</field>
+        <field name="arch" type="xml">
+            <form string="Phiên Hội Thoại QBA AI">
+                <header>
+                    <button name="action_open_in_drawer"
+                            string="Tiếp tục trong Trợ lý AI"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-comments"/>
+                    <button name="action_archive"
+                            string="Lưu trữ"
+                            type="object"
+                            invisible="state == 'archived'"/>
+                    <button name="action_restore"
+                            string="Khôi phục"
+                            type="object"
+                            class="btn-success"
+                            icon="fa-undo"
+                            invisible="state != 'archived'"/>
+                    <button name="action_delete"
+                            string="Xóa hội thoại"
+                            type="object"
+                            class="btn-outline-danger"
+                            icon="fa-trash"
+                            confirm="Bạn có chắc chắn muốn xóa vĩnh viễn cuộc hội thoại này?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="active,archived"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Tiêu đề hội thoại"/>
+                        <h1>
+                            <field name="name" placeholder="VD: Tìm lá côn phi 325..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Thông tin chung">
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="is_active" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Ngữ cảnh &amp; Thời gian">
+                            <field name="context_product_id"/>
+                            <field name="create_date" string="Bắt đầu lúc" readonly="1"/>
+                            <field name="last_message_date" readonly="1"/>
+                            <field name="message_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lịch Sử Tin Nhắn" name="messages">
+                            <field name="message_ids" readonly="1">
+                                <list string="Tin nhắn" decoration-info="role == 'user'" decoration-success="role == 'assistant'">
+                                    <field name="create_date" string="Thời gian"/>
+                                    <field name="role" widget="badge" decoration-primary="role == 'user'" decoration-success="role == 'assistant'" decoration-muted="role == 'system'"/>
+                                    <field name="intent_label" string="Ý định"/>
+                                    <field name="content" string="Nội dung"/>
+                                    <field name="matched_product_ids" widget="many2many_tags" string="Sản phẩm gợi ý" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Dữ Liệu Ngữ Cảnh Kỹ Thuật (JSON)" name="search_context">
+                            <field name="search_context_json" widget="text" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View Phiên Hội Thoại -->
+    <record id="view_qba_ai_conversation_search" model="ir.ui.view">
+        <field name="name">qba.ai.conversation.search</field>
+        <field name="model">qba.ai.conversation</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm hội thoại">
+                <field name="name" string="Tiêu đề hội thoại"/>
+                <field name="user_id" string="Người dùng"/>
+                <field name="context_product_name" string="Tên sản phẩm"/>
+                <field name="context_product_code" string="Mã SKU"/>
+                <separator/>
+                <filter name="my_conversations" string="Hội thoại của tôi" domain="[('user_id', '=', uid)]"/>
+                <filter name="state_active" string="Đang hoạt động" domain="[('state', '=', 'active')]"/>
+                <filter name="archived_conv" string="Đã lưu trữ" domain="[('state', '=', 'archived')]"/>
+                <filter name="active_conv" string="Đang mở (Active)" domain="[('is_active', '=', True)]"/>
+                <group expand="0" string="Nhóm theo">
+                    <filter name="group_user" string="Người dùng" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_state" string="Trạng thái" context="{'group_by': 'state'}"/>
+                    <filter name="group_product" string="Sản phẩm ngữ cảnh" context="{'group_by': 'context_product_id'}"/>
+                    <filter name="group_date" string="Ngày tạo" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action Lịch Sử Hội Thoại QBA AI -->
+    <record id="action_qba_ai_conversation_history" model="ir.actions.act_window">
+        <field name="name">Lịch Sử Hội Thoại QBA AI</field>
+        <field name="res_model">qba.ai.conversation</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_qba_ai_conversation_list"/>
+        <field name="search_view_id" ref="view_qba_ai_conversation_search"/>
+        <field name="context">{'search_default_my_conversations': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có phiên hội thoại nào được ghi nhận.
+            </p>
+            <p>
+                Tất cả các phiên trao đổi tìm kiếm phụ tùng, đối chiếu thông số qua Trợ lý QBA AI sẽ được lưu trữ tự động tại đây.
+            </p>
+        </field>
+    </record>
+</odoo>
+

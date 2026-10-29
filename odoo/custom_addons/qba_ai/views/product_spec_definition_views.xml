@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View Định Nghĩa Thông Số Kỹ Thuật (Odoo 18 <list>) -->
+    <record id="view_qba_product_spec_definition_list" model="ir.ui.view">
+        <field name="name">qba.product.spec.definition.list</field>
+        <field name="model">qba.product.spec.definition</field>
+        <field name="arch" type="xml">
+            <list string="Định Nghĩa Thông Số Kỹ Thuật" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="data_type"/>
+                <field name="uom"/>
+                <field name="category_ids" widget="many2many_tags"/>
+                <field name="is_required" widget="boolean_toggle"/>
+                <field name="is_searchable" widget="boolean_toggle"/>
+                <field name="is_critical" widget="boolean_toggle"/>
+                <field name="value_count" string="Số sản phẩm"/>
+                <field name="active" widget="boolean_toggle"/>
+                <button name="action_delete_spec_definition"
+                        type="object"
+                        string="Xóa hẳn"
+                        icon="fa-trash"
+                        class="btn-link text-danger"
+                        title="Xóa vĩnh viễn thông số kỹ thuật này khỏi hệ thống"
+                        confirm="Bạn có chắc chắn muốn XÓA VĨNH VIỄN thông số kỹ thuật này không? Toàn bộ dữ liệu giá trị thông số liên quan trên các sản phẩm (nếu có) cũng sẽ bị xóa hoàn toàn."
+                        groups="qba_ai.group_qba_ai_manager,base.group_system"
+                        invisible="not id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View Định Nghĩa Thông Số Kỹ Thuật -->
+    <record id="view_qba_product_spec_definition_form" model="ir.ui.view">
+        <field name="name">qba.product.spec.definition.form</field>
+        <field name="model">qba.product.spec.definition</field>
+        <field name="arch" type="xml">
+            <form string="Định Nghĩa Thông Số Kỹ Thuật">
+                <header>
+                    <button name="action_delete_spec_definition"
+                            type="object"
+                            string="Xóa vĩnh viễn"
+                            icon="fa-trash"
+                            class="btn-danger"
+                            confirm="Bạn có chắc chắn muốn XÓA VĨNH VIỄN thông số kỹ thuật này khỏi hệ thống không? Toàn bộ dữ liệu giá trị thông số liên quan trên các sản phẩm (nếu có) cũng sẽ bị xóa hoàn toàn."
+                            groups="qba_ai.group_qba_ai_manager,base.group_system"
+                            invisible="not id"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Lưu trữ" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Tên thông số kỹ thuật"/>
+                        <h1>
+                            <field name="name" placeholder="Ví dụ: Đường kính ngoài lá côn, Số răng moay ơ..."/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Cấu hình kỹ thuật">
+                            <field name="code" placeholder="Ví dụ: outer_diameter, spline_teeth..."/>
+                            <field name="data_type"/>
+                            <field name="selection_options" invisible="data_type != 'selection'" placeholder="Mỗi lựa chọn 1 dòng hoặc cách nhau bởi dấu phẩy"/>
+                            <field name="uom" placeholder="Ví dụ: mm, cái, răng, lỗ..."/>
+                        </group>
+                        <group string="Phạm vi &amp; Đặc tính">
+                            <field name="category_ids" widget="many2many_tags" placeholder="Chọn danh mục áp dụng (Để trống = Áp dụng tất cả)"/>
+                            <field name="is_required"/>
+                            <field name="is_searchable"/>
+                            <field name="is_critical"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mô tả &amp; Hướng dẫn đo" name="description">
+                            <field name="description" placeholder="Mô tả chi tiết ý nghĩa thông số, cách đo hoặc ghi chú kỹ thuật..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_qba_product_spec_definition_search" model="ir.ui.view">
+        <field name="name">qba.product.spec.definition.search</field>
+        <field name="model">qba.product.spec.definition</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm định nghĩa thông số">
+                <field name="name" string="Tên thông số"/>
+                <field name="code" string="Mã thông số"/>
+                <field name="category_ids" string="Danh mục"/>
+                <separator/>
+                <filter name="critical" string="Thông số cốt lõi (Matching)" domain="[('is_critical', '=', True)]"/>
+                <filter name="required" string="Bắt buộc nhập" domain="[('is_required', '=', True)]"/>
+                <separator/>
+                <filter name="filter_active" string="Đang có hiệu lực" domain="[('active', '=', True)]"/>
+                <filter name="archived" string="Đã tắt / Lưu trữ" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Nhóm theo">
+                    <filter string="Kiểu dữ liệu" name="group_data_type" context="{'group_by': 'data_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_qba_product_spec_definition" model="ir.actions.act_window">
+        <field name="name">Định Nghĩa Thông Số Kỹ Thuật</field>
+        <field name="res_model">qba.product.spec.definition</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_qba_product_spec_definition_search"/>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Tạo định nghĩa thông số kỹ thuật mới!
+            </p>
+            <p>
+                Định nghĩa các trường thông số kỹ thuật động (như đường kính, số răng, chiều cao...) áp dụng cho từng danh mục phụ tùng.
+            </p>
+        </field>
+    </record>
+</odoo>
+

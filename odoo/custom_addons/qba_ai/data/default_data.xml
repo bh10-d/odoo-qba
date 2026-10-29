@@ -85,5 +85,14 @@
                 </ol>
             ]]></field>
         </record>
+        <!-- Sequence cho Mã Yêu Cầu AI Hỗ Trợ Phụ Tùng -->
+        <record id="seq_qba_ai_request" model="ir.sequence">
+            <field name="name">Mã Yêu Cầu AI Hỗ Trợ Phụ Tùng</field>
+            <field name="code">qba.ai.request.seq</field>
+            <field name="prefix">REQ-</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
     </data>
 </odoo>
