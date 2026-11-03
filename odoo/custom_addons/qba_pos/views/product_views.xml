@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Server Action: Kich hoat diem ban hang cho toan bo san pham hop le -->
+    <record id="action_server_enable_all_products_pos" model="ir.actions.server">
+        <field name="name">Bat Ban Tren POS Cho Tat Ca San Pham</field>
+        <field name="model_id" ref="product.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = model.action_enable_all_products_in_pos()
+        </field>
+    </record>
+
+    <!-- Ke thua Form San Pham de hien thi dau hieu san pham nhap tay -->
+    <record id="view_product_template_pos_custom_form" model="ir.ui.view">
+        <field name="name">product.template.pos.custom.form</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="point_of_sale.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='available_in_pos']" position="after">
+                <field name="is_custom_manual_product" groups="base.group_no_one"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+

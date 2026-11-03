@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_custom_product_history_list" model="ir.ui.view">
+        <field name="name">pos.custom.product.history.list</field>
+        <field name="model">pos.custom.product.history</field>
+        <field name="arch" type="xml">
+            <list string="Lich Su Ten San Pham Nhap Tay" default_order="use_count desc, last_used_date desc" editable="bottom">
+                <field name="name" string="Ten San Pham Nhap Tay"/>
+                <field name="code" string="Ky Hieu / Ma Nhanh"/>
+                <field name="last_price" string="Don Gia Gan Nhat" widget="monetary"/>
+                <field name="use_count" string="So Lan Da Ban"/>
+                <field name="last_used_date" string="Lan Ban Gan Nhat" readonly="1"/>
+                <field name="notes" string="Ghi Chu"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pos_custom_product_history_form" model="ir.ui.view">
+        <field name="name">pos.custom.product.history.form</field>
+        <field name="model">pos.custom.product.history</field>
+        <field name="arch" type="xml">
+            <form string="Chi Tiet San Pham Nhap Tay">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Ten San Pham Nhap Tay"/>
+                        <h1><field name="name" placeholder="VD: Bac dan moay o sau HOWO 371"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="VD: BD-HOWO-371"/>
+                            <field name="last_price" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="use_count" readonly="1"/>
+                            <field name="last_used_date" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="Ghi Chu">
+                        <field name="notes" nolabel="1" placeholder="Ghi chu quy cach, kich thuoc do dac..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_custom_product_history_search" model="ir.ui.view">
+        <field name="name">pos.custom.product.history.search</field>
+        <field name="model">pos.custom.product.history</field>
+        <field name="arch" type="xml">
+            <search string="Tim Kiem San Pham Nhap Tay">
+                <field name="name" string="Ten San Pham"/>
+                <field name="code" string="Ma / Ky Hieu"/>
+                <separator/>
+                <filter name="frequent_used" string="Ban Nhieu (Tren 5 lan)" domain="[('use_count', '&gt;=', 5)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pos_custom_product_history" model="ir.actions.act_window">
+        <field name="name">Lich Su SP Nhap Tay (POS)</field>
+        <field name="res_model">pos.custom.product.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pos_custom_product_history_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chua co lich su ten san pham nhap tay nao.
+            </p>
+            <p>
+                Khi thu ngan ban hang chua co ma tren man hinh POS, he thong se tu dong ghi nho ten san pham tai day de goi y thong minh cho cac lan ban tiep theo!
+            </p>
+        </field>
+    </record>
+</odoo>
+

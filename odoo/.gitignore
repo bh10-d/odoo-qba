@@ -19,6 +19,8 @@ debian/*
 !/custom_addons/qba/**
 !/custom_addons/qba_ai/
 !/custom_addons/qba_ai/**
+!/custom_addons/qba_pos/
+!/custom_addons/qba_pos/**
 
 # 4. Loại trừ file rác, file tạm, cache và dữ liệu runtime
 __pycache__/
@@ -49,4 +51,3 @@ Thumbs.db
 
 # Tài liệu audit AI nội bộ
 docs/ai-audit/
-

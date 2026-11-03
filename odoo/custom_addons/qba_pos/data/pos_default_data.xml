@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Sequence ma tin nhan Zalo -->
+    <record id="seq_pos_zalo_message" model="ir.sequence">
+        <field name="name">POS Zalo Warranty Message Sequence</field>
+        <field name="code">pos.zalo.message</field>
+        <field name="prefix">ZALO/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- San pham dung chung cho cac mat hang chua co ma [Nhap tay] -->
+    <record id="product_template_custom_manual" model="product.template">
+        <field name="name">Hang Chua Co Ma [Nhap Tay]</field>
+        <field name="default_code">SP_CHUA_CO_MA</field>
+        <field name="type">service</field>
+        <field name="available_in_pos">True</field>
+        <field name="sale_ok">True</field>
+        <field name="purchase_ok">False</field>
+        <field name="list_price">0.0</field>
+        <field name="is_custom_manual_product">True</field>
+        <field name="description">San pham dung de ban cac mat hang chua co tren he thong va nhap tay ten hang tren POS.</field>
+    </record>
+</odoo>
+

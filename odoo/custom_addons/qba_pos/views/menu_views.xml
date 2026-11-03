@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu Tin Nhan Zalo Bao Hanh trong Menu Don Hang POS -->
+    <menuitem id="menu_pos_zalo_message"
+              name="Tin Nhan Zalo Bao Hanh"
+              parent="point_of_sale.menu_point_of_sale"
+              action="action_pos_zalo_message"
+              sequence="25"/>
+
+    <!-- Menu Lich Su Ten San Pham Nhap Tay trong Menu San Pham POS -->
+    <menuitem id="menu_pos_custom_product_history"
+              name="Lich Su SP Nhap Tay"
+              parent="point_of_sale.menu_point_config_product"
+              action="action_pos_custom_product_history"
+              sequence="30"/>
+</odoo>
+

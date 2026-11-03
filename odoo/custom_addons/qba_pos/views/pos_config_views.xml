@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_config_form_qba_pos" model="ir.ui.view">
+        <field name="name">pos.config.form.qba.pos</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <h2 class="mt32">QBA POS - Ban Hang &amp; Cham Soc Khach Hang</h2>
+                <div class="row mt16 o_settings_container">
+                    <setting string="Ban Hang Chua Co Ma [Nhap Tay]"
+                             help="San pham dung dai dien de ban cac mat hang chua co tren phan mem va cho phep nhap tay ten hang.">
+                        <field name="custom_manual_product_id"/>
+                    </setting>
+                    <setting string="Tu Dong Nhan Tin Bao Hanh Qua Zalo"
+                             help="Tu dong tao va gui tin nhan xac nhan don hang kem thong tin bao hanh qua Zalo cho khach hang.">
+                        <field name="zalo_auto_send_warranty"/>
+                        <div class="content-group" invisible="not zalo_auto_send_warranty">
+                            <div class="row mt16">
+                                <label for="zalo_warranty_hotline" string="Hotline Bao Hanh" class="col-lg-3 o_light_label"/>
+                                <field name="zalo_warranty_hotline" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt16">
+                                <label for="zalo_warranty_terms" string="Dieu Khoan Bao Hanh" class="col-lg-3 o_light_label"/>
+                                <field name="zalo_warranty_terms" class="col-lg-9"/>
+                            </div>
+                        </div>
+                    </setting>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+

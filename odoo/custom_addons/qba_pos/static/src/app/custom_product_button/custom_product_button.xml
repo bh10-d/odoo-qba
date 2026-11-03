@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+        <xpath expr="//SelectPartnerButton" position="after">
+            <button class="btn btn-light btn-lg lh-lg text-truncate d-flex align-items-center gap-1"
+                    t-if="!props.showRemainingButtons"
+                    t-on-click="() => this.clickCustomProduct()"
+                    title="Ban san pham chua co ma trong kho - Nhap tay ten hang">
+                <i class="fa fa-pencil-square-o text-warning"/>
+                <span>SP Nhap Tay</span>
+            </button>
+        </xpath>
+        <xpath expr="//div[hasclass('control-buttons-modal')]" position="inside">
+            <button class="btn btn-secondary btn-lg py-5 d-flex align-items-center justify-content-center gap-2"
+                    t-on-click="() => this.clickCustomProduct()">
+                <i class="fa fa-pencil-square-o text-warning fa-2x"/>
+                <span>Them SP Nhap Tay (Chua Co Ma)</span>
+            </button>
+        </xpath>
+    </t>
+</templates>
