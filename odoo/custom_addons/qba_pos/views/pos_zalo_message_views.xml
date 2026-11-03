@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_zalo_message_list" model="ir.ui.view">
+        <field name="name">pos.zalo.message.list</field>
+        <field name="model">pos.zalo.message</field>
+        <field name="arch" type="xml">
+            <list string="Nhat Ky Tin Nhan Zalo Bao Hanh"
+                  decoration-success="state in ('sent', 'simulated')"
+                  decoration-danger="state == 'failed'"
+                  decoration-muted="state == 'draft'">
+                <field name="name" string="Ma Tin"/>
+                <field name="pos_order_id" string="Don Hang POS"/>
+                <field name="partner_id" string="Khach Hang"/>
+                <field name="phone" string="So Dien Thoai"/>
+                <field name="sent_date" string="Thoi Gian"/>
+                <field name="state" string="Trang Thai" widget="badge"
+                       decoration-success="state in ('sent', 'simulated')"
+                       decoration-danger="state == 'failed'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pos_zalo_message_form" model="ir.ui.view">
+        <field name="name">pos.zalo.message.form</field>
+        <field name="model">pos.zalo.message</field>
+        <field name="arch" type="xml">
+            <form string="Chi Tiet Tin Nhan Zalo Bao Hanh">
+                <header>
+                    <button name="action_resend" string="Gui Lai Tin Nhan" type="object" class="btn-primary"
+                            invisible="state not in ('failed', 'draft')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,simulated,sent"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" string="Ma Tin Nhan"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="pos_order_id"/>
+                            <field name="partner_id"/>
+                            <field name="phone"/>
+                            <field name="customer_name"/>
+                        </group>
+                        <group>
+                            <field name="sent_date"/>
+                            <field name="template_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Noi Dung Tin Nhan" name="content">
+                            <field name="message_content" readonly="1" widget="text" style="font-family: monospace; white-space: pre-wrap;"/>
+                        </page>
+                        <page string="Phan Hoi / Nhat Ky Loi" name="response" invisible="not response_payload and not error_message">
+                            <group string="Chi Tiet Loi" invisible="not error_message">
+                                <field name="error_message" readonly="1"/>
+                            </group>
+                            <group string="Phan Hoi Zalo API" invisible="not response_payload">
+                                <field name="response_payload" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_zalo_message_search" model="ir.ui.view">
+        <field name="name">pos.zalo.message.search</field>
+        <field name="model">pos.zalo.message</field>
+        <field name="arch" type="xml">
+            <search string="Tim Kiem Tin Nhan Zalo">
+                <field name="name" string="Ma Tin"/>
+                <field name="partner_id" string="Khach Hang"/>
+                <field name="phone" string="So Dien Thoai"/>
+                <field name="pos_order_id" string="Don Hang"/>
+                <separator/>
+                <filter name="state_sent" string="Da Gui / Mo Phong" domain="[('state', 'in', ('sent', 'simulated'))]"/>
+                <filter name="state_failed" string="Gui That Bai" domain="[('state', '=', 'failed')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pos_zalo_message" model="ir.actions.act_window">
+        <field name="name">Tin Nhan Zalo Bao Hanh</field>
+        <field name="res_model">pos.zalo.message</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pos_zalo_message_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chua co tin nhan Zalo bao hanh nao.
+            </p>
+            <p>
+                Tin nhan bao hanh se tu dong duoc tao va gui den so Zalo cua khach hang ngay khi don ban le tren POS duoc thanh toan.
+            </p>
+        </field>
+    </record>
+</odoo>
+

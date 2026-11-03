@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('text-wrap')]" position="before">
+            <span t-if="line.is_custom_manual_line or line.product_id?.default_code === 'SP_CHUA_CO_MA'"
+                  class="badge bg-warning text-dark me-1"
+                  style="font-size: 0.72rem; padding: 2px 5px;">
+                Nhap tay
+            </span>
+        </xpath>
+    </t>
+</templates>
+

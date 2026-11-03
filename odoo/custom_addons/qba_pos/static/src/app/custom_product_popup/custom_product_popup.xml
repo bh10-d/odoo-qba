@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="qba_pos.CustomProductPopup">
+        <Dialog title="props.title">
+            <div class="custom-product-form d-flex flex-column gap-3 p-2">
+                <!-- Truong 1: Ten Hang Kem Autocomplete Goi Y -->
+                <div class="form-group">
+                    <label class="form-label fw-bold">
+                        Ten Hang Hoa / Phu Tung <span class="text-danger">*</span>
+                    </label>
+                    <div class="qba-autocomplete-container">
+                        <input type="text"
+                               class="form-control form-control-lg"
+                               placeholder="Nhap ten phu tung hoac ky tu de he thong goi y..."
+                               t-model="state.name"
+                               t-ref="nameInput"
+                               t-on-input="onNameInput"
+                               t-on-keydown="onNameKeydown"
+                               autocomplete="off"/>
+
+                        <!-- Dropdown Danh Sach Goi Y Tu Lich Su -->
+                        <div t-if="state.showSuggestions and state.suggestions.length"
+                             class="qba-suggestions-dropdown">
+                            <div t-foreach="state.suggestions" t-as="item" t-key="item.id"
+                                 class="qba-suggestion-item"
+                                 t-att-class="{'active': item_index === state.selectedIndex}"
+                                 t-on-click="() => this.selectSuggestion(item)">
+                                <div class="qba-item-name">
+                                    <i class="fa fa-history text-muted me-2"/>
+                                    <span t-esc="item.name"/>
+                                </div>
+                                <div class="qba-item-meta">
+                                    <span t-if="item.last_price" class="qba-item-price" t-esc="this.formatPrice(item.last_price)"/>
+                                    <span class="qba-item-count" title="So lan da su dung">
+                                        <i class="fa fa-shopping-cart me-1"/>
+                                        <t t-esc="item.use_count"/> lan
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-text text-muted small mt-1">
+                        He thong se tu dong ghi nho ten SP moi de goi y nhanh cho cac lan ban sau.
+                    </div>
+                </div>
+
+                <!-- Truong 2 & 3: So Luong & Don Gia -->
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-bold">So Luong</label>
+                        <input type="number"
+                               step="any"
+                               min="0.01"
+                               class="form-control form-control-lg text-center"
+                               t-model="state.qty"/>
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <label class="form-label fw-bold">Don Gia Ban (VND)</label>
+                        <input type="number"
+                               step="any"
+                               min="0"
+                               class="form-control form-control-lg text-end"
+                               placeholder="0"
+                               t-model="state.price"/>
+                    </div>
+                </div>
+
+                <!-- Truong 4: Ghi Chu Quy Cach / Thong So -->
+                <div class="form-group">
+                    <label class="form-label fw-bold">Ghi Chu / Quy Cach (Tuy chon)</label>
+                    <input type="text"
+                           class="form-control"
+                           placeholder="VD: Kich thuoc 325-10R, 8 lo xo, hang thay the..."
+                           t-model="state.notes"/>
+                </div>
+            </div>
+
+            <t t-set-slot="footer">
+                <button class="btn btn-warning btn-lg fw-bold px-4"
+                        t-att-disabled="!this.state.name.trim()"
+                        t-on-click="confirm">
+                    <i class="fa fa-check me-1"/>Them Vao Don
+                </button>
+                <button class="btn btn-secondary btn-lg px-4" t-on-click="close">
+                    Huy Bo
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

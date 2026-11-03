@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_qba_pos" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.qba.pos</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='point_of_sale']" position="inside">
+                <block title="Tich Hop Zalo CSKH &amp; Bao Hanh" id="qba_zalo_settings">
+                    <setting string="Che Do Gui Tin Zalo" help="Chon che do gui that qua Zalo OpenAPI / ZNS hoac che do mo phong kiem thu.">
+                        <field name="zalo_mode"/>
+                    </setting>
+                    <setting string="Thong Tin Ket Noi Zalo OA" help="Cau hinh thong tin xac thuc ung dung Zalo Official Account."
+                             invisible="zalo_mode == 'simulation'">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <label for="zalo_oa_id" class="col-lg-3 o_light_label" string="Zalo OA ID"/>
+                                <field name="zalo_oa_id" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="zalo_app_id" class="col-lg-3 o_light_label" string="Zalo App ID"/>
+                                <field name="zalo_app_id" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="zalo_secret_key" class="col-lg-3 o_light_label" string="Secret Key"/>
+                                <field name="zalo_secret_key" password="True" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="zalo_access_token" class="col-lg-3 o_light_label" string="Access Token"/>
+                                <field name="zalo_access_token" password="True" class="col-lg-9"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="zalo_template_id" class="col-lg-3 o_light_label" string="ZNS Template ID"/>
+                                <field name="zalo_template_id" class="col-lg-9"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+
+                <block title="Quan Ly &amp; Toi Uu Danh Muc San Pham POS" id="qba_pos_products_sync">
+                    <setting string="Kich Hoat Ban Hang POS Hang Loat" help="Tu dong tick 'Diem ban hang' cho toan bo san pham hop le trong kho va dong bo danh muc.">
+                        <button name="action_enable_all_products_for_pos"
+                                type="object"
+                                string="Bat Ban Tren POS Cho Tat Ca San Pham"
+                                class="btn btn-primary"
+                                icon="fa-check-square-o"/>
+                    </setting>
+                    <setting string="Dong Bo Danh Muc Sang POS" help="Tao cac tab Danh muc tren POS de phan nhom phu tung ro rang, giup man hinh POS nhe va muot ma.">
+                        <button name="action_sync_all_pos_categories"
+                                type="object"
+                                string="Dong Bo Danh Muc Sang POS"
+                                class="btn btn-outline-primary"
+                                icon="fa-refresh"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

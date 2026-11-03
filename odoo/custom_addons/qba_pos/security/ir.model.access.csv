@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_custom_product_history_user,pos.custom.product.history.user,model_pos_custom_product_history,point_of_sale.group_pos_user,1,1,1,0
+access_pos_custom_product_history_manager,pos.custom.product.history.manager,model_pos_custom_product_history,point_of_sale.group_pos_manager,1,1,1,1
+access_pos_zalo_message_user,pos.zalo.message.user,model_pos_zalo_message,point_of_sale.group_pos_user,1,1,1,0
+access_pos_zalo_message_manager,pos.zalo.message.manager,model_pos_zalo_message,point_of_sale.group_pos_manager,1,1,1,1
+
