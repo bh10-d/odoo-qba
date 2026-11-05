@@ -141,7 +141,13 @@ class QbaProductWebBatchUnlinkWizard(models.TransientModel):
                     success_count = 0
                     for wid in web_ids:
                         try:
-                            r = requests.post(f"{ep}/products/{wid}/link-odoo", json={'odooProductId': None}, headers=headers, timeout=2.0)
+                            unlink_payload = {
+                                'odooProductId': None,
+                                'isOdooLinked': False,
+                                'showPrice': False,
+                                'unlink': True,
+                            }
+                            r = requests.post(f"{ep}/products/{wid}/link-odoo", json=unlink_payload, headers=headers, timeout=2.0)
                             if r.status_code == 200:
                                 success_count += 1
                             elif r.status_code == 401:
@@ -176,6 +182,7 @@ class QbaProductWebBatchUnlinkWizard(models.TransientModel):
             'website_product_id': False,
             'website_product_slug': False,
             'website_link_date': False,
+            'website_show_price': False,
         })
 
         return {

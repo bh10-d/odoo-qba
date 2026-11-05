@@ -252,7 +252,7 @@ class QbaAiAssistant(models.TransientModel):
                     p_code = html_escape(p.default_code or 'N/A')
                     p_name = html_escape(p.name)
                     p_cat = html_escape(p.categ_id.display_name or 'N/A')
-                    p_price = f"{p.list_price:,.0f} VNĐ" if p.list_price else "Liên hệ"
+                    p_price = f"{p.list_price:,.0f} VNĐ" if p.list_price else "Liên hệ Báo giá"
                     prod_cards.append(f"<li><b>[{p_code}]</b> {p_name} &mdash; <i>{p_cat}</i> ({p_price})</li>")
 
                 prods_html = "<ul class='mb-0 ps-3 small'>" + "".join(prod_cards) + "</ul>"

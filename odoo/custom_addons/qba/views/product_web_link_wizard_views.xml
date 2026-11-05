@@ -35,6 +35,24 @@
 
                     <field name="product_tmpl_id" invisible="1"/>
 
+                    <!-- TÙY CHỌN HIỂN THỊ GIÁ BÁN TRÊN WEBSITE SEO -->
+                    <div class="card mb-3 border shadow-sm">
+                        <div class="card-body py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2 bg-light rounded">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-eye text-primary fs-5" title="Hiển thị giá"/>
+                                <div>
+                                    <span class="fw-bold text-dark me-2">Tùy chọn hiển thị giá trên Website:</span>
+                                    <span class="text-muted small">Bật để công khai giá niêm yết trên Web; Tắt nếu muốn hiển thị chữ <b>"Liên hệ Báo giá"</b></span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <field name="website_show_price" widget="boolean_toggle"/>
+                                <span class="badge bg-success" invisible="not website_show_price">Đang hiện giá</span>
+                                <span class="badge bg-secondary" invisible="website_show_price">Ẩn giá (Hiện "Liên hệ Báo giá")</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- PHƯƠNG ÁN 1: TRA CỨU & GỢI Ý TỪ WEBSITE QUA API -->
                     <div class="card mb-3 border shadow-sm">
                         <div class="card-header bg-light py-2 fw-bold text-dark d-flex align-items-center justify-content-between">
@@ -110,7 +128,7 @@
                                     <field name="name" string="Tên bài viết trên Web"/>
                                     <field name="part_number" string="Part Number" optional="show"/>
                                     <field name="internal_code" string="Mã Web" optional="show"/>
-                                    <field name="price" string="Giá niêm yết" widget="monetary" optional="show"/>
+                                    <field name="price_display" string="Giá trên Web" optional="show"/>
                                     <field name="is_odoo_linked" string="Đã nối Odoo" widget="boolean" optional="show"/>
                                     <button name="action_choose_candidate"
                                             type="object"
