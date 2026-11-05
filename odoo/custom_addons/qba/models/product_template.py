@@ -87,6 +87,11 @@ class ProductTemplate(models.Model):
     website_link_date = fields.Datetime(
         string="Ngày liên kết Web"
     )
+    website_show_price = fields.Boolean(
+        string="Hiển thị giá trên Web",
+        default=True,
+        help="Bật để hiển thị giá bán niêm yết trên Website SEO. Tắt nếu muốn ẩn giá và hiển thị 'Liên hệ Báo giá'."
+    )
 
     # 1. Quản lý Đa Mã OE (OE Codes)
     oe_code_ids = fields.One2many(
@@ -551,11 +556,29 @@ class ProductTemplate(models.Model):
                 if not vals.get('website_link_date'):
                     vals['website_link_date'] = fields.Datetime.now()
             else:
+                # Nếu người dùng xóa trống website_product_url: tự động ngắt liên kết và ngắt đồng bộ giá
+                for tmpl in self:
+                    if tmpl.website_product_id and not self.env.context.get('skip_web_notify'):
+                        try:
+                            tmpl._notify_express_unlink(tmpl.website_product_id)
+                        except Exception:
+                            pass
                 vals.setdefault('website_product_id', False)
                 vals.setdefault('website_product_slug', False)
                 vals.setdefault('website_link_date', False)
+                vals.setdefault('website_show_price', False)
 
         res = super().write(vals)
+
+        # Thông báo cập nhật trạng thái liên kết & hiển thị giá sang Backend Express nếu có thay đổi
+        web_fields_changed = {'website_product_id', 'website_show_price', 'list_price'} & set(vals.keys())
+        if web_fields_changed and not self.env.context.get('skip_web_notify'):
+            for tmpl in self:
+                if tmpl.website_product_id:
+                    try:
+                        tmpl._notify_express_update_display(tmpl.website_product_id, tmpl.website_show_price, tmpl.list_price)
+                    except Exception:
+                        pass
 
         # Cập nhật an toàn các trường bị Odoo khóa cứng cho Admin
         if is_admin and (target_storable is not None or target_uom_id is not None or target_uom_po_id is not None):
@@ -858,6 +881,7 @@ class ProductTemplate(models.Model):
             rec.website_product_id = False
             rec.website_product_slug = False
             rec.website_link_date = False
+            rec.website_show_price = False
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -890,10 +914,16 @@ class ProductTemplate(models.Model):
         headers = get_odoo_api_headers(self.env)
         success = False
         auth_error = False
+        payload = {
+            'odooProductId': None,
+            'isOdooLinked': False,
+            'showPrice': False,
+            'unlink': True,
+        }
         for ep in dedup:
             endpoint = f"{ep}/products/{web_product_id}/link-odoo"
             try:
-                resp = requests.post(endpoint, json={'odooProductId': None}, headers=headers, timeout=2.5)
+                resp = requests.post(endpoint, json=payload, headers=headers, timeout=2.5)
                 if resp.status_code == 200:
                     success = True
                     break
@@ -903,6 +933,43 @@ class ProductTemplate(models.Model):
             except Exception:
                 pass
         return success, auth_error
+
+    def _notify_express_update_display(self, web_product_id, show_price, price=None):
+        """Gửi thông báo cập nhật trạng thái hiển thị giá (hoặc ẩn giá) tới Backend Express"""
+        import requests
+        api_param = self.env['ir.config_parameter'].sudo().get_param('qba.website_api_url') or 'http://host.docker.internal:5000/api/v1'
+        candidates = [
+            api_param.strip().rstrip('/'),
+            'http://host.docker.internal:5000/api/v1',
+            'http://172.18.0.1:5000/api/v1',
+            'http://localhost:5000/api/v1',
+        ]
+        dedup = []
+        for c in candidates:
+            if c:
+                if 'localhost:5000' in c or '127.0.0.1:5000' in c:
+                    c = c.replace('localhost:5000', 'host.docker.internal:5000').replace('127.0.0.1:5000', 'host.docker.internal:5000')
+                if c not in dedup:
+                    dedup.append(c)
+
+        headers = get_odoo_api_headers(self.env)
+        show_p = bool(show_price)
+        payload = {
+            'odooProductId': self.id,
+            'showPrice': show_p,
+            'price': float(price or 0.0) if show_p else 0.0,
+            'priceText': f"{int(price):,} ₫" if (show_p and price) else "Liên hệ Báo giá",
+        }
+
+        for ep in dedup:
+            endpoint = f"{ep}/products/{web_product_id}/link-odoo"
+            try:
+                resp = requests.post(endpoint, json=payload, headers=headers, timeout=2.5)
+                if resp.status_code == 200:
+                    return True
+            except Exception:
+                continue
+        return False
 
     def action_open_batch_sync_wizard(self):
         """Mở popup đối soát & đồng bộ liên kết Website theo SKU từ menu Hành động"""

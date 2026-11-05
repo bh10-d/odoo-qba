@@ -156,7 +156,13 @@ class QbaProductWebBatchSyncWizard(models.TransientModel):
 
         # 2. Chuẩn bị payload gửi sang Express API
         site_url = (self.site_url or self._get_default_site_url()).rstrip('/')
-        items = [{'odooId': p.id, 'sku': p.default_code.strip()} for p in valid_targets]
+        items = [{
+            'odooId': p.id,
+            'sku': p.default_code.strip(),
+            'showPrice': bool(p.website_show_price),
+            'price': float(p.list_price or 0.0) if p.website_show_price else 0.0,
+            'priceText': f"{int(p.list_price):,} ₫" if (p.website_show_price and p.list_price) else "Liên hệ Báo giá",
+        } for p in valid_targets]
 
         endpoints = self._get_candidate_endpoints()
         connected = False

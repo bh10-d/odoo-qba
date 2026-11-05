@@ -96,6 +96,11 @@ class QbaProductWebLinkWizard(models.TransientModel):
         default=True,
         help="Khi bật, hệ thống sẽ gửi ID sản phẩm Odoo sang Web để đánh dấu sản phẩm trên Web là hàng có sẵn tại kho QBA"
     )
+    website_show_price = fields.Boolean(
+        string="Hiển thị giá trên Web",
+        default=True,
+        help="Bật để hiển thị giá bán niêm yết trên Website SEO. Tắt nếu muốn ẩn giá và hiển thị 'Liên hệ Báo giá'."
+    )
 
     @api.model
     def _get_default_api_url(self):
@@ -125,6 +130,7 @@ class QbaProductWebLinkWizard(models.TransientModel):
                 res['target_url'] = product.website_product_url or ''
                 res['web_product_id'] = product.website_product_id or 0
                 res['web_product_slug'] = product.website_product_slug or ''
+                res['website_show_price'] = product.website_show_price
                 first_oe = product.oe_code_ids[0].name if product.oe_code_ids else ''
                 res['search_query'] = product.default_code or first_oe or product.name or ''
         return res
@@ -169,11 +175,12 @@ class QbaProductWebLinkWizard(models.TransientModel):
         if candidate_id:
             identifiers_to_try.append(str(candidate_id))
         identifiers_to_try.append(last_seg)
+        headers = get_odoo_api_headers(self.env)
 
         for ident in identifiers_to_try:
             for ep in endpoints:
                 try:
-                    resp = requests.get(f"{ep}/products/{ident}", timeout=2.0)
+                    resp = requests.get(f"{ep}/products/{ident}", headers=headers, timeout=2.0)
                     if resp.status_code == 200:
                         data = resp.json().get('data', {})
                         if data and data.get('id'):
@@ -247,6 +254,8 @@ class QbaProductWebLinkWizard(models.TransientModel):
         connected = False
         working_endpoint = None
         products = []
+        last_error = ""
+        headers = get_odoo_api_headers(self.env)
 
         for ep in endpoints:
             api_url = f"{ep}/products"
@@ -254,7 +263,8 @@ class QbaProductWebLinkWizard(models.TransientModel):
                 resp = requests.get(
                     api_url,
                     params={'search': query, 'limit': 15},
-                    timeout=2.5
+                    headers=headers,
+                    timeout=3.0
                 )
                 if resp.status_code == 200:
                     data = resp.json()
@@ -264,7 +274,11 @@ class QbaProductWebLinkWizard(models.TransientModel):
                     self.env['ir.config_parameter'].sudo().set_param('qba.website_api_url', working_endpoint)
                     self.api_url = working_endpoint
                     break
+                else:
+                    last_error = f"Mã HTTP {resp.status_code}: {resp.text[:150]}"
+                    _logger.warning("Endpoint %s trả về lỗi: %s", api_url, last_error)
             except Exception as e:
+                last_error = str(e)
                 _logger.info("Thử endpoint %s thất bại: %s", api_url, str(e))
                 continue
 
@@ -296,6 +310,7 @@ class QbaProductWebLinkWizard(models.TransientModel):
                 p_part = p.get('partNumber') or ''
                 p_code = p.get('internalCode') or ''
                 p_price = float(p.get('price') or 0.0)
+                p_show_price = p.get('showPrice', True) if p.get('showPrice') is not None else True
 
                 images = p.get('images') or []
                 first_img = images[0].get('imageUrl') if images else ''
@@ -316,6 +331,7 @@ class QbaProductWebLinkWizard(models.TransientModel):
                     'part_number': p_part,
                     'internal_code': p_code,
                     'price': p_price,
+                    'show_price': bool(p_show_price),
                     'image_url': full_img_url,
                     'web_url': web_url,
                     'is_odoo_linked': bool(p.get('odooProductId') or p.get('isOdooLinked')),
@@ -337,7 +353,12 @@ class QbaProductWebLinkWizard(models.TransientModel):
             }
         else:
             self.api_status_state = 'danger'
-            msg = "Không thể kết nối máy chủ API Express. Hãy kiểm tra server Express cổng 5000 đang bật hoặc dán link thủ công ở trên."
+            if "500" in last_error:
+                msg = f"Máy chủ Express trả về lỗi 500 (Internal Server Error)! Chi tiết: {last_error}"
+            elif "401" in last_error:
+                msg = "Lỗi xác thực (401 Unauthorized): Khóa bí mật HMAC không khớp với cấu hình Backend!"
+            else:
+                msg = f"Không thể kết nối máy chủ API Express. Chi tiết: {last_error or 'Connection refused'}. Hãy kiểm tra server Express cổng 5000 đang bật hoặc dán link thủ công ở bên dưới."
             self.api_status_message = msg
             return {
                 "type": "ir.actions.client",
@@ -441,7 +462,10 @@ class QbaProductWebLinkWizard(models.TransientModel):
                 resolved_id = detected_id
                 resolved_slug = detected_slug
             elif not resolved_id:
-                raise UserError(_("Không thể nhận diện được mã bài viết từ đường link đã nhập. Vui lòng kiểm tra lại URL hoặc dùng công cụ tra cứu phía trên."))
+                clean_url = url.strip().split("?")[0].split("#")[0].rstrip("/")
+                parts = clean_url.split("/")
+                resolved_slug = detected_slug or (parts[-1] if parts else "")
+                resolved_id = 0
 
         if not url and not resolved_id:
             raise UserError(_("Vui lòng dán đường link website hoặc chọn một sản phẩm từ kết quả tìm kiếm."))
@@ -451,7 +475,12 @@ class QbaProductWebLinkWizard(models.TransientModel):
             url = f"{site_url}/products/{resolved_slug or resolved_id}-{resolved_id}"
 
         # 1. Đồng bộ sang Backend Express TRƯỚC (nếu bật sync_to_web). Tuyệt đối KHÔNG sửa Odoo nếu API lỗi
-        if self.sync_to_web and resolved_id:
+        if self.sync_to_web:
+            if not resolved_id:
+                raise UserError(_(
+                    "Đang bật 'Cập nhật ngược lên Web' nhưng hệ thống chưa nhận diện được ID số của bài viết trên Web (ID: 0)!\n\n"
+                    "Vui lòng sử dụng công cụ 'Cách 1: Tra Cứu Web' để chọn bài viết, hoặc dán đường link có ID số ở cuối (vd: /products/ten-bai-viet-101)."
+                ))
             sync_success, sync_error = self._notify_express_web_linked(resolved_id, self.product_tmpl_id.id)
             if sync_error == "401_UNAUTHORIZED":
                 raise UserError(_(
@@ -472,6 +501,7 @@ class QbaProductWebLinkWizard(models.TransientModel):
             'website_product_id': resolved_id,
             'website_product_slug': resolved_slug or '',
             'website_link_date': fields.Datetime.now(),
+            'website_show_price': self.website_show_price,
         }
         self.product_tmpl_id.write(vals)
 
@@ -491,12 +521,19 @@ class QbaProductWebLinkWizard(models.TransientModel):
         endpoints = self._get_candidate_endpoints()
         last_error = "Không kết nối được tới bất kỳ cổng API nào"
         headers = get_odoo_api_headers(self.env)
+        show_p = bool(self.website_show_price)
+        payload = {
+            'odooProductId': odoo_product_id,
+            'showPrice': show_p,
+            'price': float(self.product_price or 0.0) if show_p else 0.0,
+            'priceText': f"{int(self.product_price):,} ₫" if (show_p and self.product_price) else "Liên hệ Báo giá",
+        }
         for ep in endpoints:
             endpoint = f"{ep}/products/{web_product_id}/link-odoo"
             try:
                 resp = requests.post(
                     endpoint,
-                    json={'odooProductId': odoo_product_id},
+                    json=payload,
                     headers=headers,
                     timeout=3.0
                 )
@@ -552,6 +589,14 @@ class QbaProductWebLinkCandidate(models.TransientModel):
     price = fields.Float(
         string="Giá niêm yết"
     )
+    show_price = fields.Boolean(
+        string="Hiện giá Web",
+        default=True
+    )
+    price_display = fields.Char(
+        string="Giá trên Web",
+        compute="_compute_price_display"
+    )
     image_url = fields.Char(
         string="Link ảnh"
     )
@@ -561,6 +606,14 @@ class QbaProductWebLinkCandidate(models.TransientModel):
     is_odoo_linked = fields.Boolean(
         string="Đã nối Odoo"
     )
+
+    @api.depends('price', 'show_price')
+    def _compute_price_display(self):
+        for rec in self:
+            if not rec.show_price or not rec.price:
+                rec.price_display = "Liên hệ Báo giá"
+            else:
+                rec.price_display = f"{int(rec.price):,} ₫"
 
     def action_choose_candidate(self):
         """Chọn bài viết này và lưu liên kết với sản phẩm Odoo"""

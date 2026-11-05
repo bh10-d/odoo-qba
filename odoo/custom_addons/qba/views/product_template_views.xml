@@ -169,6 +169,7 @@
                     <group>
                         <group string="Thông Tin Liên Kết Website (phutungotoquyba.com)">
                             <field name="is_website_linked" widget="boolean_toggle" readonly="1"/>
+                            <field name="website_show_price" widget="boolean_toggle"/>
                             <field name="website_product_url" widget="url" placeholder="https://phutungotoquyba.com/products/slug-id"/>
                             <field name="website_product_id" readonly="1"/>
                             <field name="website_product_slug" readonly="1"/>
@@ -225,6 +226,7 @@
             <xpath expr="//field[@name='list_price']" position="after">
                 <field name="qty_available" optional="show"/>
                 <field name="is_website_linked" optional="show" string="Web SEO" widget="boolean"/>
+                <field name="website_show_price" optional="hide" widget="boolean_toggle" string="Hiện giá Web"/>
                 <field name="website_product_url" optional="hide" widget="url" string="Link Web"/>
                 <field name="last_purchase_code" optional="show" string="Toa nhập gần nhất"/>
                 <field name="last_quotation_code" optional="hide" string="Toa báo giá gần nhất"/>
@@ -252,6 +254,9 @@
                 <separator/>
                 <filter string="Đã liên kết Web" name="filter_website_linked" domain="[('is_website_linked', '=', True)]"/>
                 <filter string="Chưa liên kết Web" name="filter_not_website_linked" domain="[('is_website_linked', '=', False)]"/>
+                <separator/>
+                <filter string="Hiện giá trên Web" name="filter_website_show_price" domain="[('website_show_price', '=', True), ('is_website_linked', '=', True)]"/>
+                <filter string="Ẩn giá Web (Hiện 'Liên hệ Báo giá')" name="filter_website_hide_price" domain="[('website_show_price', '=', False), ('is_website_linked', '=', True)]"/>
                 <separator/>
             </xpath>
         </field>
