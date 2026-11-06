@@ -75,7 +75,8 @@ class QbaAiConversation(models.Model):
     )
     message_count = fields.Integer(
         string="Số lượng tin nhắn",
-        compute="_compute_message_count"
+        compute="_compute_message_count",
+        store=True
     )
     last_message_date = fields.Datetime(
         string="Tin nhắn cuối",

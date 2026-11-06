@@ -92,6 +92,7 @@ class QbaProductSpecValue(models.Model):
          "Mỗi thông số kỹ thuật chỉ được có một giá trị duy nhất trên cùng một sản phẩm!"),
     ]
 
+    @api.depends("product_tmpl_id.display_name", "spec_definition_id.name", "value_display", "uom")
     def _compute_display_name(self):
         for rec in self:
             spec_name = rec.spec_definition_id.name or ""
