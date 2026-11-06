@@ -16,7 +16,8 @@ class PosOrder(models.Model):
     )
     zalo_message_count = fields.Integer(
         string="So Tin Zalo",
-        compute="_compute_zalo_message_count"
+        compute="_compute_zalo_message_count",
+        store=True
     )
     has_custom_manual_products = fields.Boolean(
         string="Co Hang Nhap Tay",
@@ -100,7 +101,8 @@ class PosOrder(models.Model):
                 "customer_name": partner.name,
                 "message_content": message_content,
             })
-            zalo_msg.action_send_zalo()
+            msg_id = zalo_msg.id
+            self.env.cr.after('commit', lambda: self.env['pos.zalo.message'].sudo().browse(msg_id).action_send_zalo())
 
             body = _("Da tao tin nhan bao hanh Zalo cho khach hang <b>%s</b> (%s) theo ma tin <b>%s</b>.") % (
                 html_escape(partner.name or ""),

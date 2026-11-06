@@ -274,16 +274,16 @@ class QbaQueryIntentRouter(models.AbstractModel):
         if cats_cache is None:
             all_cats = self.env['product.category'].search([])
             cats_cache = [
-                (cat.id, cat.name or '', cat) for cat in all_cats
+                (cat.id, cat.name or '') for cat in all_cats
             ]
             self.env.registry._qba_product_categories_cache = cats_cache
 
         q_lower = query.lower()
 
-        best_cat = False
+        best_cat_id = False
         best_score = 0
 
-        for cat_id, raw_name, cat in cats_cache:
+        for cat_id, raw_name in cats_cache:
             m = re.match(r'^([A-Z0-9\+]+)\s*[-–]\s*(.+)$', raw_name)
             code = m.group(1).strip() if m else None
             title = m.group(2).strip() if m else raw_name.strip()
@@ -345,9 +345,9 @@ class QbaQueryIntentRouter(models.AbstractModel):
             final_score = score - (first_pos * 5) if score > 0 else 0
             if final_score > best_score:
                 best_score = final_score
-                best_cat = cat
+                best_cat_id = cat_id
 
-        return best_cat
+        return self.env['product.category'].browse(best_cat_id) if best_cat_id else False
 
     @api.model
     def _extract_technical_specs(self, query, category=None, return_details=False):

@@ -2,7 +2,7 @@ import json
 import logging
 from odoo import http, fields, _
 from odoo.http import request
-from odoo.exceptions import ValidationError, AccessError
+from odoo.exceptions import ValidationError, AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 

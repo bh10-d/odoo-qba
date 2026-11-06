@@ -8,7 +8,7 @@ Tài liệu này lưu trữ trạng thái làm việc và nhật ký bàn giao g
 ## 1. Thông Tin Môi Trường & Kiến Trúc Hiện Tại (Baseline)
 
 - **Dự án:** QBA Odoo 18 Community (Phụ tùng ô tô xe tải nặng Q.BA)
-- **Nhánh Git hiện tại:** `perf-optimize-qba-ai`
+- **Nhánh Git hiện tại:** `perf-optimize-qba-pos`
 - **Môi trường Docker:**
   - `staging-qba-postgres-1`: PostgreSQL 15, Database chính: `qba`
   - `staging-qba-odoo-1`: Odoo 18.0 Community, Cổng Web: `http://localhost:8089` (Longpolling: `8092`)
@@ -68,28 +68,22 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-06 15:53 (GMT+7)
-- **Nhánh Git:** `perf-optimize-qba-ai`
+- **Thời gian:** 2026-11-06 15:58 (GMT+7)
+- **Nhánh Git:** `perf-optimize-qba-pos`
 - **Công việc đã hoàn thành:**
-  1. Đã commit thành công nhánh `perf-optimize-qba-core` (`3bc7f87`) và chuyển sang nhánh `perf-optimize-qba-ai`.
-  2. Áp dụng chuẩn **antislop-code** (không sinh comment sáo rỗng, không trang trí emoji/banner thừa) và **Ponytail** (tối thiểu diff, không over-engineering).
-  3. **Xử lý toàn diện các lỗi hiệu năng trên module `qba_ai`**:
-     - **M5**: Batch field assign trong `product_spec_definition.py` thành 1 `val.write(val_updates)` duy nhất.
-     - **M6**: Batch token SKU query trong `query_intent_router.py` bằng 1 domain OR tổng hợp.
-     - **M7**: Batch query và bulk create trong `lc_spec_parser.py` (loại bỏ search lặp lại từng bản ghi).
-     - **L1**: Bổ sung `@api.depends` đầy đủ cho `_compute_display_name` trong `product_spec_value.py`.
-     - **L2**: Bổ sung `store=True` cho `message_count` trong `ai_conversation.py`.
-     - **H5**: Batch token knowledge search trong `ai_assistant.py` (gộp thành 1 query OR thay vì 5 queries riêng lẻ).
-     - **H6**: Batch model code search trong `ai_assistant.py` (gộp thành 1 domain query duy nhất).
-     - **H7**: Caching category list tại class registry trong `query_intent_router.py` (tránh full table scan lặp lại trên mỗi tin nhắn AI).
-  4. Kiểm tra syntax bằng `py_compile` và khởi động lại container Odoo thành công, log sạch.
+  1. Đã commit thành công nhánh `perf-optimize-qba-ai` (`06fd9cc`) và chuyển sang nhánh `perf-optimize-qba-pos`.
+  2. **Giải quyết triệt để các phát hiện audit trên module `qba_pos`**:
+     - **H1 (Rủi ro Lockout cao nhất)**: Tách HTTP call Zalo API ra ngoài DB transaction trong [`pos_order.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/pos_order.py). Sử dụng hook `self.env.cr.after('commit', lambda: ...)` sau khi đơn hàng POS đã commit xong hoàn toàn. Chấm dứt nguy cơ treo giữ khóa bản ghi đơn hàng khi mạng Zalo chậm.
+     - **H2 (N+1 Category Sync)**: Batch tải danh sách `PosCategory` một lần duy nhất vào memory dictionary `{name: record}` trong [`product_template.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/product_template.py) thay vì chạy câu `search` lặp đi lặp lại per category.
+     - **H3 (Index Trigram)**: Chuyển trường `name` trong [`pos_custom_product_history.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/pos_custom_product_history.py) sang `index="trigram"` native của Odoo 18 / PostgreSQL, tối ưu triệt để câu so khớp `=ilike` khi gợi ý tên hàng nhập tay.
+     - **M1 (Stored Count)**: Bổ sung `store=True` cho trường `zalo_message_count` trên `pos.order` để tăng tốc độ load view danh sách đơn hàng POS.
+     - **Sửa nhanh NameError Controller**: Bổ sung import `UserError` trong `qba_ai/controllers/main.py`.
+  3. Kiểm tra biên dịch và khởi động lại container Odoo thành công, hệ thống hoạt động ổn định.
 - **File đã thay đổi:**
-  - `odoo/custom_addons/qba_ai/models/ai_assistant.py`
-  - `odoo/custom_addons/qba_ai/models/ai_conversation.py`
-  - `odoo/custom_addons/qba_ai/models/lc_spec_parser.py`
-  - `odoo/custom_addons/qba_ai/models/product_spec_definition.py`
-  - `odoo/custom_addons/qba_ai/models/product_spec_value.py`
-  - `odoo/custom_addons/qba_ai/models/query_intent_router.py`
+  - `odoo/custom_addons/qba_pos/models/pos_order.py`
+  - `odoo/custom_addons/qba_pos/models/product_template.py`
+  - `odoo/custom_addons/qba_pos/models/pos_custom_product_history.py`
+  - `odoo/custom_addons/qba_ai/controllers/main.py`
   - `SESSION_STATE.md`
 
 ---
@@ -98,5 +92,7 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 - [x] Khởi tạo nhánh `perf-optimize-qba-core` và hoàn thành tối ưu module lõi `qba` ✅
 - [x] Khởi tạo nhánh `perf-optimize-qba-ai` và hoàn thành tối ưu module `qba_ai` ✅
-- [ ] Commit nhánh `perf-optimize-qba-ai`.
-- [ ] Chuyển sang module cuối cùng: Tạo nhánh `perf-optimize-qba-pos` để xử lý các mục trong `qba_pos` (H1, H2, H3, M1, M2).
+- [x] Khởi tạo nhánh `perf-optimize-qba-pos` và hoàn thành tối ưu module `qba_pos` ✅
+- [ ] Commit nhánh `perf-optimize-qba-pos`.
+- [ ] Nghiệm thu toàn diện cả 3 module trên giao diện Odoo.
+- [ ] Hợp nhất (Merge) các nhánh tối ưu vào nhánh chính theo yêu cầu người dùng.
