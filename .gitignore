@@ -9,6 +9,10 @@
 # 2. WHITELIST các file và thư mục gốc
 !/.gitignore
 !/README.md
+!/AGENTS.md
+!/SESSION_STATE.md
+!/.agents/
+!/.agents/**
 
 # 3. THƯ MỤC ENVIRONMENT: Chỉ lấy docker-compose và restore scripts
 !/environment/
