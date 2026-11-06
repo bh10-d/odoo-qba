@@ -56,8 +56,11 @@ class ProductTemplate(models.Model):
         prod_cats = ProductCategory.search([("id", "!=", 1)], order="parent_path asc")
         cat_map = {}
 
+        existing_pos_cats = PosCategory.search([])
+        pos_by_name = {c.name: c for c in existing_pos_cats}
+
         for pc in prod_cats:
-            existing = PosCategory.search([("name", "=", pc.name)], limit=1)
+            existing = pos_by_name.get(pc.name)
             parent_pos = cat_map.get(pc.parent_id.id) if pc.parent_id and pc.parent_id.id != 1 else master_cat.id
             if not existing:
                 existing = PosCategory.create({
@@ -65,6 +68,7 @@ class ProductTemplate(models.Model):
                     "parent_id": parent_pos,
                     "sequence": pc.id,
                 })
+                pos_by_name[pc.name] = existing
             else:
                 if existing.id != master_cat.id and existing.parent_id.id != parent_pos:
                     existing.write({"parent_id": parent_pos})

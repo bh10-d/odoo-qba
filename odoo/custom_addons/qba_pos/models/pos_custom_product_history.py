@@ -8,7 +8,7 @@ class PosCustomProductHistory(models.Model):
     _order = "use_count desc, last_used_date desc, name asc"
     _inherit = ["pos.load.mixin"]
 
-    name = fields.Char(string="Ten San Pham Nhap Tay", required=True, index=True)
+    name = fields.Char(string="Ten San Pham Nhap Tay", required=True, index="trigram")
     code = fields.Char(string="Ma / Ky Hieu Goi Y", index=True)
     last_price = fields.Float(string="Don Gia Gan Nhat", digits="Product Price", default=0.0)
     use_count = fields.Integer(string="So Lan Da Su Dung", default=1, index=True)
@@ -32,7 +32,7 @@ class PosCustomProductHistory(models.Model):
     def _load_pos_data(self, data):
         domain = self._load_pos_data_domain(data)
         fields = self._load_pos_data_fields(data["pos.config"]["data"][0]["id"])
-        records = self.search_read(domain, fields, order="use_count desc, last_used_date desc", load=False)
+        records = self.search_read(domain, fields, order="use_count desc, last_used_date desc", limit=200, load=False)
         return {
             "data": records,
             "fields": fields,
