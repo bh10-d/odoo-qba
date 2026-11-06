@@ -62,10 +62,26 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 | Review code, đánh giá rủi ro trước khi commit hoặc merge | `.agents/skills/odoo-code-review` |
 | Cấu hình Docker, kiểm tra log container, restart service, backup dữ liệu | `.agents/skills/odoo-devops` |
 | Viết code tối giản, loại bỏ bloat, YAGNI, review diff tinh gọn | `.agents/skills/ponytail*` |
+| Chống code rác, chống UI cliché, template sáo rỗng, comment máy móc | `.agents/skills/antislop*` |
 
 ---
 
-## 4. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
+## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- [ ] Người dùng kiểm tra lại điểm bán hàng `POS Ban Le Q.BA` trên server staging / web interface.
-- [ ] Các lập trình viên khác chỉ cần chạy `git pull` để nhận toàn bộ 16 skills, quy tắc Odoo 18 và file trạng thái phiên.
+- **Thời gian:** 2026-11-06 11:55 (GMT+7)
+- **Công việc đã hoàn thành:**
+  1. Kiểm tra nguyên nhân load lâu: Odoo vừa khởi động song song với PostgreSQL, gặp lỗi `database system is starting up` ban đầu; sau khi Postgres hoàn tất và restart Odoo thì dịch vụ đã ổn định và phản hồi HTTP 200 OK.
+  2. Tải và cài đặt đầy đủ bộ skill **anti-slop** (`antislop`, `antislop-code`, `antislop-copywriting`, `antislop-human`, `antislop-layoutmobile`, `antislop-ui`) vào `.agents/skills/`.
+  3. Bổ sung rule `.agents/rules/antislop.md`, tích hợp anti-slop vào bảng workflow và hướng dẫn trong `AGENTS.md` & `SESSION_STATE.md`.
+- **File đã thay đổi:**
+  - `AGENTS.md` (Cập nhật danh sách skills bắt buộc)
+  - `SESSION_STATE.md` (Cập nhật skill activation map và nhật ký phiên)
+  - `.agents/rules/antislop.md` (Tạo mới)
+  - `.agents/skills/antislop*` (6 skill folders tạo mới)
+
+---
+
+## 5. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
+
+- [ ] Người dùng kiểm tra lại điểm bán hàng `POS Ban Le Q.BA` trên server staging / web interface (tài khoản đăng nhập kiểm tra: `admin` / `123456`).
+- [ ] Các lập trình viên khác chỉ cần chạy `git pull` để nhận toàn bộ 22 skills, quy tắc Odoo 18, anti-slop và file trạng thái phiên.
