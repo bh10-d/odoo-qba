@@ -8,7 +8,7 @@ Tài liệu này lưu trữ trạng thái làm việc và nhật ký bàn giao g
 ## 1. Thông Tin Môi Trường & Kiến Trúc Hiện Tại (Baseline)
 
 - **Dự án:** QBA Odoo 18 Community (Phụ tùng ô tô xe tải nặng Q.BA)
-- **Nhánh Git hiện tại:** `perf-optimize-qba-core`
+- **Nhánh Git hiện tại:** `perf-optimize-qba-ai`
 - **Môi trường Docker:**
   - `staging-qba-postgres-1`: PostgreSQL 15, Database chính: `qba`
   - `staging-qba-odoo-1`: Odoo 18.0 Community, Cổng Web: `http://localhost:8089` (Longpolling: `8092`)
@@ -68,27 +68,28 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-06 15:45 (GMT+7)
-- **Nhánh Git:** `perf-optimize-qba-core`
+- **Thời gian:** 2026-11-06 15:53 (GMT+7)
+- **Nhánh Git:** `perf-optimize-qba-ai`
 - **Công việc đã hoàn thành:**
-  1. Tạo và checkout nhánh mới `perf-optimize-qba-core` để tối ưu toàn diện module lõi `qba`.
-  2. **Giải quyết triệt để HIGH 1 (N+1 Tree View trên 4 danh mục phụ tùng)**:
-     - Refactor `_compute_product_count` trong [`axle.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/axle.py), [`engine.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/engine.py), [`gearbox.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/gearbox.py), [`vehicle.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/vehicle.py).
-     - Gom nhóm đếm sản phẩm bằng 1 truy vấn SQL `GROUP BY` trực tiếp vào bảng quan hệ Many2many (`product_vehicle_rel`, `product_engine_rel`, `product_gearbox_rel`, `product_axle_rel`) thay vì chạy `search_count` vòng lặp $2 \times N$ lần.
-  3. **Giải quyết triệt để HIGH 2 (HTTP Sync Blocking trong DB Transaction)**:
-     - Refactor `write()` trong [`product_template.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py): bọc lệnh gọi `_notify_express_unlink` và `_notify_express_update_display` vào post-commit hook `self.env.cr.after('commit', ...)`.
-     - Loại bỏ hoàn toàn nguy cơ treo khóa dòng PostgreSQL khi kết nối Backend Express.js bị chậm.
-  4. **Giải quyết triệt để HIGH 3 (Vòng lặp N+1 `stock.move` trong Bulk Edit Wizard)**:
-     - Refactor khóa an toàn kiểm tra ĐVT trong [`product_bulk_edit_wizard.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_bulk_edit_wizard.py).
-     - Batch toàn bộ `variant_ids` vào 1 câu SQL `SELECT DISTINCT product_id FROM stock_move WHERE product_id IN %s`, loại bỏ hoàn toàn N queries.
-  5. Kiểm tra syntax bằng `py_compile` và khởi động lại container Odoo thành công, hệ thống hoạt động ổn định.
+  1. Đã commit thành công nhánh `perf-optimize-qba-core` (`3bc7f87`) và chuyển sang nhánh `perf-optimize-qba-ai`.
+  2. Áp dụng chuẩn **antislop-code** (không sinh comment sáo rỗng, không trang trí emoji/banner thừa) và **Ponytail** (tối thiểu diff, không over-engineering).
+  3. **Xử lý toàn diện các lỗi hiệu năng trên module `qba_ai`**:
+     - **M5**: Batch field assign trong `product_spec_definition.py` thành 1 `val.write(val_updates)` duy nhất.
+     - **M6**: Batch token SKU query trong `query_intent_router.py` bằng 1 domain OR tổng hợp.
+     - **M7**: Batch query và bulk create trong `lc_spec_parser.py` (loại bỏ search lặp lại từng bản ghi).
+     - **L1**: Bổ sung `@api.depends` đầy đủ cho `_compute_display_name` trong `product_spec_value.py`.
+     - **L2**: Bổ sung `store=True` cho `message_count` trong `ai_conversation.py`.
+     - **H5**: Batch token knowledge search trong `ai_assistant.py` (gộp thành 1 query OR thay vì 5 queries riêng lẻ).
+     - **H6**: Batch model code search trong `ai_assistant.py` (gộp thành 1 domain query duy nhất).
+     - **H7**: Caching category list tại class registry trong `query_intent_router.py` (tránh full table scan lặp lại trên mỗi tin nhắn AI).
+  4. Kiểm tra syntax bằng `py_compile` và khởi động lại container Odoo thành công, log sạch.
 - **File đã thay đổi:**
-  - `odoo/custom_addons/qba/models/axle.py`
-  - `odoo/custom_addons/qba/models/engine.py`
-  - `odoo/custom_addons/qba/models/gearbox.py`
-  - `odoo/custom_addons/qba/models/vehicle.py`
-  - `odoo/custom_addons/qba/models/product_template.py`
-  - `odoo/custom_addons/qba/models/product_bulk_edit_wizard.py`
+  - `odoo/custom_addons/qba_ai/models/ai_assistant.py`
+  - `odoo/custom_addons/qba_ai/models/ai_conversation.py`
+  - `odoo/custom_addons/qba_ai/models/lc_spec_parser.py`
+  - `odoo/custom_addons/qba_ai/models/product_spec_definition.py`
+  - `odoo/custom_addons/qba_ai/models/product_spec_value.py`
+  - `odoo/custom_addons/qba_ai/models/query_intent_router.py`
   - `SESSION_STATE.md`
 
 ---
@@ -96,7 +97,6 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 ## 5. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
 
 - [x] Khởi tạo nhánh `perf-optimize-qba-core` và hoàn thành tối ưu module lõi `qba` ✅
-- [ ] Kiểm tra thực tế trên giao diện Odoo (Danh mục xe/động cơ/hộp số, sửa hàng loạt, đồng bộ web).
-- [ ] Commit nhánh `perf-optimize-qba-core` sau khi người dùng nghiệm thu.
-- [ ] Chuyển sang module tiếp theo: Tạo nhánh `perf-optimize-qba-ai` để xử lý các mục trong `qba_ai` (H4, H5, H6, H7, M3, M4, M5, M6, M7, L1, L2).
-- [ ] Cuối cùng: Tạo nhánh `perf-optimize-qba-pos` để xử lý các mục trong `qba_pos` (H1, H2, H3, M1, M2).
+- [x] Khởi tạo nhánh `perf-optimize-qba-ai` và hoàn thành tối ưu module `qba_ai` ✅
+- [ ] Commit nhánh `perf-optimize-qba-ai`.
+- [ ] Chuyển sang module cuối cùng: Tạo nhánh `perf-optimize-qba-pos` để xử lý các mục trong `qba_pos` (H1, H2, H3, M1, M2).

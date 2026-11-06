@@ -188,32 +188,34 @@ class QbaProductSpecDefinition(models.Model):
         if target_type:
             for rec in self:
                 if rec.data_type != target_type:
-                    # Di chuyển dữ liệu trên các giá trị hiện có an toàn và có thể đảo ngược
                     values = self.env["qba.product.spec.value"].sudo().search([("spec_definition_id", "=", rec.id)])
                     for val in values:
+                        val_updates = {}
                         if target_type == "float":
                             if val.value_char:
                                 try:
-                                    val.value_float = float(val.value_char.replace(",", "."))
+                                    val_updates["value_float"] = float(val.value_char.replace(",", "."))
                                 except (ValueError, TypeError):
                                     if val.value_integer:
-                                        val.value_float = float(val.value_integer)
+                                        val_updates["value_float"] = float(val.value_integer)
                             elif val.value_integer:
-                                val.value_float = float(val.value_integer)
-                                val.value_char = str(val.value_integer)
-                            if val.value_char is not False and val.value_char != "":
-                                val.value_display = f"{val.value_float:g}"
+                                val_updates["value_float"] = float(val.value_integer)
+                                val_updates["value_char"] = str(val.value_integer)
+                            if "value_float" in val_updates and val.value_char is not False and val.value_char != "":
+                                val_updates["value_display"] = f"{val_updates['value_float']:g}"
                         elif target_type == "integer":
                             if val.value_char:
                                 try:
-                                    val.value_integer = int(float(val.value_char.replace(",", ".")))
+                                    val_updates["value_integer"] = int(float(val.value_char.replace(",", ".")))
                                 except (ValueError, TypeError):
-                                    val.value_integer = int(val.value_float)
+                                    val_updates["value_integer"] = int(val.value_float)
                             elif val.value_float:
-                                val.value_integer = int(val.value_float)
-                                val.value_char = str(val.value_integer)
-                            if val.value_char is not False and val.value_char != "":
-                                val.value_display = str(val.value_integer)
+                                val_updates["value_integer"] = int(val.value_float)
+                                val_updates["value_char"] = str(val.value_integer)
+                            if "value_integer" in val_updates and val.value_char is not False and val.value_char != "":
+                                val_updates["value_display"] = str(val_updates["value_integer"])
+                        if val_updates:
+                            val.write(val_updates)
         return super().write(vals)
 
     def action_open_spec_form(self):

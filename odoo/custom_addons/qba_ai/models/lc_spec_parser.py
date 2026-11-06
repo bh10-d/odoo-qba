@@ -284,44 +284,51 @@ class QbaLcSpecParser(models.AbstractModel):
         migrated_count = 0
         manual_review_count = 0
 
-        for item in preview_data:
-            if item.get("status") != "ready":
-                manual_review_count += 1
-                continue
-            prod_id = item["product_id"]
-            orig_text = item["original_text"]
-            c_val = item["c_value"]
-            d_val = item["d_value"]
-            note = _("Đề xuất tách từ thông số cũ 'đường kính moay ơ': %s") % orig_text
+        ready_items = [it for it in preview_data if it.get("status") == "ready"]
+        manual_review_count = len(preview_data) - len(ready_items)
 
-            val_c = self.env["qba.product.spec.value"].search([
-                ("product_tmpl_id", "=", prod_id),
-                ("spec_definition_id", "=", def_c.id),
-            ], limit=1)
-            if not val_c:
-                self.env["qba.product.spec.value"].create({
-                    "product_tmpl_id": prod_id,
-                    "spec_definition_id": def_c.id,
-                    "value_display": f"{c_val:g}",
-                    "validation_status": "unverified",
-                    "source": "manual_entry",
-                    "notes": note,
-                })
+        if ready_items:
+            prod_ids = [it["product_id"] for it in ready_items]
+            existing_vals = self.env["qba.product.spec.value"].search([
+                ("product_tmpl_id", "in", prod_ids),
+                ("spec_definition_id", "in", [def_c.id, def_d.id]),
+            ])
+            existing_set = {(v.product_tmpl_id.id, v.spec_definition_id.id) for v in existing_vals}
 
-            val_d = self.env["qba.product.spec.value"].search([
-                ("product_tmpl_id", "=", prod_id),
-                ("spec_definition_id", "=", def_d.id),
-            ], limit=1)
-            if not val_d:
-                self.env["qba.product.spec.value"].create({
-                    "product_tmpl_id": prod_id,
-                    "spec_definition_id": def_d.id,
-                    "value_display": f"{d_val:g}",
-                    "validation_status": "unverified",
-                    "source": "manual_entry",
-                    "notes": note,
-                })
-            migrated_count += 1
+            to_create = []
+            for item in ready_items:
+                prod_id = item["product_id"]
+                orig_text = item["original_text"]
+                c_val = item["c_value"]
+                d_val = item["d_value"]
+                note = _("Đề xuất tách từ thông số cũ 'đường kính moay ơ': %s") % orig_text
+
+                if (prod_id, def_c.id) not in existing_set:
+                    to_create.append({
+                        "product_tmpl_id": prod_id,
+                        "spec_definition_id": def_c.id,
+                        "value_display": f"{c_val:g}",
+                        "validation_status": "unverified",
+                        "source": "manual_entry",
+                        "notes": note,
+                    })
+                    existing_set.add((prod_id, def_c.id))
+
+                if (prod_id, def_d.id) not in existing_set:
+                    to_create.append({
+                        "product_tmpl_id": prod_id,
+                        "spec_definition_id": def_d.id,
+                        "value_display": f"{d_val:g}",
+                        "validation_status": "unverified",
+                        "source": "manual_entry",
+                        "notes": note,
+                    })
+                    existing_set.add((prod_id, def_d.id))
+
+                migrated_count += 1
+
+            if to_create:
+                self.env["qba.product.spec.value"].create(to_create)
 
         msg = _("Đã tạo đề xuất tách C & D cho %d sản phẩm (ở trạng thái Chưa duyệt để Admin kiểm tra). "
                 "Có %d sản phẩm cần kiểm tra thủ công.") % (migrated_count, manual_review_count)

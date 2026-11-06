@@ -867,14 +867,15 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
         import re
         raw_clean = re.sub(r'[^\w\s\.-]', ' ', query).strip()
         tokens = [t for t in raw_clean.split() if len(t) >= 2]
-        
-        found_knowledge = self.env['qba.ai.knowledge'].browse()
-        for token in tokens:
-            domain = ['|', '|', ('name', 'ilike', token), ('keywords', 'ilike', token), ('summary', 'ilike', token)]
-            recs = self.env['qba.ai.knowledge'].search(domain, limit=5)
-            found_knowledge |= recs
-            
-        return found_knowledge[:5]
+        if not tokens:
+            return self.env['qba.ai.knowledge'].browse()
+
+        domain = []
+        for token in tokens[:5]:
+            sub = ['|', '|', ('name', 'ilike', token), ('keywords', 'ilike', token), ('summary', 'ilike', token)]
+            domain = ['|'] + domain + sub if domain else sub
+
+        return self.env['qba.ai.knowledge'].search(domain, limit=5)
 
     def _search_products(self, query):
         """
@@ -901,27 +902,23 @@ Phản hồi trình bày rõ ràng dạng HTML (dùng <h4>, <ul>, <li>, <b>).
                 model_codes.append(clean_code)
 
         if model_codes:
-            found_by_code = self.env['product.template'].browse()
-            for code in model_codes:
-                domain_code = ['|', '|', '|',
+            domain_code = []
+            for code in model_codes[:10]:
+                sub = ['|', '|', '|',
                     ('name', 'ilike', code),
                     ('default_code', 'ilike', code),
                     ('brand_sku', 'ilike', code),
                     ('brand_id.name', 'ilike', code)
                 ]
-                recs = self.env['product.template'].search(domain_code, limit=20)
-                if recs:
-                    # Nếu có từ mô tả đi kèm (ví dụ 'Bộ hơi MC07' hoặc 'Bánh răng bơm WP10')
-                    text_terms = [t for t in raw_clean.split() if t not in model_codes and len(t) >= 2]
-                    if text_terms:
-                        # BẮT BUỘC sản phẩm phải chứa TẤT CẢ các từ mô tả (ví dụ cả 'bộ' VÀ 'hơi')
-                        matched_strict = recs.filtered(lambda p: all(t.lower() in (p.name or '').lower() or t.lower() in (p.default_code or '').lower() for t in text_terms))
-                        if matched_strict:
-                            return matched_strict[:10]
-                    else:
-                        found_by_code |= recs
-            if found_by_code:
-                return found_by_code[:10]
+                domain_code = ['|'] + domain_code + sub if domain_code else sub
+            recs = self.env['product.template'].search(domain_code, limit=30)
+            if recs:
+                text_terms = [t for t in raw_clean.split() if t not in model_codes and len(t) >= 2]
+                if text_terms:
+                    matched_strict = recs.filtered(lambda p: all(t.lower() in (p.name or '').lower() or t.lower() in (p.default_code or '').lower() for t in text_terms))
+                    if matched_strict:
+                        return matched_strict[:10]
+                return recs[:10]
 
         # 2. Loại bỏ các từ giao tiếp / từ phụ tiếng Việt (giữ lại các danh từ phụ tùng quan trọng như 'bộ')
         stop_words = {

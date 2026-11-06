@@ -211,17 +211,24 @@ class QbaQueryIntentRouter(models.AbstractModel):
             if prod_prefix:
                 return (prod_prefix, clean_q)
 
-        # Tìm token SKU kỹ thuật nằm bên trong câu hỏi (ví dụ: "So sánh với LC.002")
-        for m_sku in re.finditer(r'\b([A-Za-z0-9]+[\.-][A-Za-z0-9\.-]+)\b', query):
-            embedded_code = m_sku.group(1).strip()
-            prod_embedded = self.env['product.template'].search([
-                '|', '|',
-                ('default_code', '=ilike', embedded_code),
-                ('brand_sku', '=ilike', embedded_code),
-                ('barcode', '=ilike', embedded_code),
-            ], limit=1)
-            if prod_embedded:
-                return (prod_embedded, embedded_code)
+        # Tìm token SKU kỹ thuật nằm bên trong câu hỏi
+        embedded_codes = [m.group(1).strip() for m in re.finditer(r'\b([A-Za-z0-9]+[\.-][A-Za-z0-9\.-]+)\b', query)]
+        if embedded_codes:
+            domain = []
+            for code in embedded_codes:
+                sub = ['|', '|', ('default_code', '=ilike', code), ('brand_sku', '=ilike', code), ('barcode', '=ilike', code)]
+                domain = ['|'] + domain + sub if domain else sub
+            prods = self.env['product.template'].search(domain, limit=len(embedded_codes))
+            if prods:
+                prod_map = {}
+                for p in prods:
+                    for c in [p.default_code, p.brand_sku, p.barcode]:
+                        if c:
+                            prod_map[c.lower()] = p
+                for code in embedded_codes:
+                    matched = prod_map.get(code.lower())
+                    if matched:
+                        return (matched, code)
 
         return (False, False)
 
@@ -262,14 +269,21 @@ class QbaQueryIntentRouter(models.AbstractModel):
            Ví dụ: 'vòng bi moay ơ' -> danh từ chính là 'vòng bi' (BI), 'moay ơ' là định ngữ -> Danh mục BI.
                   'moay ơ sau' -> danh từ chính là 'moay ơ' -> Danh mục MO.
         """
-        all_cats = self.env['product.category'].search([])
+        # Lấy danh mục sản phẩm từ cache class-level nếu có
+        cats_cache = getattr(self.env.registry, '_qba_product_categories_cache', None)
+        if cats_cache is None:
+            all_cats = self.env['product.category'].search([])
+            cats_cache = [
+                (cat.id, cat.name or '', cat) for cat in all_cats
+            ]
+            self.env.registry._qba_product_categories_cache = cats_cache
+
         q_lower = query.lower()
 
         best_cat = False
         best_score = 0
 
-        for cat in all_cats:
-            raw_name = cat.name or ''
+        for cat_id, raw_name, cat in cats_cache:
             m = re.match(r'^([A-Z0-9\+]+)\s*[-–]\s*(.+)$', raw_name)
             code = m.group(1).strip() if m else None
             title = m.group(2).strip() if m else raw_name.strip()
