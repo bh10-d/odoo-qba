@@ -201,13 +201,23 @@ class QbaProductBulkEditWizard(models.TransientModel):
                 raise UserError(_("Vui lòng chọn Đơn vị tính mới trước khi áp dụng."))
             incompatible = targets.filtered(lambda t: t.uom_id and t.uom_id.category_id != self.uom_id.category_id)
             if incompatible:
-                incompatible_with_moves = []
-                for p in incompatible:
-                    has_m = self.env['stock.move'].sudo().search_count([
-                        ('product_id', 'in', p.with_context(active_test=False).mapped('product_variant_ids').ids)
-                    ])
-                    if has_m > 0:
-                        incompatible_with_moves.append(p)
+                p_to_variants = {
+                    p: p.with_context(active_test=False).mapped('product_variant_ids').ids
+                    for p in incompatible
+                }
+                all_v_ids = list({vid for vids in p_to_variants.values() for vid in vids if vid})
+                moves_v_ids = set()
+                if all_v_ids:
+                    self.env.cr.execute(
+                        "SELECT DISTINCT product_id FROM stock_move WHERE product_id IN %s",
+                        [tuple(all_v_ids)]
+                    )
+                    moves_v_ids = {row[0] for row in self.env.cr.fetchall()}
+
+                incompatible_with_moves = [
+                    p for p, vids in p_to_variants.items()
+                    if any(vid in moves_v_ids for vid in vids)
+                ]
                 if incompatible_with_moves:
                     first_bad = incompatible_with_moves[0]
                     raise UserError(_(

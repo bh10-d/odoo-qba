@@ -43,11 +43,20 @@ class QbaGearbox(models.Model):
                 rec.complete_name = rec.name
 
     def _compute_product_count(self):
+        descendants_map = {rec.id: self.search([('id', 'child_of', rec.ids)]).ids for rec in self}
+        all_descendants = list({d_id for d_list in descendants_map.values() for d_id in d_list})
+        counts = {}
+        if all_descendants:
+            self.env.cr.execute("""
+                SELECT gearbox_id, count(DISTINCT product_id)
+                FROM product_gearbox_rel
+                WHERE gearbox_id IN %s
+                GROUP BY gearbox_id
+            """, [tuple(all_descendants)])
+            counts = dict(self.env.cr.fetchall())
         for rec in self:
-            descendant_ids = self.search([('id', 'child_of', rec.ids)]).ids
-            rec.product_count = self.env['product.template'].search_count([
-                ('gearbox_ids', 'in', descendant_ids)
-            ])
+            d_ids = descendants_map.get(rec.id, [])
+            rec.product_count = sum(counts.get(d_id, 0) for d_id in d_ids)
 
     def action_view_products(self):
         self.ensure_one()
