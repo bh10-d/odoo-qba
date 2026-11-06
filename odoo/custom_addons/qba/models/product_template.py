@@ -235,20 +235,25 @@ class ProductTemplate(models.Model):
 
     @api.depends("extra_image_ids")
     def _compute_extra_image_count(self):
+        real_ids = [rec._origin.id or (isinstance(rec.id, int) and rec.id) for rec in self]
+        valid_ids = [i for i in real_ids if i]
+        att_counts = {}
+        if valid_ids:
+            self.env.cr.execute("""
+                SELECT res_id, count(id)
+                FROM ir_attachment
+                WHERE res_model = 'product.template'
+                  AND res_id IN %s
+                  AND res_field IS NULL
+                  AND mimetype LIKE 'image/%%'
+                GROUP BY res_id
+            """, [tuple(valid_ids)])
+            att_counts = dict(self.env.cr.fetchall())
+
         for rec in self:
             real_id = rec._origin.id or (isinstance(rec.id, int) and rec.id)
             extra_cnt = len(rec.extra_image_ids)
-            if not real_id:
-                rec.extra_image_count = extra_cnt
-                continue
-
-            att_cnt = self.env['ir.attachment'].search_count([
-                ('res_model', '=', 'product.template'),
-                ('res_id', '=', real_id),
-                ('res_field', '=', False),
-                ('mimetype', '=like', 'image/%')
-            ])
-            rec.extra_image_count = extra_cnt + att_cnt
+            rec.extra_image_count = extra_cnt + att_counts.get(real_id, 0)
 
     def _compute_attachment_images_preview(self):
         for rec in self:
@@ -306,6 +311,108 @@ class ProductTemplate(models.Model):
             rec.attachment_images_preview = "".join(html_parts)
 
     def _compute_dates(self):
+        real_ids = [rec._origin.id or (isinstance(rec.id, int) and rec.id) for rec in self]
+        valid_ids = [i for i in real_ids if i]
+
+        po_done_map = {}
+        po_any_map = {}
+        moves_map = {}
+        quotes_map = {}
+
+        if valid_ids:
+            # 1. Batch PO done / purchase (qty > 0)
+            self.env.cr.execute("""
+                SELECT DISTINCT ON (pt.id)
+                    pt.id as tmpl_id,
+                    po.id as po_id,
+                    po.name as po_name,
+                    po.partner_ref,
+                    po.date_approve,
+                    po.date_order,
+                    pol.product_qty,
+                    rp.name as partner_name
+                FROM product_template pt
+                JOIN product_product pp ON pp.product_tmpl_id = pt.id
+                JOIN purchase_order_line pol ON pol.product_id = pp.id
+                JOIN purchase_order po ON po.id = pol.order_id
+                LEFT JOIN res_partner rp ON rp.id = po.partner_id
+                WHERE pt.id IN %s
+                  AND pol.product_qty > 0
+                  AND po.state IN ('purchase', 'done')
+                ORDER BY pt.id, po.date_order DESC, pol.id DESC
+            """, [tuple(valid_ids)])
+            po_done_map = {r['tmpl_id']: r for r in self.env.cr.dictfetchall()}
+
+            # 2. Batch PO state khác bất kỳ (qty > 0) cho SP chưa có PO done
+            missing_done = [i for i in valid_ids if i not in po_done_map]
+            if missing_done:
+                self.env.cr.execute("""
+                    SELECT DISTINCT ON (pt.id)
+                        pt.id as tmpl_id,
+                        po.id as po_id,
+                        po.name as po_name,
+                        po.partner_ref,
+                        po.date_approve,
+                        po.date_order,
+                        pol.product_qty,
+                        rp.name as partner_name
+                    FROM product_template pt
+                    JOIN product_product pp ON pp.product_tmpl_id = pt.id
+                    JOIN purchase_order_line pol ON pol.product_id = pp.id
+                    JOIN purchase_order po ON po.id = pol.order_id
+                    LEFT JOIN res_partner rp ON rp.id = po.partner_id
+                    WHERE pt.id IN %s
+                      AND pol.product_qty > 0
+                    ORDER BY pt.id, po.date_order DESC, pol.id DESC
+                """, [tuple(missing_done)])
+                po_any_map = {r['tmpl_id']: r for r in self.env.cr.dictfetchall()}
+
+            # 3. Batch Stock Moves fallback cho SP chưa từng có PO line nào
+            missing_all_po = [i for i in missing_done if i not in po_any_map]
+            if missing_all_po:
+                self.env.cr.execute("""
+                    SELECT DISTINCT ON (pt.id)
+                        pt.id as tmpl_id,
+                        sm.date,
+                        coalesce(sm.quantity, sm.product_uom_qty) as qty,
+                        sp.origin as pick_origin,
+                        sm.origin as move_origin,
+                        sp.name as pick_name
+                    FROM product_template pt
+                    JOIN product_product pp ON pp.product_tmpl_id = pt.id
+                    JOIN stock_move sm ON sm.product_id = pp.id
+                    LEFT JOIN stock_picking sp ON sp.id = sm.picking_id
+                    LEFT JOIN stock_picking_type spt ON spt.id = sm.picking_type_id
+                    LEFT JOIN stock_location ld ON ld.id = sm.location_dest_id
+                    LEFT JOIN stock_location ls ON ls.id = sm.location_id
+                    WHERE pt.id IN %s
+                      AND sm.state = 'done'
+                      AND (spt.code = 'incoming' OR (ld.usage = 'internal' AND ls.usage != 'internal'))
+                    ORDER BY pt.id, sm.date DESC, sm.id DESC
+                """, [tuple(missing_all_po)])
+                moves_map = {r['tmpl_id']: r for r in self.env.cr.dictfetchall()}
+
+            # 4. Batch PO Báo giá (qty = 0 HOẶC state in draft, sent)
+            self.env.cr.execute("""
+                SELECT DISTINCT ON (pt.id)
+                    pt.id as tmpl_id,
+                    po.id as po_id,
+                    po.name as po_name,
+                    po.partner_ref,
+                    po.date_approve,
+                    po.date_order,
+                    rp.name as partner_name
+                FROM product_template pt
+                JOIN product_product pp ON pp.product_tmpl_id = pt.id
+                JOIN purchase_order_line pol ON pol.product_id = pp.id
+                JOIN purchase_order po ON po.id = pol.order_id
+                LEFT JOIN res_partner rp ON rp.id = po.partner_id
+                WHERE pt.id IN %s
+                  AND (pol.product_qty = 0 OR po.state IN ('draft', 'sent'))
+                ORDER BY pt.id, po.date_order DESC, pol.id DESC
+            """, [tuple(valid_ids)])
+            quotes_map = {r['tmpl_id']: r for r in self.env.cr.dictfetchall()}
+
         for rec in self:
             real_id = rec._origin.id or (isinstance(rec.id, int) and rec.id)
             rec.last_purchase_date = False
@@ -313,39 +420,25 @@ class ProductTemplate(models.Model):
             rec.last_quotation_date = False
             rec.last_quotation_code = False
             dt_purchase = False
-            dt_quote = False
             if not real_id:
                 continue
 
             uom_str = rec.uom_id.name.lower() if rec.uom_id.name else "cái"
 
-            # 1. Tính nhập gần nhất từ đơn mua hàng có số lượng > 0
-            po_line = self.env["purchase.order.line"].search([
-                ("product_id.product_tmpl_id", "=", real_id),
-                ("product_qty", ">", 0),
-                ("order_id.state", "in", ["purchase", "done"]),
-            ], order="date_order desc, id desc", limit=1)
-
-            if not po_line:
-                po_line = self.env["purchase.order.line"].search([
-                    ("product_id.product_tmpl_id", "=", real_id),
-                    ("product_qty", ">", 0),
-                ], order="date_order desc, id desc", limit=1)
-
-            if po_line and po_line.order_id:
-                po = po_line.order_id
-                code_name = po.name or "PO"
-                partner_ref = po.partner_ref.strip() if po.partner_ref else ""
-                dt_purchase = po.date_approve or po.date_order
+            # 1. Tính nhập gần nhất từ PO (done -> any) hoặc Stock Move
+            po_info = po_done_map.get(real_id) or po_any_map.get(real_id)
+            if po_info:
+                code_name = po_info['po_name'] or "PO"
+                partner_ref = po_info['partner_ref'].strip() if po_info['partner_ref'] else ""
+                dt_purchase = po_info['date_approve'] or po_info['date_order']
                 date_str = dt_purchase.strftime('%d/%m/%y') if dt_purchase else ''
                 rec.last_purchase_date = dt_purchase.date() if dt_purchase else False
-                qty = po_line.product_qty
+                qty = po_info['product_qty']
 
-                # Định dạng chuẩn theo mockup: P01998 (BA 27/06/26) 1 cái
                 if partner_ref:
                     po_display = f"{code_name} ({partner_ref})"
                 else:
-                    partner_name = po.partner_id.name or ""
+                    partner_name = po_info['partner_name'] or ""
                     short_partner = partner_name.split(" - ")[0].strip() if " - " in partner_name else partner_name[:5].strip()
                     if short_partner and date_str:
                         po_display = f"{code_name} ({short_partner} {date_str})"
@@ -355,50 +448,32 @@ class ProductTemplate(models.Model):
                         po_display = code_name
 
                 rec.last_purchase_code = f"Nhập: {po_display} {qty:g} {uom_str}"
-            else:
-                # Fallback: Kiểm tra dịch chuyển kho hoàn tất
-                stock_move = self.env["stock.move"].search([
-                    ("product_id.product_tmpl_id", "=", real_id),
-                    ("state", "=", "done"),
-                    "|",
-                    ("picking_type_id.code", "=", "incoming"),
-                    "&", ("location_dest_id.usage", "=", "internal"), ("location_id.usage", "!=", "internal")
-                ], order="date desc, id desc", limit=1)
+            elif real_id in moves_map:
+                sm_info = moves_map[real_id]
+                dt_purchase = sm_info['date']
+                rec.last_purchase_date = dt_purchase.date() if dt_purchase else False
+                date_str = dt_purchase.strftime('%d/%m/%y') if dt_purchase else ''
+                qty = sm_info['qty'] or 0
+                origin = sm_info['pick_origin'] or sm_info['move_origin'] or sm_info['pick_name'] or "Kho"
+                rec.last_purchase_code = f"Nhập: {origin} {date_str} {qty:g} {uom_str}"
 
-                if stock_move and stock_move.date:
-                    dt_purchase = stock_move.date
-                    rec.last_purchase_date = stock_move.date.date()
-                    date_str = stock_move.date.strftime('%d/%m/%y')
-                    qty = stock_move.quantity or stock_move.product_uom_qty
-                    origin = stock_move.picking_id.origin or stock_move.origin or stock_move.picking_id.name or "Kho"
-                    rec.last_purchase_code = f"Nhập: {origin} {date_str} {qty:g} {uom_str}"
-
-            # 2. Tính đơn báo giá gần nhất:
-            # Chỉ lấy từ đơn Purchase Order có SL = 0 (quy trình lưu báo giá NCC) hoặc RFQ (draft, sent)
-            po_quote = self.env["purchase.order.line"].search([
-                ("product_id.product_tmpl_id", "=", real_id),
-                "|",
-                ("product_qty", "=", 0),
-                ("order_id.state", "in", ["draft", "sent"]),
-            ], order="date_order desc, id desc", limit=1)
-
+            # 2. Tính đơn báo giá gần nhất
+            po_quote_info = quotes_map.get(real_id)
             po_quote_code = False
             po_quote_date = False
             dt_po_quote = False
 
-            if po_quote and po_quote.order_id:
-                po_q = po_quote.order_id
-                dt_po_quote = po_q.date_approve or po_q.date_order
+            if po_quote_info:
+                dt_po_quote = po_quote_info['date_approve'] or po_quote_info['date_order']
                 po_quote_date = dt_po_quote.date() if dt_po_quote else False
                 date_str = dt_po_quote.strftime('%d/%m/%y') if dt_po_quote else ''
-                q_name = po_q.name or "PO"
-                q_pref = po_q.partner_ref.strip() if po_q.partner_ref else ""
+                q_name = po_quote_info['po_name'] or "PO"
+                q_pref = po_quote_info['partner_ref'].strip() if po_quote_info['partner_ref'] else ""
 
-                # Định dạng chuẩn theo mockup: P01999 (VN 09/10/26)
                 if q_pref:
                     q_display = f"{q_name} ({q_pref})"
                 else:
-                    partner_name = po_q.partner_id.name or ""
+                    partner_name = po_quote_info['partner_name'] or ""
                     short_partner = partner_name.split(" - ")[0].strip() if " - " in partner_name else partner_name[:5].strip()
                     if short_partner and date_str:
                         q_display = f"{q_name} ({short_partner} {date_str})"
@@ -409,12 +484,7 @@ class ProductTemplate(models.Model):
 
                 po_quote_code = f"Báo giá: {q_display}"
 
-            # 3. Quy tắc thể hiện ngày báo giá tại trang tổng theo đúng chữ đỏ và mũi tên trong ảnh:
-            # - Báo giá CHỈ lấy từ đơn PO báo giá (product_qty == 0 hoặc RFQ) với định dạng P.... (Mã NCC).
-            # - Nếu không có đơn PO báo giá: Không hiển thị dòng báo giá ngoài trang tổng.
-            # - "Nếu ngày xác nhận của nhập hàng (SL>0) gần hơn xác nhận của báo giá (=0) => ko cần thể hiện ngày báo giá tại trang tổng":
-            #   Ẩn dòng báo giá khi ngày xác nhận của lần nhập hàng mới hơn hoặc bằng lần báo giá.
-            # - Chỉ thể hiện khi có đơn PO báo giá và báo giá MỚI HƠN lần nhập hàng (như BNM.017) hoặc sản phẩm chưa từng nhập hàng.
+            # 3. So sánh ngày báo giá và ngày nhập hàng
             if po_quote_code:
                 if dt_purchase and dt_po_quote:
                     dt_p_cmp = _to_datetime(dt_purchase)
@@ -428,9 +498,6 @@ class ProductTemplate(models.Model):
                 else:
                     rec.last_quotation_code = po_quote_code
                     rec.last_quotation_date = po_quote_date
-            else:
-                rec.last_quotation_code = False
-                rec.last_quotation_date = False
 
     @api.model
     def _parse_website_url_data(self, url):
@@ -557,12 +624,10 @@ class ProductTemplate(models.Model):
                     vals['website_link_date'] = fields.Datetime.now()
             else:
                 # Nếu người dùng xóa trống website_product_url: tự động ngắt liên kết và ngắt đồng bộ giá
-                for tmpl in self:
-                    if tmpl.website_product_id and not self.env.context.get('skip_web_notify'):
-                        try:
-                            tmpl._notify_express_unlink(tmpl.website_product_id)
-                        except Exception:
-                            pass
+                unlinks_to_notify = [tmpl.website_product_id for tmpl in self if tmpl.website_product_id and not self.env.context.get('skip_web_notify')]
+                if unlinks_to_notify:
+                    tmpl_model = self.browse()
+                    self.env.cr.after('commit', lambda: [tmpl_model._notify_express_unlink(wid) for wid in unlinks_to_notify])
                 vals.setdefault('website_product_id', False)
                 vals.setdefault('website_product_slug', False)
                 vals.setdefault('website_link_date', False)
@@ -573,12 +638,18 @@ class ProductTemplate(models.Model):
         # Thông báo cập nhật trạng thái liên kết & hiển thị giá sang Backend Express nếu có thay đổi
         web_fields_changed = {'website_product_id', 'website_show_price', 'list_price'} & set(vals.keys())
         if web_fields_changed and not self.env.context.get('skip_web_notify'):
-            for tmpl in self:
-                if tmpl.website_product_id:
-                    try:
-                        tmpl._notify_express_update_display(tmpl.website_product_id, tmpl.website_show_price, tmpl.list_price)
-                    except Exception:
-                        pass
+            updates_to_notify = [
+                (tmpl.id, tmpl.website_product_id, tmpl.website_show_price, tmpl.list_price)
+                for tmpl in self if tmpl.website_product_id
+            ]
+            if updates_to_notify:
+                def _do_notify_updates():
+                    for tid, wid, show_p, lprice in updates_to_notify:
+                        try:
+                            self.browse(tid)._notify_express_update_display(wid, show_p, lprice)
+                        except Exception:
+                            pass
+                self.env.cr.after('commit', _do_notify_updates)
 
         # Cập nhật an toàn các trường bị Odoo khóa cứng cho Admin
         if is_admin and (target_storable is not None or target_uom_id is not None or target_uom_po_id is not None):

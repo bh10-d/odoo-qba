@@ -15,7 +15,6 @@
   - `odoo-testing`: Kiểm thử tự động, test evidence thực tế.
   - `odoo-code-review` / `ponytail-review`: Rà soát rủi ro, bảo mật và tinh gọn mã nguồn.
   - `odoo-devops`: Vận hành Docker, logs, khởi động dịch vụ, backup an toàn.
-  - `antislop*`: Chống tạo code rác, chống UI cliché, template sáo rỗng, comment máy móc và copy sáo ngữ.
 
 ## 2. TRIỂN KHAI (Execution)
 - Tuân thủ phong cách **Ponytail** (viết ít code nhất có thể, không sinh boilerplate hay abstraction thừa, tái sử dụng code có sẵn).
