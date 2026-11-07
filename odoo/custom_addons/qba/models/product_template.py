@@ -273,23 +273,20 @@ class ProductTemplate(models.Model):
 
             if not attachments and not extra_imgs:
                 rec.attachment_images_preview = """
-                    <div class="qba-attachment-empty text-muted small py-2 text-center" style="font-size: 11px;">
-                        <i class="fa fa-paperclip me-1"/>Chưa có ảnh phụ.<br/>Bấm nút <b>Tập tin</b> ở thanh bên phải (Chatter) để đính kèm ảnh.
+                    <div class="qba-attachment-empty text-muted small py-1 text-center" style="font-size: 11px;">
+                        <i class="fa fa-info-circle me-1"/>Chưa có ảnh chi tiết
                     </div>
                 """
                 continue
 
-            html_parts = ['<div class="qba-attachment-gallery d-flex flex-wrap gap-2 pt-1 pb-1 justify-content-center">']
+            html_parts = ['<div class="qba-attachment-gallery d-flex flex-wrap gap-1 pt-1 pb-1 justify-content-start">']
             for att in attachments:
                 name = (att.name or "Ảnh đính kèm").replace('"', '&quot;')
                 desc = (att.description or name).replace('"', '&quot;')
                 html_parts.append(f'''
-                    <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 66px;">
-                        <div class="qba-thumb-wrapper position-relative" style="width: 58px; height: 58px; overflow: visible;">
-                            <img src="/web/image/{att.id}" alt="{name}" title="{desc} (Rê chuột để phóng to x4 - Bấm để mở xem lớn)" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-contain" style="cursor: pointer; background: #fafafa;"/>
-                        </div>
-                        <div class="qba-thumb-title text-truncate small fw-medium mt-1 text-dark" style="font-size: 10px; max-width: 58px;" title="{name}">
-                            {name}
+                    <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 46px; height: 46px;" title="{desc} (Click xem ảnh lớn)">
+                        <div class="qba-thumb-wrapper position-relative w-100 h-100 overflow-hidden">
+                            <img src="/web/image/{att.id}" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
                         </div>
                     </div>
                 ''')
@@ -297,12 +294,9 @@ class ProductTemplate(models.Model):
             for extra in extra_imgs:
                 name = (extra.name or "Ảnh chi tiết").replace('"', '&quot;')
                 html_parts.append(f'''
-                    <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 66px;">
-                        <div class="qba-thumb-wrapper position-relative" style="width: 58px; height: 58px; overflow: visible;">
-                            <img src="/web/image/qba.product.image/{extra.id}/image_1920" alt="{name}" title="{name} (Rê chuột để phóng to x4 - Bấm để mở xem lớn)" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-contain" style="cursor: pointer; background: #fafafa;"/>
-                        </div>
-                        <div class="qba-thumb-title text-truncate small fw-medium mt-1 text-dark" style="font-size: 10px; max-width: 58px;" title="{name}">
-                            {name}
+                    <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 46px; height: 46px;" title="{name} (Click xem ảnh lớn)">
+                        <div class="qba-thumb-wrapper position-relative w-100 h-100 overflow-hidden">
+                            <img src="/web/image/qba.product.image/{extra.id}/image_1920" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
                         </div>
                     </div>
                 ''')
@@ -569,6 +563,88 @@ class ProductTemplate(models.Model):
             }
         }
 
+    def _calculate_historical_stock_qty(self):
+        """Tính toán số lượng tồn kho theo nguyên lý: SL hiện có = Đã nhập - Đã bán"""
+        self.ensure_one()
+        variant_ids = self.product_variant_ids.ids
+        if not variant_ids:
+            return 0.0
+
+        # 1. Đã nhập (Purchased / Inbound)
+        po_lines = self.env['purchase.order.line'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('order_id.state', 'in', ['purchase', 'done'])
+        ])
+        po_qty = sum(po_lines.mapped('product_qty'))
+
+        in_moves = self.env['stock.move'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('location_id.usage', '=', 'supplier'),
+            ('location_dest_id.usage', '=', 'internal'),
+            ('state', '=', 'done')
+        ])
+        in_move_qty = sum(in_moves.mapped('quantity'))
+        qty_purchased = max(po_qty, in_move_qty)
+
+        # 2. Đã bán (Sold / Outbound)
+        so_lines = self.env['sale.order.line'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('order_id.state', 'in', ['sale', 'done'])
+        ])
+        so_qty = sum(so_lines.mapped('product_uom_qty'))
+
+        pos_lines = self.env['pos.order.line'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('order_id.state', 'not in', ['draft', 'cancel'])
+        ])
+        pos_qty = sum(pos_lines.mapped('qty'))
+
+        out_moves = self.env['stock.move'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('location_id.usage', '=', 'internal'),
+            ('location_dest_id.usage', '=', 'customer'),
+            ('state', '=', 'done')
+        ])
+        out_move_qty = sum(out_moves.mapped('quantity'))
+        qty_sold = max(so_qty + pos_qty, out_move_qty)
+
+        return max(0.0, qty_purchased - qty_sold)
+
+    def _auto_sync_stock_from_history(self):
+        """Tự động đồng bộ số lượng tồn kho thực tế = Đã nhập - Đã bán vào kho"""
+        self.ensure_one()
+        warehouse = self.env['stock.warehouse'].sudo().search(
+            [('company_id', '=', self.company_id.id or self.env.company.id)], limit=1
+        )
+        if not warehouse or not warehouse.lot_stock_id:
+            return
+        target_qty = self._calculate_historical_stock_qty()
+        for variant in self.product_variant_ids:
+            self.env['stock.quant'].with_context(inventory_mode=True).sudo().create({
+                'product_id': variant.id,
+                'location_id': warehouse.lot_stock_id.id,
+                'inventory_quantity': target_qty,
+            })._apply_inventory()
+
+    def action_sync_stock_from_history(self):
+        """Hành động nút bấm: Đồng bộ số lượng tồn kho theo nguyên lý Đã nhập - Đã bán"""
+        if not (self.env.is_admin() or self.env.user.has_group('base.group_system')):
+            raise AccessError(_("Chỉ Quản trị viên hệ thống (Admin) mới có quyền tính toán và đồng bộ lại tồn kho!"))
+        for tmpl in self:
+            tmpl._auto_sync_stock_from_history()
+        self.invalidate_recordset(['qty_available', 'virtual_available'])
+        tmpl_name = self.display_name if len(self) == 1 else f"{len(self)} sản phẩm"
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Đồng Bộ Tồn Kho Thành Công'),
+                'message': _('Đã tự động tính toán SL hiện có = Đã nhập - Đã bán cho %s.') % tmpl_name,
+                'sticky': False,
+                'type': 'success',
+            }
+        }
+
     def write(self, vals):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
         # KHÓA BẢO VỆ 1: Chặn tuyệt đối người dùng không phải Admin can thiệp vào is_storable hoặc uom_id
@@ -692,6 +768,12 @@ class ProductTemplate(models.Model):
                 variants = self.with_context(active_test=False).mapped('product_variant_ids')
                 if variants:
                     variants.invalidate_recordset([f for f in fnames_to_invalidate if f in variants._fields])
+
+            # Tự động tính toán và đồng bộ tồn kho khi Admin bật Theo dõi hàng tồn kho
+            if target_storable is True:
+                for tmpl in self:
+                    tmpl._auto_sync_stock_from_history()
+                self.invalidate_recordset(['qty_available', 'virtual_available'])
 
         return res
 

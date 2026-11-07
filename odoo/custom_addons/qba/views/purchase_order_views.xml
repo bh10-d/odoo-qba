@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_inherit_qba_discount" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.qba.discount</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Đổi nhãn cột discount thành % CK cho thống nhất -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="attributes">
+                <attribute name="string">% CK</attribute>
+            </xpath>
+            <!-- Thêm cột tiền CK bằng số ngay sau % CK trong danh sách chi tiết dòng đơn mua -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='discount']" position="after">
+                <field name="discount_amount" string="CK" optional="show" readonly="qty_invoiced != 0"/>
+            </xpath>
+            <!-- Trong popup form chi tiết của dòng đơn mua nếu mở -->
+            <xpath expr="//field[@name='order_line']/form//field[@name='discount']" position="after">
+                <field name="discount_amount" string="CK"/>
+            </xpath>
+            <!-- Khai báo trường discount_amount cho thẻ kanban mobile -->
+            <xpath expr="//field[@name='order_line']/kanban/field[@name='display_type']" position="before">
+                <field name="discount_amount"/>
+            </xpath>
+            <!-- Hiển thị tiền CK trên kanban mobile -->
+            <xpath expr="//field[@name='order_line']/kanban//span[@t-if='record.discount.raw_value']" position="after">
+                <span class="text-muted" t-if="record.discount_amount.raw_value">
+                    CK: <field name="discount_amount"/>
+                </span>
+            </xpath>
+        </field>
+    </record>
+</odoo>

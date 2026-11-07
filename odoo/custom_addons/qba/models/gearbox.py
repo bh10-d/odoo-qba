@@ -3,6 +3,8 @@ from odoo import models, fields, api
 class QbaGearbox(models.Model):
     _name = "qba.gearbox"
     _description = "Hộp số xe"
+    _parent_name = "parent_id"
+    _parent_store = True
     _order = "complete_name"
     _rec_name = "complete_name"
 
@@ -26,6 +28,21 @@ class QbaGearbox(models.Model):
 
     # Hình ảnh và mô tả
     image_1920 = fields.Image(string="Hình ảnh", max_width=1920, max_height=1920)
+    extra_image_ids = fields.Many2many(
+        "ir.attachment",
+        "qba_gearbox_attachment_rel",
+        "gearbox_id",
+        "attachment_id",
+        string="Ảnh phụ",
+        domain=[("mimetype", "=like", "image/%")],
+        help="Chọn cùng lúc nhiều file ảnh từ máy tính để đính kèm làm ảnh phụ."
+    )
+    extra_image_count = fields.Integer(string="Số ảnh phụ", compute="_compute_extra_images")
+    attachment_images_preview = fields.Html(
+        string="Xem trước ảnh phụ",
+        compute="_compute_extra_images",
+        sanitize=False
+    )
     description = fields.Html(string="Mô tả", translate=True, sanitize=False)
 
     brand = fields.Char(string="Nhãn hiệu")
@@ -42,6 +59,18 @@ class QbaGearbox(models.Model):
             else:
                 rec.complete_name = rec.name
 
+    @api.depends_context('hierarchical_naming')
+    def _compute_display_name(self):
+        if self.env.context.get('hierarchical_naming', True):
+            return super()._compute_display_name()
+        for record in self:
+            record.display_name = record.name
+
+    @api.model
+    def name_create(self, name):
+        record = self.create({'name': name})
+        return record.id, record.display_name
+
     def _compute_product_count(self):
         descendants_map = {rec.id: self.search([('id', 'child_of', rec.ids)]).ids for rec in self}
         all_descendants = list({d_id for d_list in descendants_map.values() for d_id in d_list})
@@ -57,6 +86,31 @@ class QbaGearbox(models.Model):
         for rec in self:
             d_ids = descendants_map.get(rec.id, [])
             rec.product_count = sum(counts.get(d_id, 0) for d_id in d_ids)
+
+    @api.depends("extra_image_ids")
+    def _compute_extra_images(self):
+        for rec in self:
+            rec.extra_image_count = len(rec.extra_image_ids)
+            if not rec.extra_image_ids:
+                rec.attachment_images_preview = False
+                continue
+            html_parts = ['<div class="d-flex flex-wrap gap-2 pt-2 pb-1 justify-content-start">']
+            for att in rec.extra_image_ids:
+                att_id = att._origin.id or (isinstance(att.id, int) and att.id)
+                if not att_id:
+                    continue
+                name = (att.name or "Ảnh phụ").replace('"', '&quot;')
+                html_parts.append(f'''
+                    <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 52px; height: 52px;">
+                        <div class="position-relative" style="width: 44px; height: 44px; overflow: visible;">
+                            <img src="/web/image/{att_id}" alt="{name}" title="{name} (Bấm xem lớn)" 
+                                 class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-contain" 
+                                 style="cursor: pointer; background: #fafafa;"/>
+                        </div>
+                    </div>
+                ''')
+            html_parts.append('</div>')
+            rec.attachment_images_preview = "".join(html_parts)
 
     def action_view_products(self):
         self.ensure_one()

@@ -7,9 +7,17 @@
     let counterEl = null;
     let prevBtn = null;
     let nextBtn = null;
+    let filmstripWrap = null;
+    let filmstripEl = null;
     let galleryItems = [];
     let currentIndex = 0;
-    let isZoomed = false;
+    let currentZoom = 1;
+    let currentRotation = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let panX = 0;
+    let panY = 0;
 
     function getHighResUrl(src) {
         if (!src) return '';
@@ -26,257 +34,275 @@
         return highRes;
     }
 
+    function applyTransform() {
+        if (!bigImg) return;
+        if (currentZoom > 1) {
+            bigImg.classList.add('zoomed');
+            bigImg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        } else {
+            bigImg.classList.remove('zoomed');
+            panX = 0;
+            panY = 0;
+            bigImg.style.transform = `rotate(${currentRotation}deg)`;
+        }
+    }
+
+    function resetZoomAndRotation() {
+        currentZoom = 1;
+        currentRotation = 0;
+        panX = 0;
+        panY = 0;
+        applyTransform();
+    }
+
     // =========================================================================
-    // 1. LIGHTBOX MODAL & GALLERY (CLICK VÀO ẢNH ĐỂ XEM ĐẦY ĐỦ CÁC HÌNH ẢNH)
+    // 1. LIGHTBOX MODAL & GALLERY (LUXURY GLASSMORPHISM VIEWER)
     // =========================================================================
     function getOrCreateViewer() {
         if (viewer) return viewer;
 
         viewer = document.createElement('div');
-        viewer.className = 'qba-simple-image-viewer';
-        viewer.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 2147483640;
-            background: rgba(0, 0, 0, 0.88);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.18s ease, visibility 0.18s ease;
-            backdrop-filter: blur(4px);
-        `;
+        viewer.className = 'qba-lightbox-viewer';
 
-        const imgContainer = document.createElement('div');
-        imgContainer.className = 'qba-viewer-img-container';
-        imgContainer.style.cssText = `
-            position: relative;
-            max-width: 90vw;
-            max-height: 85vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        `;
+        // 1. Top Bar
+        const topBar = document.createElement('div');
+        topBar.className = 'qba-lightbox-topbar';
 
-        bigImg = document.createElement('img');
-        bigImg.style.cssText = `
-            max-width: 90vw;
-            max-height: 85vh;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.75);
-            transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
-            cursor: zoom-in;
-            user-select: none;
-            background-color: #ffffff;
-            transform-origin: center center;
-        `;
-        imgContainer.appendChild(bigImg);
-        viewer.appendChild(imgContainer);
+        const titleWrap = document.createElement('div');
+        titleWrap.className = 'qba-lightbox-title-wrap';
 
-        // Chú thích ảnh (Caption)
-        captionEl = document.createElement('div');
-        captionEl.style.cssText = `
-            position: absolute;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.75);
-            padding: 7px 22px;
-            border-radius: 24px;
-            font-size: 0.92rem;
-            max-width: 80vw;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            pointer-events: none;
-            display: none;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-        `;
-        viewer.appendChild(captionEl);
-
-        // Số thứ tự ảnh (Counter: ví dụ 1 / 4)
         counterEl = document.createElement('div');
-        counterEl.style.cssText = `
-            position: absolute;
-            top: 20px;
-            left: 25px;
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.65);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            pointer-events: none;
-            display: none;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            z-index: 10;
-        `;
-        viewer.appendChild(counterEl);
+        counterEl.className = 'qba-lightbox-counter';
+        counterEl.textContent = '1 / 1';
+        titleWrap.appendChild(counterEl);
 
-        // Hướng dẫn phím tắt
-        const tipEl = document.createElement('div');
-        tipEl.style.cssText = `
-            position: absolute;
-            top: 20px;
-            right: 75px;
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            pointer-events: none;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            z-index: 10;
-        `;
-        tipEl.textContent = 'ESC: Đóng | Phím ← →: Chuyển ảnh | Click: Phóng to';
-        viewer.appendChild(tipEl);
+        captionEl = document.createElement('div');
+        captionEl.className = 'qba-lightbox-caption';
+        captionEl.textContent = '';
+        titleWrap.appendChild(captionEl);
 
-        // Nút đóng (X)
-        const closeBtn = document.createElement('button');
-        closeBtn.innerHTML = '&times;';
-        closeBtn.title = 'Đóng (ESC)';
-        closeBtn.style.cssText = `
-            position: absolute;
-            top: 16px;
-            right: 20px;
-            width: 38px;
-            height: 38px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border: none;
-            border-radius: 50%;
-            font-size: 26px;
-            line-height: 1;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s ease;
-            z-index: 11;
-        `;
-        closeBtn.addEventListener('mouseenter', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.4)');
-        closeBtn.addEventListener('mouseleave', () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)');
-        closeBtn.addEventListener('click', function (e) {
+        topBar.appendChild(titleWrap);
+
+        // Toolbar Buttons
+        const toolbar = document.createElement('div');
+        toolbar.className = 'qba-lightbox-toolbar';
+
+        // Nút Zoom In
+        const btnZoomIn = document.createElement('button');
+        btnZoomIn.className = 'qba-lightbox-btn';
+        btnZoomIn.title = 'Phóng to (+)';
+        btnZoomIn.innerHTML = '<i class="fa fa-search-plus"></i>';
+        btnZoomIn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentZoom < 3.5) {
+                currentZoom = Math.min(3.5, currentZoom + 0.35);
+                applyTransform();
+            }
+        });
+        toolbar.appendChild(btnZoomIn);
+
+        // Nút Zoom Out
+        const btnZoomOut = document.createElement('button');
+        btnZoomOut.className = 'qba-lightbox-btn';
+        btnZoomOut.title = 'Thu nhỏ (-)';
+        btnZoomOut.innerHTML = '<i class="fa fa-search-minus"></i>';
+        btnZoomOut.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentZoom > 1) {
+                currentZoom = Math.max(1, currentZoom - 0.35);
+                applyTransform();
+            }
+        });
+        toolbar.appendChild(btnZoomOut);
+
+        // Nút Xoay 90 độ
+        const btnRotate = document.createElement('button');
+        btnRotate.className = 'qba-lightbox-btn';
+        btnRotate.title = 'Xoay ảnh 90° (R)';
+        btnRotate.innerHTML = '<i class="fa fa-repeat"></i>';
+        btnRotate.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentRotation = (currentRotation + 90) % 360;
+            applyTransform();
+        });
+        toolbar.appendChild(btnRotate);
+
+        // Nút Tải ảnh về
+        const btnDownload = document.createElement('button');
+        btnDownload.className = 'qba-lightbox-btn';
+        btnDownload.title = 'Tải ảnh về máy';
+        btnDownload.innerHTML = '<i class="fa fa-download"></i>';
+        btnDownload.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (bigImg && bigImg.src) {
+                const a = document.createElement('a');
+                a.href = bigImg.src;
+                a.download = (captionEl.textContent || 'qba_image').replace(/\s+/g, '_') + '.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        });
+        toolbar.appendChild(btnDownload);
+
+        // Nút Đóng
+        const btnClose = document.createElement('button');
+        btnClose.className = 'qba-lightbox-btn btn-close-viewer';
+        btnClose.title = 'Đóng (ESC)';
+        btnClose.innerHTML = '<i class="fa fa-times"></i>';
+        btnClose.addEventListener('click', (e) => {
             e.stopPropagation();
             closeViewer();
         });
-        viewer.appendChild(closeBtn);
+        toolbar.appendChild(btnClose);
 
-        // Nút ảnh trước (Prev)
-        prevBtn = document.createElement('button');
-        prevBtn.innerHTML = '&#10094;';
-        prevBtn.title = 'Ảnh trước (←)';
-        prevBtn.style.cssText = `
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 0, 0, 0.6);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 50%;
-            font-size: 24px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s ease, transform 0.15s ease;
-            z-index: 11;
-        `;
-        prevBtn.addEventListener('mouseenter', () => {
-            prevBtn.style.background = 'rgba(0, 0, 0, 0.9)';
-            prevBtn.style.transform = 'translateY(-50%) scale(1.08)';
-        });
-        prevBtn.addEventListener('mouseleave', () => {
-            prevBtn.style.background = 'rgba(0, 0, 0, 0.6)';
-            prevBtn.style.transform = 'translateY(-50%) scale(1)';
-        });
-        prevBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            navigateGallery(-1);
-        });
-        viewer.appendChild(prevBtn);
+        topBar.appendChild(toolbar);
+        viewer.appendChild(topBar);
 
-        // Nút ảnh sau (Next)
-        nextBtn = document.createElement('button');
-        nextBtn.innerHTML = '&#10095;';
-        nextBtn.title = 'Ảnh tiếp theo (→)';
-        nextBtn.style.cssText = `
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 0, 0, 0.6);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 50%;
-            font-size: 24px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.15s ease, transform 0.15s ease;
-            z-index: 11;
-        `;
-        nextBtn.addEventListener('mouseenter', () => {
-            nextBtn.style.background = 'rgba(0, 0, 0, 0.9)';
-            nextBtn.style.transform = 'translateY(-50%) scale(1.08)';
-        });
-        nextBtn.addEventListener('mouseleave', () => {
-            nextBtn.style.background = 'rgba(0, 0, 0, 0.6)';
-            nextBtn.style.transform = 'translateY(-50%) scale(1)';
-        });
-        nextBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            navigateGallery(1);
-        });
-        viewer.appendChild(nextBtn);
+        // 2. Stage (Vùng hiển thị ảnh chính)
+        const stage = document.createElement('div');
+        stage.className = 'qba-lightbox-stage';
 
-        // Click ảnh để phóng to thu nhỏ (Zoom 2x)
-        bigImg.addEventListener('click', function (e) {
-            e.stopPropagation();
-            isZoomed = !isZoomed;
-            if (isZoomed) {
-                bigImg.style.transform = 'scale(2)';
-                bigImg.style.cursor = 'zoom-out';
-            } else {
-                bigImg.style.transform = 'scale(1)';
-                bigImg.style.cursor = 'zoom-in';
+        bigImg = document.createElement('img');
+        bigImg.className = 'qba-lightbox-main-img';
+        bigImg.alt = 'Phóng to ảnh';
+        bigImg.draggable = false;
+
+        let hasDragged = false;
+        let dragInitialX = 0;
+        let dragInitialY = 0;
+
+        // Tương tác kéo rê ảnh (Pan) khi đang zoom trên cả stage và bigImg
+        stage.addEventListener('mousedown', (e) => {
+            if (currentZoom > 1 && (e.target === bigImg || e.target === stage)) {
+                isDragging = true;
+                hasDragged = false;
+                dragInitialX = e.clientX;
+                dragInitialY = e.clientY;
+                dragStartX = e.clientX - panX;
+                dragStartY = e.clientY - panY;
+                bigImg.style.transition = 'none';
+                e.preventDefault();
             }
         });
 
-        // Click nền tối để đóng
-        viewer.addEventListener('click', function (e) {
-            if (e.target === viewer || e.target === imgContainer) {
-                isZoomed = false;
-                bigImg.style.transform = 'scale(1)';
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging && currentZoom > 1) {
+                if (Math.hypot(e.clientX - dragInitialX, e.clientY - dragInitialY) > 4) {
+                    hasDragged = true;
+                }
+                panX = e.clientX - dragStartX;
+                panY = e.clientY - dragStartY;
+                applyTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                if (bigImg) {
+                    bigImg.style.transition = 'transform 0.16s ease-out';
+                }
+            }
+        });
+
+        // Click ảnh: chỉ toggle zoom khi KHÔNG PHẢI là thao tác drag
+        bigImg.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (hasDragged) {
+                hasDragged = false;
+                return;
+            }
+            if (currentZoom > 1) {
+                resetZoomAndRotation();
+            } else {
+                currentZoom = 2;
+                applyTransform();
+            }
+        });
+
+        // Hỗ trợ lăn con lăn chuột để zoom mượt mà (Wheel Zoom)
+        stage.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.35 : -0.35;
+            const newZoom = Math.min(4, Math.max(1, Math.round((currentZoom + delta) * 100) / 100));
+            if (newZoom !== currentZoom) {
+                currentZoom = newZoom;
+                if (currentZoom === 1) {
+                    panX = 0;
+                    panY = 0;
+                }
+                applyTransform();
+            }
+        }, { passive: false });
+
+        stage.appendChild(bigImg);
+
+        // Nút Prev
+        prevBtn = document.createElement('button');
+        prevBtn.className = 'qba-lightbox-nav prev';
+        prevBtn.title = 'Ảnh trước (←)';
+        prevBtn.innerHTML = '<i class="fa fa-chevron-left"></i>';
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateGallery(-1);
+        });
+        stage.appendChild(prevBtn);
+
+        // Nút Next
+        nextBtn = document.createElement('button');
+        nextBtn.className = 'qba-lightbox-nav next';
+        nextBtn.title = 'Ảnh tiếp theo (→)';
+        nextBtn.innerHTML = '<i class="fa fa-chevron-right"></i>';
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigateGallery(1);
+        });
+        stage.appendChild(nextBtn);
+
+        // Click vùng ngoài ảnh để đóng
+        stage.addEventListener('click', (e) => {
+            if (e.target === stage) {
+                if (hasDragged) {
+                    hasDragged = false;
+                    return;
+                }
                 closeViewer();
             }
         });
 
-        // Bắt phím ESC, mũi tên trái / phải
-        document.addEventListener('keydown', function (e) {
-            if (viewer.style.visibility === 'visible') {
+        viewer.appendChild(stage);
+
+        // 3. Filmstrip Thumbnails ở đáy màn hình
+        filmstripWrap = document.createElement('div');
+        filmstripWrap.className = 'qba-lightbox-filmstrip-wrap';
+        filmstripEl = document.createElement('div');
+        filmstripEl.className = 'qba-lightbox-filmstrip';
+        filmstripWrap.appendChild(filmstripEl);
+        viewer.appendChild(filmstripWrap);
+
+        // Bắt phím tắt
+        document.addEventListener('keydown', (e) => {
+            if (viewer.classList.contains('active')) {
                 if (e.key === 'Escape') {
-                    isZoomed = false;
-                    bigImg.style.transform = 'scale(1)';
                     closeViewer();
                 } else if (e.key === 'ArrowLeft') {
                     navigateGallery(-1);
                 } else if (e.key === 'ArrowRight') {
                     navigateGallery(1);
+                } else if (e.key === '+' || e.key === '=') {
+                    if (currentZoom < 3.5) {
+                        currentZoom += 0.35;
+                        applyTransform();
+                    }
+                } else if (e.key === '-' || e.key === '_') {
+                    if (currentZoom > 1) {
+                        currentZoom = Math.max(1, currentZoom - 0.35);
+                        applyTransform();
+                    }
+                } else if (e.key === 'r' || e.key === 'R') {
+                    currentRotation = (currentRotation + 90) % 360;
+                    applyTransform();
                 }
             }
         });
@@ -285,28 +311,64 @@
         return viewer;
     }
 
+    function renderFilmstrip() {
+        if (!filmstripEl || !galleryItems) return;
+        filmstripEl.innerHTML = '';
+        if (galleryItems.length <= 1) {
+            filmstripWrap.style.display = 'none';
+            return;
+        }
+        filmstripWrap.style.display = 'flex';
+
+        galleryItems.forEach((item, idx) => {
+            const thumbBox = document.createElement('div');
+            thumbBox.className = 'qba-lightbox-filmstrip-thumb' + (idx === currentIndex ? ' active' : '');
+            thumbBox.title = item.title || `Ảnh ${idx + 1}`;
+            const img = document.createElement('img');
+            img.src = item.src;
+            img.alt = item.title || `Ảnh ${idx + 1}`;
+            thumbBox.appendChild(img);
+
+            thumbBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentIndex !== idx) {
+                    currentIndex = idx;
+                    renderCurrentGalleryItem();
+                }
+            });
+
+            filmstripEl.appendChild(thumbBox);
+        });
+
+        // Cuộn filmstrip tới vị trí thumb đang active
+        const activeThumb = filmstripEl.querySelector('.active');
+        if (activeThumb) {
+            activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }
+
     function renderCurrentGalleryItem() {
         if (!galleryItems || galleryItems.length === 0) return;
         const item = galleryItems[currentIndex];
-        isZoomed = false;
+        resetZoomAndRotation();
+
         bigImg.src = getHighResUrl(item.src);
-        bigImg.style.transform = 'scale(1)';
-        bigImg.style.cursor = 'zoom-in';
 
         if (captionEl) {
             captionEl.textContent = item.title || '';
-            captionEl.style.display = item.title ? 'block' : 'none';
         }
 
         const hasMultiple = galleryItems.length > 1;
         if (counterEl) {
             counterEl.textContent = `${currentIndex + 1} / ${galleryItems.length}`;
-            counterEl.style.display = hasMultiple ? 'block' : 'none';
+            counterEl.style.display = hasMultiple ? 'inline-block' : 'none';
         }
         if (prevBtn && nextBtn) {
             prevBtn.style.display = hasMultiple ? 'flex' : 'none';
             nextBtn.style.display = hasMultiple ? 'flex' : 'none';
         }
+
+        renderFilmstrip();
     }
 
     function navigateGallery(direction) {
@@ -332,21 +394,20 @@
         }
 
         renderCurrentGalleryItem();
-        viewer.style.visibility = 'visible';
-        viewer.style.opacity = '1';
+        viewer.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
 
     function closeViewer() {
         if (!viewer) return;
-        viewer.style.opacity = '0';
-        viewer.style.visibility = 'hidden';
+        viewer.classList.remove('active');
         document.body.style.overflow = '';
         setTimeout(() => {
             if (bigImg) bigImg.src = '';
+            resetZoomAndRotation();
             galleryItems = [];
             currentIndex = 0;
-        }, 180);
+        }, 220);
     }
 
     // =========================================================================
@@ -400,7 +461,7 @@
     }
 
     function showHoverPreview(targetEl) {
-        if (!targetEl) return;
+        if (!targetEl || targetEl.closest('.modal, .modal-dialog, .o_dialog')) return;
         const imgEl = targetEl.tagName === 'IMG' ? targetEl : targetEl.querySelector('img');
         if (!imgEl) return;
 
@@ -541,6 +602,9 @@
 
         const trigger = e.target.closest('.qba-img-hover-scale, .qba-img-hover-box img, .qba-form-avatar-zoom img');
         if (trigger) {
+            if (trigger.closest('.modal, .modal-dialog, .o_dialog')) {
+                return;
+            }
             showHoverPreview(trigger);
             return;
         }
@@ -680,7 +744,7 @@
         // 0. Nếu đang ở trong Form Danh mục (.qba-fullwidth-category-form) -> Gom tất cả ảnh sơ đồ đo & ảnh danh mục để xem dạng Gallery
         const categoryForm = targetEl.closest('.qba-fullwidth-category-form');
         if (categoryForm) {
-            const catImgs = Array.from(categoryForm.querySelectorAll('.qba-category-measure-img img, .qba-category-large-img img, .qba-category-html-desc img')).filter(i => {
+            const catImgs = Array.from(categoryForm.querySelectorAll('.qba-category-measure-img img, .qba-category-large-img img, .qba-category-html-desc img, .qba-thumb-box img')).filter(i => {
                 const s = i.getAttribute('data-zoom-src') || i.currentSrc || i.src;
                 return s && !s.includes('placeholder');
             });
@@ -691,7 +755,9 @@
                     if (i.closest('.qba-category-measure-img')) {
                         itemTitle = `${catName} - Sơ đồ cách đo`;
                     } else if (i.closest('.qba-category-large-img')) {
-                        itemTitle = `${catName} - Hình ảnh danh mục`;
+                        itemTitle = `${catName} - Hình ảnh chính`;
+                    } else if (i.closest('.qba-thumb-box')) {
+                        itemTitle = `${catName} - Ảnh phụ`;
                     }
                     return {
                         src: i.getAttribute('data-zoom-src') || i.currentSrc || i.src,
