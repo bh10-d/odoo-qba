@@ -261,7 +261,7 @@ class QbaProductBulkEditWizard(models.TransientModel):
         # Ghi vết kiểm toán (Audit Trail) vào Chatter từng sản phẩm
         log_items = []
         if self.change_is_storable:
-            st_txt = "BẬT Theo dõi tồn kho (Lưu ý: Tồn kho ban đầu = 0, cần cập nhật số lượng/kiểm kê kho)" if self.is_storable else "TẮT Theo dõi tồn kho"
+            st_txt = "BẬT Theo dõi tồn kho (Tự động tính SL hiện có = Đã nhập - Đã bán)" if self.is_storable else "TẮT Theo dõi tồn kho"
             log_items.append(f"<li>Theo dõi tồn kho: <b>{st_txt}</b></li>")
         if self.change_available_in_pos:
             pos_txt = "Có bán trên POS" if self.available_in_pos else "Không bán trên POS"

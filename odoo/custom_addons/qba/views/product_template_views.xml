@@ -17,7 +17,7 @@
             <!-- Mở khóa Theo dõi hàng tồn kho & Đơn vị tính cho Admin -->
             <xpath expr="//field[@name='is_storable']" position="attributes">
                 <attribute name="readonly">not is_system_admin</attribute>
-                <attribute name="help">Đặc quyền Quản trị viên: Sau khi bật theo dõi kho, số tồn ban đầu sẽ hiển thị là 0. Bắt buộc bấm 'Cập nhật số lượng' hoặc làm phiếu Kiểm kê kho để ghi nhận số tồn thực tế.</attribute>
+                <attribute name="help">Đặc quyền Quản trị viên: Khi bật theo dõi tồn kho, hệ thống tự động tính toán Số lượng hiện có = Đã nhập - Đã bán từ toàn bộ lịch sử mua bán và đồng bộ ngay vào kho.</attribute>
             </xpath>
             <xpath expr="//field[@name='uom_id']" position="attributes">
                 <attribute name="readonly">not is_system_admin</attribute>
@@ -27,17 +27,34 @@
                 <attribute name="groups"></attribute>
             </xpath>
 
-            <!-- Ảnh đại diện: Rê chuột phóng to scale x3 + Thumbnail ảnh phụ đính kèm (Hover Scale x4) bên dưới -->
+            <!-- Ảnh đại diện & Dải ảnh chi tiết phụ tùng chuẩn E-Commerce Showcase -->
             <field name="image_1920" position="replace">
-                <div class="float-end d-flex flex-column align-items-center me-2 mb-2" style="max-width: 280px; overflow: visible !important; position: relative; z-index: 50;">
-                    <field
-                        name="image_1920"
-                        widget="image"
-                        class="oe_avatar qba-form-avatar-zoom m-0"
-                        options="{'convert_to_webp': False}"
-                    />
-                    <div class="qba-attachment-strip-wrapper w-100 mt-2" style="overflow: visible !important;">
-                        <field name="attachment_images_preview" nolabel="1"/>
+                <div class="float-end me-2 mb-3 qba-product-showcase-card">
+                    <div class="qba-product-main-image-box">
+                        <field
+                            name="image_1920"
+                            widget="image"
+                            class="qba-product-showcase-img qba-lightbox-trigger m-0"
+                            options="{'convert_to_webp': False}"
+                        />
+                        <span class="qba-product-zoom-badge" title="Click để phóng to toàn màn hình">
+                            <i class="fa fa-search-plus"/> Phóng to
+                        </span>
+                    </div>
+                    <div class="qba-product-extra-section mt-2 pt-2 border-top">
+                        <div class="d-flex align-items-center justify-content-between mb-1 px-1">
+                            <span class="fw-semibold text-secondary" style="font-size: 0.74rem;">
+                                <i class="fa fa-images text-primary me-1"/>Ảnh chi tiết (<field name="extra_image_count" readonly="1"/>)
+                            </span>
+                            <button name="action_open_multi_image_wizard"
+                                    type="object"
+                                    class="btn btn-link p-0 text-decoration-none small text-primary fw-medium"
+                                    style="font-size: 0.72rem;"
+                                    title="Tải thêm nhiều ảnh">
+                                <i class="fa fa-plus-circle me-1"/>Thêm ảnh
+                            </button>
+                        </div>
+                        <field name="attachment_images_preview" readonly="1" nolabel="1"/>
                     </div>
                 </div>
             </field>
@@ -67,6 +84,13 @@
             </xpath>
 
             <xpath expr="//header" position="inside">
+                <button name="action_sync_stock_from_history"
+                        type="object"
+                        string="Tính Tồn Kho Theo Mua/Bán"
+                        class="btn-outline-info"
+                        icon="fa-calculator"
+                        invisible="not is_system_admin"
+                        help="Tự động tính toán lại Số lượng hiện có = Đã nhập - Đã bán theo đúng nguyên lý lịch sử mua bán."/>
                 <button name="action_open_web_link_wizard"
                         type="object"
                         string="Link Web SEO"
@@ -134,32 +158,32 @@
                     </group>
                 </page>
 
-                <!-- Cây phân cấp Xe / Động cơ / Hộp số / Cầu (như Danh mục sản phẩm từ gốc đến ngọn) -->
-                <page string="Xe">
+                <!-- Các Tab Tương Thích: Xe, Động cơ, Hộp số, Cầu (Chuẩn Odoo List View phân cấp từ gốc đến ngọn) -->
+                <page string="Xe" name="vehicles">
                     <field name="vehicle_ids">
-                        <list editable="bottom" string="Dòng xe áp dụng">
-                            <field name="complete_name" string="Dòng xe"/>
+                        <list>
+                            <field name="display_name" string="Dòng xe"/>
                         </list>
                     </field>
                 </page>
-                <page string="Động cơ">
+                <page string="Động cơ" name="engines">
                     <field name="engine_ids">
-                        <list editable="bottom" string="Động cơ áp dụng">
-                            <field name="complete_name" string="Động cơ"/>
+                        <list>
+                            <field name="display_name" string="Động cơ"/>
                         </list>
                     </field>
                 </page>
-                <page string="Hộp số">
+                <page string="Hộp số" name="gearboxes">
                     <field name="gearbox_ids">
-                        <list editable="bottom" string="Hộp số áp dụng">
-                            <field name="complete_name" string="Hộp số"/>
+                        <list>
+                            <field name="display_name" string="Hộp số"/>
                         </list>
                     </field>
                 </page>
-                <page string="Cầu">
+                <page string="Cầu" name="axles">
                     <field name="axle_ids">
-                        <list editable="bottom" string="Cầu xe áp dụng">
-                            <field name="complete_name" string="Cầu xe"/>
+                        <list>
+                            <field name="display_name" string="Cầu xe"/>
                         </list>
                     </field>
                 </page>

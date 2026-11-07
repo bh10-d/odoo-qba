@@ -528,31 +528,37 @@
 
 .qba-thumb-box {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
     padding: 3px;
-    transition: all 0.2s ease;
+    width: 52px;
+    height: 52px;
+    box-sizing: border-box;
+    transition: all 0.18s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    overflow: visible !important;
+    overflow: hidden !important;
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
 .qba-thumb-box:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    z-index: 99999 !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
 }
 
 .qba-thumb-wrapper {
     position: relative;
-    width: 58px;
-    height: 58px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #f8fafc;
     border-radius: 4px;
-    overflow: visible !important;
+    overflow: hidden !important;
 }
 
 .qba-img-hover-scale-4x {
@@ -560,22 +566,13 @@
     height: 100%;
     object-fit: contain;
     border-radius: 4px;
-    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease;
-    transform-origin: top right; /* Neo góc trên-phải để khi phóng to sẽ mở rộng sang TRÁI và XUỐNG DƯỚI, không bao giờ bị cắt mép phải và trên */
-    position: relative;
-    z-index: 2;
+    transition: transform 0.18s ease, opacity 0.18s ease;
     cursor: pointer;
     image-rendering: -webkit-optimize-contrast;
 }
 
-.qba-img-hover-scale-4x:hover {
-    /* Scale 3.8x và tịnh tiến nhẹ sang trái & xuống dưới để không bao giờ bị cắt bởi mép phải (Chatter) hoặc mép trên (Header) */
-    transform: scale(3.8) translate(-6px, 6px);
-    transform-origin: top right !important;
-    z-index: 999999 !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), 0 0 0 2px #3b82f6 !important;
-    background-color: #ffffff;
-    border-radius: 6px;
+.qba-thumb-box:hover .qba-img-hover-scale-4x {
+    transform: scale(1.08);
 }
 
 /* ==========================================================================
@@ -680,17 +677,19 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
 }
 
-/* Khung bao Hình ảnh danh mục lớn (Cột phải: Bảng tra cứu / Hình ảnh danh mục) */
+/* Khung bao Hình ảnh danh mục (Cột phải: Động cơ, Hộp số, Cầu, Xe) */
 .qba-category-image-box {
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px;
-    background-color: #ffffff;
-    min-height: 360px;
+    border-radius: 8px;
+    padding: 6px;
+    background-color: #f8fafc;
+    min-height: 180px;
+    max-height: 220px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .qba-category-large-img {
@@ -710,17 +709,507 @@
 .qba-category-large-img img {
     width: auto !important;
     max-width: 100% !important;
-    max-height: 600px !important;
+    max-height: 205px !important;
     height: auto !important;
     object-fit: contain !important;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: zoom-in;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .qba-category-large-img img:hover {
-    transform: scale(1.015);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
+
+/* Panel Quản lý Ảnh Phụ Gọn Gàng Hiện Đại */
+.qba-extra-images-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.qba-compact-uploader .oe_fileupload {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qba-compact-uploader .o_attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+}
+
+.qba-compact-uploader .o_attachment_many2many {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 26px !important;
+    padding: 2px 8px !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 13px !important;
+    max-width: 170px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.qba-compact-uploader .o_attachment_wrap {
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    overflow: hidden !important;
+}
+
+.qba-compact-uploader .o_image_box {
+    margin-right: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.qba-compact-uploader .o_image {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+.qba-compact-uploader .caption {
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+}
+
+.qba-compact-uploader .caption a {
+    font-size: 0.72rem !important;
+    color: #334155 !important;
+    text-decoration: none !important;
+}
+
+.qba-compact-uploader .caption.small {
+    display: none !important;
+}
+
+.qba-compact-uploader .o_attachment_uploaded {
+    display: none !important;
+}
+
+.qba-compact-uploader .o_attachment_delete {
+    margin-left: 5px !important;
+    color: #ef4444 !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    opacity: 0.75;
+    transition: opacity 0.15s ease;
+}
+
+.qba-compact-uploader .o_attachment_delete:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.qba-compact-uploader .oe_add button.o_attach {
+    font-size: 0.76rem !important;
+    padding: 3px 10px !important;
+    border-radius: 6px !important;
+    border: 1px dashed #3b82f6 !important;
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease;
+}
+
+.qba-compact-uploader .oe_add button.o_attach:hover {
+    background: #dbeafe !important;
+    border-color: #2563eb !important;
+}
+
+/* Loại bỏ hoàn toàn viền focus / editor của Odoo trên preview ảnh phụ */
+[name="attachment_images_preview"] {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+[name="attachment_images_preview"] .odoo-editor-editable {
+    outline: none !important;
+    border: none !important;
+}
+
+/* Cố định các nút sửa/xóa ảnh của Odoo ở góc trên phải để không làm nhảy box khi hover */
+.qba-category-image-box .o_field_image .opacity-trigger-hover > div.position-absolute {
+    top: 6px !important;
+    right: 6px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto !important;
+    justify-content: flex-end !important;
+}
+
+/* ==========================================================================
+   10. LUXURY GLASSMORPHYS LIGHTBOX VIEWER (XEM ẢNH FULL MÀN HÌNH CHUYÊN NGHIỆP)
+   ========================================================================== */
+
+.qba-lightbox-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483640;
+    background: rgba(11, 15, 25, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.22s ease;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.qba-lightbox-viewer.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Top Navigation & Toolbar */
+.qba-lightbox-topbar {
+    height: 58px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 20;
+    flex-shrink: 0;
+}
+
+.qba-lightbox-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 60%;
+    overflow: hidden;
+}
+
+.qba-lightbox-counter {
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.qba-lightbox-caption {
+    color: #f1f5f9;
+    font-size: 0.92rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.qba-lightbox-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qba-lightbox-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.16s ease;
+}
+
+.qba-lightbox-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.qba-lightbox-btn.btn-close-viewer {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    margin-left: 6px;
+}
+
+.qba-lightbox-btn.btn-close-viewer:hover {
+    background: rgba(239, 68, 68, 0.85);
+    border-color: rgba(239, 68, 68, 1);
+    color: #ffffff;
+}
+
+/* Image Viewing Stage */
+.qba-lightbox-stage {
+    flex: 1 1 auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.qba-lightbox-main-img {
+    max-width: 90vw;
+    max-height: calc(85vh - 120px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    background: #ffffff;
+    cursor: zoom-in;
+}
+
+.qba-lightbox-main-img.zoomed {
+    cursor: grab;
+    max-width: none !important;
+    max-height: none !important;
+}
+
+.qba-lightbox-main-img.zoomed:active {
+    cursor: grabbing;
+}
+
+/* Prev / Next Floating Buttons */
+.qba-lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    backdrop-filter: blur(8px);
+    z-index: 25;
+}
+
+.qba-lightbox-nav:hover {
+    background: rgba(37, 99, 235, 0.85);
+    border-color: #3b82f6;
+    transform: translateY(-50%) scale(1.08);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.qba-lightbox-nav.prev {
+    left: 24px;
+}
+
+.qba-lightbox-nav.next {
+    right: 24px;
+}
+
+/* Bottom Filmstrip Thumbnails */
+.qba-lightbox-filmstrip-wrap {
+    height: 72px;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.75);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    flex-shrink: 0;
+    z-index: 20;
+}
+
+.qba-lightbox-filmstrip {
+    display: flex;
+    gap: 10px;
+    max-width: 90vw;
+    overflow-x: auto;
+    padding: 4px 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.qba-lightbox-filmstrip::-webkit-scrollbar {
+    height: 4px;
+}
+
+.qba-lightbox-filmstrip::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.qba-lightbox-filmstrip-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    background: #1e293b;
+    border: 2px solid transparent;
+    opacity: 0.55;
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: all 0.16s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qba-lightbox-filmstrip-thumb:hover {
+    opacity: 0.9;
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.qba-lightbox-filmstrip-thumb.active {
+    opacity: 1;
+    border-color: #3b82f6;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+    transform: scale(1.05);
+}
+
+.qba-lightbox-filmstrip-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #ffffff;
+}
+
+/* ==========================================================================
+   11. PRODUCT IMAGE SHOWCASE CARD (KHUNG TRƯNG BÀY ẢNH TRANG CHI TIẾT SẢN PHẨM)
+   ========================================================================== */
+
+.qba-product-showcase-card {
+    width: 240px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 20;
+}
+
+.qba-product-showcase-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
+}
+
+.qba-product-main-image-box {
+    width: 100%;
+    height: 180px;
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    cursor: zoom-in;
+}
+
+.qba-product-showcase-img {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.qba-product-showcase-img img {
+    max-width: 216px !important;
+    max-height: 170px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 6px;
+    transition: transform 0.2s ease;
+}
+
+.qba-product-showcase-card:hover .qba-product-showcase-img img {
+    transform: scale(1.02);
+}
+
+.qba-product-zoom-badge {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(15, 23, 42, 0.65);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 0.68rem;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s ease;
+}
+
+.qba-product-showcase-card:hover .qba-product-zoom-badge {
+    background: rgba(37, 99, 235, 0.85);
+}
+
+/* Nút sửa/xóa ảnh đại diện Odoo trong showcase card */
+.qba-product-showcase-card .o_field_image .opacity-trigger-hover > div.position-absolute {
+    top: 6px !important;
+    right: 6px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto !important;
+    justify-content: flex-end !important;
+}
+
+/* Dải thumbnail ảnh phụ trong product showcase */
+.qba-product-extra-section .qba-thumb-box {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 6px !important;
+    padding: 2px !important;
+}
+
+.qba-product-extra-section .qba-thumb-wrapper {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 4px !important;
+}
+
+.qba-product-extra-section .qba-thumb-title {
+    display: none !important;
+}
+
+
+
+
 
 

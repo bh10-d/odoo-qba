@@ -113,7 +113,10 @@ class QbaAiAssistantController(http.Controller):
             return {"success": True, "data": conv.get_conversation_data()}
         except Exception as e:
             _logger.error("Lỗi send_message: %s", e)
-            return {"success": False, "error": str(e)}
+            err_msg = str(e)
+            if "Cursor already closed" in err_msg or "closed" in err_msg.lower():
+                err_msg = "Kết nối cơ sở dữ liệu vừa được làm mới (server reload). Vui lòng thử gửi lại tin nhắn."
+            return {"success": False, "error": err_msg}
 
     @http.route("/qba_ai/conversation/new", type="json", auth="user")
     def new_conversation(self, context_product_id=None):

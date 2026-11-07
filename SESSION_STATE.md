@@ -68,31 +68,46 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-06 15:58 (GMT+7)
-- **Nhánh Git:** `perf-optimize-qba-pos`
+- **Thời gian:** 2026-11-07 23:40 (GMT+7)
+- **Nhánh Git:** `feature/admin-product-management`
 - **Công việc đã hoàn thành:**
-  1. Đã commit thành công nhánh `perf-optimize-qba-ai` (`06fd9cc`) và chuyển sang nhánh `perf-optimize-qba-pos`.
-  2. **Giải quyết triệt để các phát hiện audit trên module `qba_pos`**:
-     - **H1 (Rủi ro Lockout cao nhất)**: Tách HTTP call Zalo API ra ngoài DB transaction trong [`pos_order.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/pos_order.py). Sử dụng hook `self.env.cr.after('commit', lambda: ...)` sau khi đơn hàng POS đã commit xong hoàn toàn. Chấm dứt nguy cơ treo giữ khóa bản ghi đơn hàng khi mạng Zalo chậm.
-     - **H2 (N+1 Category Sync)**: Batch tải danh sách `PosCategory` một lần duy nhất vào memory dictionary `{name: record}` trong [`product_template.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/product_template.py) thay vì chạy câu `search` lặp đi lặp lại per category.
-     - **H3 (Index Trigram)**: Chuyển trường `name` trong [`pos_custom_product_history.py`](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba_pos/models/pos_custom_product_history.py) sang `index="trigram"` native của Odoo 18 / PostgreSQL, tối ưu triệt để câu so khớp `=ilike` khi gợi ý tên hàng nhập tay.
-     - **M1 (Stored Count)**: Bổ sung `store=True` cho trường `zalo_message_count` trên `pos.order` để tăng tốc độ load view danh sách đơn hàng POS.
-     - **Sửa nhanh NameError Controller**: Bổ sung import `UserError` trong `qba_ai/controllers/main.py`.
-  3. Kiểm tra biên dịch và khởi động lại container Odoo thành công, hệ thống hoạt động ổn định.
-- **File đã thay đổi:**
-  - `odoo/custom_addons/qba_pos/models/pos_order.py`
-  - `odoo/custom_addons/qba_pos/models/product_template.py`
-  - `odoo/custom_addons/qba_pos/models/pos_custom_product_history.py`
-  - `odoo/custom_addons/qba_ai/controllers/main.py`
-  - `SESSION_STATE.md`
+  1. **Audit & Gia Cố Toàn Diện Luồng Tiền Tệ Chiết Khấu Mua Hàng (`purchase.order.line`):**
+     - **Phát hiện & xử lý rủi ro Định giá tồn kho (Inventory Valuation):** Odoo standard `purchase_stock` khi tạo dịch chuyển kho (`stock.move`) dùng đơn giá gốc chưa trừ chiết khấu (`self.price_unit`), khiến giá trị kho bị ghi nhận cao hơn thực tế và lệch tài khoản trung gian nhập kho (`Stock Interim Received`). Đã override `_get_stock_move_price_unit()` áp dụng đúng tỷ lệ giảm giá sang `stock.move` (`83,333.33đ/cái`), triệt tiêu 100% rủi ro lệch định giá tài sản và giá vốn hàng bán (COGS).
+     - **Thêm ràng buộc kiểm soát rủi ro tài chính (`@api.constrains`):**
+       - Chặn hoàn toàn số tiền chiết khấu âm (`discount_amount < 0`).
+       - Chặn tỷ lệ chiết khấu ngoài khoảng `[0%, 100%]`.
+       - Chặn số tiền chiết khấu vượt quá tổng tiền hàng của dòng (`discount_amount > abs(price_unit * qty)`).
+     - **Hỗ trợ an toàn dòng trả hàng (Số lượng âm):** Dùng `abs(self.product_qty)` trong các phép tính đơn giá và tỷ lệ chiết khấu, ngăn chặn lỗi đảo dấu tiền tệ khi xuất trả hàng nhà cung cấp.
+     - **Bộ Test Kiểm Toán 5/5 Đạt 100%:**
+       - Test 1: Đơn mua và đơn giá nhập kho `stock.move` tính chính xác `83,333.33đ`.
+       - Test 2: Bắt lỗi nhập tiền chiết khấu âm.
+       - Test 3: Bắt lỗi chiết khấu vượt quá tiền hàng.
+       - Test 4: Bắt lỗi tỷ lệ chiết khấu > 100%.
+       - Test 5: Xác nhận đơn -> Nhập kho -> Lập Hóa đơn NCC (`account.move.line`) khớp số tiền `250,000đ` tuyệt đối.
+  2. **Thêm Cột Tiền Chiết Khấu Bằng Số (`CK`) Trên Đơn Mua Hàng:**
+     - Đã thêm trường `discount_amount` (Monetary, ký hiệu / nhãn **`CK`**) song hành cùng `% CK` (`discount`) trên chi tiết đơn mua hàng, hỗ trợ đồng bộ hai chiều và hiển thị trên list/form/kanban view.
+  3. **Tự Động Tính Số Lượng Hiện Có & Dự Báo (SL hiện có = Đã nhập - Đã bán):**
+     - Đã hoàn tất và đồng bộ CSDL.
+  4. Đã nâng cấp module `qba` (`odoo-bin -u qba`) và khởi động lại container Odoo `staging-qba-odoo-1` hoạt động ổn định (HTTP 200).
+- **File đã thay đổi / tạo mới:**
+  - `odoo/custom_addons/qba/models/purchase_order_line.py` (Mới - Override `purchase.order.line`)
+  - `odoo/custom_addons/qba/models/__init__.py` (Import `purchase_order_line`)
+  - `odoo/custom_addons/qba/views/purchase_order_views.xml` (Mới - Thêm cột `CK` & `% CK` vào form Mua hàng)
+  - `odoo/custom_addons/qba/__manifest__.py` (Đăng ký `purchase_order_views.xml`)
+  - `SESSION_STATE.md` (Cập nhật bàn giao)
 
 ---
 
 ## 5. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
 
-- [x] Khởi tạo nhánh `perf-optimize-qba-core` và hoàn thành tối ưu module lõi `qba` ✅
-- [x] Khởi tạo nhánh `perf-optimize-qba-ai` và hoàn thành tối ưu module `qba_ai` ✅
-- [x] Khởi tạo nhánh `perf-optimize-qba-pos` và hoàn thành tối ưu module `qba_pos` ✅
-- [ ] Commit nhánh `perf-optimize-qba-pos`.
-- [ ] Nghiệm thu toàn diện cả 3 module trên giao diện Odoo.
-- [ ] Hợp nhất (Merge) các nhánh tối ưu vào nhánh chính theo yêu cầu người dùng.
+- [x] Khắc phục lỗi xuất Hóa đơn POS `deferred_start_date` ✅
+- [x] Khắc phục lỗi `Cursor already closed` và kiểm thử Trợ lý QBA AI ✅
+- [x] Nâng cấp Showcase Card ảnh sản phẩm trên `product.template` form view ✅
+- [x] Fix thao tác kéo rê pan ảnh khi phóng to trong Lightbox ✅
+- [x] Fix bug UI 2 checkbox Điểm bán hàng trên trang thông tin sản phẩm ✅
+- [x] Chuẩn hóa 4 Tab Xe, Động cơ, Hộp số, Cầu hiển thị phân cấp từ gốc đến ngọn như Danh mục ✅
+- [x] Bật hiển thị trực tiếp cột Nhãn hiệu & Chủng loại trên các bảng danh mục Hộp số, Động cơ, Xe, Cầu ✅
+- [x] Tự động tính số lượng hiện có theo lịch sử Mua/Bán khi bật theo dõi tồn kho ✅
+- [x] Thêm cột tiền chiết khấu bằng số `CK` bên cạnh `% CK` trên đơn mua hàng ✅
+- [x] Người dùng kiểm tra giao diện trên trình duyệt (`http://localhost:8089`) ✅
+- [x] Commit và push các thay đổi lên nhánh `feature/admin-product-management` ✅

@@ -4,12 +4,12 @@
         <field name="model">qba.gearbox</field>
         <field name="arch" type="xml">
             <list>
-                <field name="complete_name" string="Hộp số"/>
-                <field name="name"/>
-                <field name="parent_id"/>
+                <field name="name" string="Hộp số"/>
+                <field name="parent_id" string="Danh mục chính"/>
                 <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" optional="hide"/>
-                <field name="category" optional="hide"/>
+                <field name="brand" string="Nhãn hiệu"/>
+                <field name="category" string="Chủng loại"/>
+                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
             </list>
         </field>
     </record>
@@ -31,7 +31,7 @@
                     </div>
                     <group>
                         <group>
-                            <field name="parent_id" placeholder="Chọn danh mục cha (VD: Fast / 9JS135)"/>
+                            <field name="parent_id" string="Danh mục chính" placeholder="Chọn danh mục chính (VD: Fast / 9JS135)"/>
                             <field name="brand"/>
                             <field name="ratio"/>
                         </group>
@@ -49,12 +49,33 @@
                             </div>
                         </div>
                         <div class="col-12 col-lg-5">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <span class="fw-bold" style="font-size: 0.95rem; color: #b91c1c;">Hình ảnh hộp số</span>
-                                <span class="text-muted small" style="font-size: 0.76rem;"><i class="fa fa-search-plus me-1"/>Click vào ảnh để phóng to</span>
+                            <div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="fw-bold text-dark" style="font-size: 0.9rem;">
+                                        <i class="fa fa-camera text-primary me-1"/>Hình ảnh hộp số
+                                    </span>
+                                    <field name="extra_image_count" invisible="1"/>
+                                    <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle ms-1"
+                                          invisible="extra_image_count == 0" style="font-size: 0.72rem; padding: 2px 7px;">
+                                        <i class="fa fa-images me-1"/>+<field name="extra_image_count" readonly="1"/> ảnh
+                                    </span>
+                                </div>
+                                <span class="text-muted small" style="font-size: 0.72rem;">
+                                    <i class="fa fa-search-plus me-1 text-secondary"/>Phóng to
+                                </span>
                             </div>
-                            <div class="qba-category-image-box text-center">
+                            <div class="qba-category-image-box text-center position-relative">
                                 <field name="image_1920" widget="image" nolabel="1" class="qba-category-large-img qba-lightbox-trigger"/>
+                            </div>
+                            <div class="qba-extra-images-panel mt-2 p-2 bg-light rounded border">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="small fw-semibold text-secondary" style="font-size: 0.78rem;">
+                                        <i class="fa fa-paperclip text-primary me-1"/>Ảnh phụ đính kèm
+                                    </span>
+                                    <span class="text-muted" style="font-size: 0.7rem;">(chọn nhiều ảnh cùng lúc)</span>
+                                </div>
+                                <field name="extra_image_ids" widget="many2many_binary" string="Tải ảnh phụ" class="qba-compact-uploader" options="{'accepted_file_extensions': 'image/*'}"/>
+                                <field name="attachment_images_preview" readonly="1" nolabel="1"/>
                             </div>
                         </div>
                     </div>

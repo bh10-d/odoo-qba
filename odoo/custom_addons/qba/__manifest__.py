@@ -26,7 +26,8 @@
         "views/product_web_batch_unlink_wizard_views.xml",
         "views/product_bulk_edit_wizard_views.xml",
         "views/res_config_settings_views.xml",
-        "views/sale_order_views.xml"
+        "views/sale_order_views.xml",
+        "views/purchase_order_views.xml"
     ],
     "license": "LGPL-3",
     "assets": {

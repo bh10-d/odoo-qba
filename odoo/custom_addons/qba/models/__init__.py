@@ -20,3 +20,5 @@ from . import res_config_settings
 from . import api_utils
 from . import sale_order
 from . import product_bulk_edit_wizard
+from . import account_move_line
+from . import purchase_order_line
