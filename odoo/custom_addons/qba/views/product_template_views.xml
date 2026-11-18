@@ -83,14 +83,12 @@
                 </button>
             </xpath>
 
+            <!-- Bỏ hoàn toàn nút Cập nhật số lượng trên header form sản phẩm (kiểm kê qua Tồn kho -> Kiểm kê thực tế) -->
+            <xpath expr="//header/button[@name='action_update_quantity_on_hand']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
             <xpath expr="//header" position="inside">
-                <button name="action_sync_stock_from_history"
-                        type="object"
-                        string="Tính Tồn Kho Theo Mua/Bán"
-                        class="btn-outline-info"
-                        icon="fa-calculator"
-                        invisible="not is_system_admin"
-                        help="Tự động tính toán lại Số lượng hiện có = Đã nhập - Đã bán theo đúng nguyên lý lịch sử mua bán."/>
                 <button name="action_open_web_link_wizard"
                         type="object"
                         string="Link Web SEO"

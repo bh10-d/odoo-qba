@@ -68,46 +68,35 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-07 23:40 (GMT+7)
-- **Nhánh Git:** `feature/admin-product-management`
+- **Thời gian:** 2026-11-18 17:26 (GMT+7)
+- **Nhánh Git:** `feature/stock-accounting-opening-balance` (tạo từ `main`)
 - **Công việc đã hoàn thành:**
-  1. **Audit & Gia Cố Toàn Diện Luồng Tiền Tệ Chiết Khấu Mua Hàng (`purchase.order.line`):**
-     - **Phát hiện & xử lý rủi ro Định giá tồn kho (Inventory Valuation):** Odoo standard `purchase_stock` khi tạo dịch chuyển kho (`stock.move`) dùng đơn giá gốc chưa trừ chiết khấu (`self.price_unit`), khiến giá trị kho bị ghi nhận cao hơn thực tế và lệch tài khoản trung gian nhập kho (`Stock Interim Received`). Đã override `_get_stock_move_price_unit()` áp dụng đúng tỷ lệ giảm giá sang `stock.move` (`83,333.33đ/cái`), triệt tiêu 100% rủi ro lệch định giá tài sản và giá vốn hàng bán (COGS).
-     - **Thêm ràng buộc kiểm soát rủi ro tài chính (`@api.constrains`):**
-       - Chặn hoàn toàn số tiền chiết khấu âm (`discount_amount < 0`).
-       - Chặn tỷ lệ chiết khấu ngoài khoảng `[0%, 100%]`.
-       - Chặn số tiền chiết khấu vượt quá tổng tiền hàng của dòng (`discount_amount > abs(price_unit * qty)`).
-     - **Hỗ trợ an toàn dòng trả hàng (Số lượng âm):** Dùng `abs(self.product_qty)` trong các phép tính đơn giá và tỷ lệ chiết khấu, ngăn chặn lỗi đảo dấu tiền tệ khi xuất trả hàng nhà cung cấp.
-     - **Bộ Test Kiểm Toán 5/5 Đạt 100%:**
-       - Test 1: Đơn mua và đơn giá nhập kho `stock.move` tính chính xác `83,333.33đ`.
-       - Test 2: Bắt lỗi nhập tiền chiết khấu âm.
-       - Test 3: Bắt lỗi chiết khấu vượt quá tiền hàng.
-       - Test 4: Bắt lỗi tỷ lệ chiết khấu > 100%.
-       - Test 5: Xác nhận đơn -> Nhập kho -> Lập Hóa đơn NCC (`account.move.line`) khớp số tiền `250,000đ` tuyệt đối.
-  2. **Thêm Cột Tiền Chiết Khấu Bằng Số (`CK`) Trên Đơn Mua Hàng:**
-     - Đã thêm trường `discount_amount` (Monetary, ký hiệu / nhãn **`CK`**) song hành cùng `% CK` (`discount`) trên chi tiết đơn mua hàng, hỗ trợ đồng bộ hai chiều và hiển thị trên list/form/kanban view.
-  3. **Tự Động Tính Số Lượng Hiện Có & Dự Báo (SL hiện có = Đã nhập - Đã bán):**
-     - Đã hoàn tất và đồng bộ CSDL.
-  4. Đã nâng cấp module `qba` (`odoo-bin -u qba`) và khởi động lại container Odoo `staging-qba-odoo-1` hoạt động ổn định (HTTP 200).
+  1. **Xóa hoàn toàn nút `Cập nhật số lượng` trên header form Sản phẩm & khóa chỉ đọc trên smart button `Hiện có`:**
+     - Gắn `invisible="1"` cho `<header>/button[@name='action_update_quantity_on_hand']` trong [product_template_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/product_template_views.xml) để không ai nhỡ tay chỉnh SL trên hồ sơ sản phẩm (kiểm kê định kỳ đi qua `Tồn kho → Hoạt động → Kiểm kê thực tế`).
+     - Ghi đè `action_update_quantity_on_hand()` trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py) luôn trả về danh sách tồn kho ở chế độ chỉ đọc (`create=False, edit=False, delete=False`).
+  2. **Gia cố logic kế toán cho Bút toán Tồn đầu kỳ (`_calculate_historical_stock_breakdown`):**
+     - Quy đổi toàn bộ số lượng PO, SO, POS và `stock.move` về **ĐVT gốc (`product_id.uom_id`)** qua `_compute_quantity()`.
+     - Khấu trừ chính xác **hàng trả lại NCC** (`internal -> supplier`) và **hàng khách trả lại** (`customer -> internal`).
+     - Tính riêng cho từng biến thể (`variant_ids=[variant.id]`) để không bị nhân bản tồn kho trên sản phẩm nhiều biến thể.
+     - **Giữ nguyên 67 mã** chưa bật theo dõi kho trong CSDL để người dùng tự test tay.
+  3. **Tài liệu giải thích nguyên lý kế toán:** Cập nhật [GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md).
+  5. **Audit Bảo Mật & Toàn Vẹn Dữ Liệu (`odoo-security`):**
+     - **Chặn ghi đè lặp lại:** Chỉ chạy `_auto_sync_stock_from_history()` cho `newly_storable` (chuyển thực sự từ `False → True`), tránh trường hợp Bulk Edit hoặc RPC ghi `is_storable=True` lên mã đang theo dõi kho làm đè số tồn thực tế.
+     - **Khóa cả biến thể (`product.product`):** Bổ sung override `action_update_quantity_on_hand()` trên `product.product` trả về danh sách tồn kho chỉ đọc (`create=False, edit=False, delete=False`).
+     - **Cô lập công ty (`company_id`):** Bổ sung `company_domain` vào các truy vấn `.sudo().search(...)` trong `_calculate_historical_stock_breakdown()`.
+     - **Kiểm thử bảo mật 4/4 đạt 100% (rollback sạch):** User `nhanvien` (`uid=34`) bị chặn `AccessError` khi sửa `is_storable`, nhận view chỉ đọc trên cả `product.template` & `product.product`; ghi lại `is_storable=True` không kích hoạt đồng bộ lại hay spam Chatter; HTTP 200.
 - **File đã thay đổi / tạo mới:**
-  - `odoo/custom_addons/qba/models/purchase_order_line.py` (Mới - Override `purchase.order.line`)
-  - `odoo/custom_addons/qba/models/__init__.py` (Import `purchase_order_line`)
-  - `odoo/custom_addons/qba/views/purchase_order_views.xml` (Mới - Thêm cột `CK` & `% CK` vào form Mua hàng)
-  - `odoo/custom_addons/qba/__manifest__.py` (Đăng ký `purchase_order_views.xml`)
-  - `SESSION_STATE.md` (Cập nhật bàn giao)
+  - `odoo/custom_addons/qba/views/product_template_views.xml`
+  - `odoo/custom_addons/qba/models/product_template.py`
+  - `docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md` (Mới)
+  - `SESSION_STATE.md`
 
 ---
 
 ## 5. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
 
-- [x] Khắc phục lỗi xuất Hóa đơn POS `deferred_start_date` ✅
-- [x] Khắc phục lỗi `Cursor already closed` và kiểm thử Trợ lý QBA AI ✅
-- [x] Nâng cấp Showcase Card ảnh sản phẩm trên `product.template` form view ✅
-- [x] Fix thao tác kéo rê pan ảnh khi phóng to trong Lightbox ✅
-- [x] Fix bug UI 2 checkbox Điểm bán hàng trên trang thông tin sản phẩm ✅
-- [x] Chuẩn hóa 4 Tab Xe, Động cơ, Hộp số, Cầu hiển thị phân cấp từ gốc đến ngọn như Danh mục ✅
-- [x] Bật hiển thị trực tiếp cột Nhãn hiệu & Chủng loại trên các bảng danh mục Hộp số, Động cơ, Xe, Cầu ✅
-- [x] Tự động tính số lượng hiện có theo lịch sử Mua/Bán khi bật theo dõi tồn kho ✅
-- [x] Thêm cột tiền chiết khấu bằng số `CK` bên cạnh `% CK` trên đơn mua hàng ✅
-- [x] Người dùng kiểm tra giao diện trên trình duyệt (`http://localhost:8089`) ✅
-- [x] Commit và push các thay đổi lên nhánh `feature/admin-product-management` ✅
+- [x] Gỡ bỏ nút `Tính Tồn Kho Theo Mua/Bán` khỏi form sản phẩm ✅
+- [x] Ẩn/khóa nút `Cập nhật số lượng` với nhân viên thường & ghi log Chatter tồn đầu kỳ ✅
+- [x] Viết file giải thích nguyên lý kế toán tồn kho (`docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md`) ✅
+- [ ] Người dùng test tay trên nhóm 67 mã chưa bật theo dõi kho.
+- [ ] Xác định & sửa lỗi `"Thêm một dòng"` trên 4 tab Xe, Động cơ, Hộp số, Cầu (cần nội dung `"Xem thông tin kỹ thuật"` hoặc bật Chrome remote debugging).
