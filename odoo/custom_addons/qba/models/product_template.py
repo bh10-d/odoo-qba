@@ -114,7 +114,8 @@ class ProductTemplate(models.Model):
     # Cờ quyền Quản Trị Viên (System Admin)
     is_system_admin = fields.Boolean(
         string="Là Quản Trị Viên",
-        compute="_compute_is_system_admin"
+        compute="_compute_is_system_admin",
+        default=lambda self: self.env.is_admin() or self.env.user.has_group('base.group_system'),
     )
 
     # 2. Thông số kỹ thuật & Bảo hành & Cầu & Mô tả SP
@@ -218,6 +219,7 @@ class ProductTemplate(models.Model):
             else:
                 rec.axles_display = False
 
+    @api.depends_context('uid')
     def _compute_is_system_admin(self):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
         for rec in self:
@@ -563,87 +565,131 @@ class ProductTemplate(models.Model):
             }
         }
 
-    def _calculate_historical_stock_qty(self):
-        """Tính toán số lượng tồn kho theo nguyên lý: SL hiện có = Đã nhập - Đã bán"""
+    def _calculate_historical_stock_breakdown(self, variant_ids=None):
+        """Tính toán chi tiết tồn kho chuẩn kế toán (quy đổi đúng ĐVT gốc, trừ hàng trả lại):
+        SL tồn đầu kỳ = max(0, (Đã nhập - Trả NCC) - (Đã bán - Khách trả))"""
         self.ensure_one()
-        variant_ids = self.product_variant_ids.ids
+        if variant_ids is None:
+            variant_ids = self.with_context(active_test=False).product_variant_ids.ids
         if not variant_ids:
-            return 0.0
+            return 0.0, 0.0, 0.0
 
-        # 1. Đã nhập (Purchased / Inbound)
+        company_domain = [('company_id', '=', self.company_id.id)] if self.company_id else []
+
+        # 1. Đã nhập (PO đã xác nhận/hoàn tất hoặc dịch chuyển từ NCC vào kho, trừ hàng xuất trả NCC)
         po_lines = self.env['purchase.order.line'].sudo().search([
             ('product_id', 'in', variant_ids),
-            ('order_id.state', 'in', ['purchase', 'done'])
-        ])
-        po_qty = sum(po_lines.mapped('product_qty'))
+            ('order_id.state', 'in', ['purchase', 'done']),
+        ] + company_domain)
+        po_qty = sum(
+            l.product_uom._compute_quantity(l.product_qty, l.product_id.uom_id)
+            for l in po_lines
+        )
 
         in_moves = self.env['stock.move'].sudo().search([
             ('product_id', 'in', variant_ids),
             ('location_id.usage', '=', 'supplier'),
             ('location_dest_id.usage', '=', 'internal'),
-            ('state', '=', 'done')
-        ])
-        in_move_qty = sum(in_moves.mapped('quantity'))
-        qty_purchased = max(po_qty, in_move_qty)
+            ('state', '=', 'done'),
+        ] + company_domain)
+        in_move_qty = sum(
+            m.product_uom._compute_quantity(m.quantity, m.product_id.uom_id)
+            for m in in_moves
+        )
 
-        # 2. Đã bán (Sold / Outbound)
+        supplier_return_moves = self.env['stock.move'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('location_id.usage', '=', 'internal'),
+            ('location_dest_id.usage', '=', 'supplier'),
+            ('state', '=', 'done'),
+        ] + company_domain)
+        supplier_return_qty = sum(
+            m.product_uom._compute_quantity(m.quantity, m.product_id.uom_id)
+            for m in supplier_return_moves
+        )
+        qty_purchased = max(0.0, max(po_qty, in_move_qty) - supplier_return_qty)
+
+        # 2. Đã bán (SO + POS hợp lệ hoặc dịch chuyển từ kho ra KH, trừ hàng khách trả lại)
         so_lines = self.env['sale.order.line'].sudo().search([
             ('product_id', 'in', variant_ids),
-            ('order_id.state', 'in', ['sale', 'done'])
-        ])
-        so_qty = sum(so_lines.mapped('product_uom_qty'))
+            ('order_id.state', 'in', ['sale', 'done']),
+        ] + company_domain)
+        so_qty = sum(
+            l.product_uom._compute_quantity(l.product_uom_qty, l.product_id.uom_id)
+            for l in so_lines
+        )
 
         pos_lines = self.env['pos.order.line'].sudo().search([
             ('product_id', 'in', variant_ids),
-            ('order_id.state', 'not in', ['draft', 'cancel'])
-        ])
-        pos_qty = sum(pos_lines.mapped('qty'))
+            ('order_id.state', 'not in', ['draft', 'cancel']),
+        ] + company_domain)
+        pos_qty = sum(
+            l.product_uom_id._compute_quantity(l.qty, l.product_id.uom_id)
+            for l in pos_lines
+        )
 
         out_moves = self.env['stock.move'].sudo().search([
             ('product_id', 'in', variant_ids),
             ('location_id.usage', '=', 'internal'),
             ('location_dest_id.usage', '=', 'customer'),
-            ('state', '=', 'done')
-        ])
-        out_move_qty = sum(out_moves.mapped('quantity'))
-        qty_sold = max(so_qty + pos_qty, out_move_qty)
+            ('state', '=', 'done'),
+        ] + company_domain)
+        out_move_qty = sum(
+            m.product_uom._compute_quantity(m.quantity, m.product_id.uom_id)
+            for m in out_moves
+        )
 
-        return max(0.0, qty_purchased - qty_sold)
+        customer_return_moves = self.env['stock.move'].sudo().search([
+            ('product_id', 'in', variant_ids),
+            ('location_id.usage', '=', 'customer'),
+            ('location_dest_id.usage', '=', 'internal'),
+            ('state', '=', 'done'),
+        ] + company_domain)
+        customer_return_qty = sum(
+            m.product_uom._compute_quantity(m.quantity, m.product_id.uom_id)
+            for m in customer_return_moves
+        )
+        qty_sold = max(0.0, max(so_qty + pos_qty, out_move_qty) - customer_return_qty)
+
+        return qty_purchased, qty_sold, max(0.0, qty_purchased - qty_sold)
+
+    def _calculate_historical_stock_qty(self):
+        return self._calculate_historical_stock_breakdown()[2]
 
     def _auto_sync_stock_from_history(self):
-        """Tự động đồng bộ số lượng tồn kho thực tế = Đã nhập - Đã bán vào kho"""
+        """Tự động ghi nhận bút toán Tồn đầu kỳ = max(0, Đã nhập - Đã bán) cho từng biến thể khi bật theo dõi kho"""
         self.ensure_one()
         warehouse = self.env['stock.warehouse'].sudo().search(
             [('company_id', '=', self.company_id.id or self.env.company.id)], limit=1
         )
         if not warehouse or not warehouse.lot_stock_id:
             return
-        target_qty = self._calculate_historical_stock_qty()
-        for variant in self.product_variant_ids:
-            self.env['stock.quant'].with_context(inventory_mode=True).sudo().create({
+        total_purchased = 0.0
+        total_sold = 0.0
+        total_target = 0.0
+        for variant in self.with_context(active_test=False).product_variant_ids:
+            qty_purchased, qty_sold, target_qty = self._calculate_historical_stock_breakdown(variant_ids=[variant.id])
+            total_purchased += qty_purchased
+            total_sold += qty_sold
+            total_target += target_qty
+            self.env['stock.quant'].with_context(
+                inventory_mode=True,
+                inventory_name=_("Tồn đầu kỳ theo lịch sử Mua/Bán")
+            ).sudo().create({
                 'product_id': variant.id,
                 'location_id': warehouse.lot_stock_id.id,
                 'inventory_quantity': target_qty,
             })._apply_inventory()
+        self.sudo().message_post(
+            body=_("Khai báo tồn kho đầu kỳ khi bật Theo dõi hàng tồn kho: Đã mua %g - Đã bán %g → Tồn đầu kỳ = %g.")
+            % (total_purchased, total_sold, total_target)
+        )
 
-    def action_sync_stock_from_history(self):
-        """Hành động nút bấm: Đồng bộ số lượng tồn kho theo nguyên lý Đã nhập - Đã bán"""
-        if not (self.env.is_admin() or self.env.user.has_group('base.group_system')):
-            raise AccessError(_("Chỉ Quản trị viên hệ thống (Admin) mới có quyền tính toán và đồng bộ lại tồn kho!"))
-        for tmpl in self:
-            tmpl._auto_sync_stock_from_history()
-        self.invalidate_recordset(['qty_available', 'virtual_available'])
-        tmpl_name = self.display_name if len(self) == 1 else f"{len(self)} sản phẩm"
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Đồng Bộ Tồn Kho Thành Công'),
-                'message': _('Đã tự động tính toán SL hiện có = Đã nhập - Đã bán cho %s.') % tmpl_name,
-                'sticky': False,
-                'type': 'success',
-            }
-        }
+    def action_update_quantity_on_hand(self):
+        """Khóa chỉnh tay tồn kho trên form sản phẩm (chỉ xem chỉ đọc; kiểm kê thực tế qua menu Tồn kho)."""
+        action = self.action_open_quants()
+        action['context'] = dict(action.get('context') or {}, create=False, edit=False, delete=False)
+        return action
 
     def write(self, vals):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
@@ -729,6 +775,7 @@ class ProductTemplate(models.Model):
 
         # Cập nhật an toàn các trường bị Odoo khóa cứng cho Admin
         if is_admin and (target_storable is not None or target_uom_id is not None or target_uom_po_id is not None):
+            newly_storable = self.filtered(lambda t: not t.is_storable) if target_storable is True else self.browse()
             for tmpl in self:
                 updates = []
                 params = []
@@ -769,11 +816,11 @@ class ProductTemplate(models.Model):
                 if variants:
                     variants.invalidate_recordset([f for f in fnames_to_invalidate if f in variants._fields])
 
-            # Tự động tính toán và đồng bộ tồn kho khi Admin bật Theo dõi hàng tồn kho
-            if target_storable is True:
-                for tmpl in self:
+            # Tự động tính toán và đồng bộ tồn kho chỉ cho sản phẩm mới chuyển từ False -> True
+            if newly_storable:
+                for tmpl in newly_storable:
                     tmpl._auto_sync_stock_from_history()
-                self.invalidate_recordset(['qty_available', 'virtual_available'])
+                newly_storable.invalidate_recordset(['qty_available', 'virtual_available'])
 
         return res
 
@@ -1157,6 +1204,17 @@ class ProductTemplate(models.Model):
                 'default_product_tmpl_ids': [(6, 0, valid_prods.ids)],
             }
         }
+
+
+class ProductProduct(models.Model):
+    _inherit = "product.product"
+
+    def action_update_quantity_on_hand(self):
+        """Khóa chỉnh tay tồn kho trên form biến thể sản phẩm (chỉ xem chỉ đọc)."""
+        action = self.action_open_quants()
+        action['context'] = dict(action.get('context') or {}, create=False, edit=False, delete=False)
+        return action
+
 
 
 
