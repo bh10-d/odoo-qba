@@ -520,20 +520,15 @@ class ProductTemplate(models.Model):
 
     @api.model
     def _extract_oe_codes_from_name_and_sku(self, name="", brand_sku=""):
-        """Trích xuất danh sách mã OE từ cặp dấu <...> trên tên SP và brand_sku; nếu có dấu / thì tách xuống dòng riêng"""
+        """Trích xuất mã OE về duy nhất 1 dòng (không tách dấu /): ưu tiên brand_sku có sẵn, nếu trống thì lấy cặp dấu <...> trên tên SP"""
         import re
-        raw_parts = []
+        if isinstance(brand_sku, str) and brand_sku.strip():
+            return [brand_sku.strip()]
         if name:
-            raw_parts.extend(re.findall(r'<([^>]+)>', str(name)))
-        if brand_sku:
-            raw_parts.append(str(brand_sku))
-        codes = []
-        for part in raw_parts:
-            for item in part.split('/'):
-                c = item.strip()
-                if c and c not in codes:
-                    codes.append(c)
-        return codes
+            parts = [p.strip() for p in re.findall(r'<([^>]+)>', str(name)) if p.strip()]
+            if parts:
+                return [" | ".join(parts)]
+        return []
 
     @api.onchange("description_sale")
     def _onchange_description_sale_sync_specs(self):
@@ -568,7 +563,7 @@ class ProductTemplate(models.Model):
         return records
 
     def _auto_populate_oe_codes(self):
-        """Tự động điền bảng OE. Code từ dấu <...> trên tên SP hoặc brand_sku nếu sản phẩm chưa có mã OE"""
+        """Tự động điền bảng OE. Code (1 dòng duy nhất, để trống cột Hãng) từ brand_sku hoặc <...> nếu sản phẩm chưa có mã OE"""
         oe_vals = []
         for rec in self:
             if not rec.oe_code_ids:
@@ -576,7 +571,7 @@ class ProductTemplate(models.Model):
                     oe_vals.append({
                         'product_tmpl_id': rec.id,
                         'name': code,
-                        'brand_id': rec.brand_id.id or False,
+                        'brand_id': False,
                         'sequence': (idx + 1) * 10,
                     })
         if oe_vals:
@@ -890,6 +885,32 @@ class ProductTemplate(models.Model):
 
         return res
 
+    def _migrate_missing_oe_codes_sql(self):
+        """Chuyển mã OE từ brand_sku hoặc <...> sang qba_product_oe_code (1 dòng, để trống Hãng) cho SP chưa có OE"""
+        self.env.cr.execute("""
+            SELECT pt.id,
+                   coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') AS prod_name,
+                   coalesce(pt.brand_sku, '') AS brand_sku
+            FROM product_template pt
+            WHERE (coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') ~ '<[^>]+>'
+                   OR (pt.brand_sku IS NOT NULL AND trim(pt.brand_sku) != ''))
+              AND NOT EXISTS (
+                  SELECT 1 FROM qba_product_oe_code oe WHERE oe.product_tmpl_id = pt.id
+              );
+        """)
+        rows = self.env.cr.fetchall()
+        oe_vals = []
+        for tmpl_id, prod_name, b_sku in rows:
+            for idx, code in enumerate(self._extract_oe_codes_from_name_and_sku(prod_name, b_sku)):
+                oe_vals.append((tmpl_id, code, None, (idx + 1) * 10))
+        if oe_vals:
+            self.env.cr.executemany("""
+                INSERT INTO qba_product_oe_code (product_tmpl_id, name, brand_id, sequence, create_date, write_date, create_uid, write_uid)
+                VALUES (%s, %s, %s, %s, NOW(), NOW(), 1, 1)
+                ON CONFLICT (name, product_tmpl_id) DO NOTHING
+            """, oe_vals)
+        return [r[0] for r in rows]
+
     def _register_hook(self):
         """Chạy 1 lần duy nhất (guarded by ir.config_parameter): tạo trigram index, đồng bộ mô tả, mã OE, bảo hành và ảnh phụ"""
         super()._register_hook()
@@ -906,6 +927,31 @@ class ProductTemplate(models.Model):
                         ON qba_product_oe_code USING gin (name gin_trgm_ops);
                 """)
                 icp.set_param('qba.trgm_search_indexes_v1', '1')
+
+            if icp.get_param('qba.oe_single_line_and_warranty_zero_v2') != '1':
+                # 1. Reset toàn bộ bảo hành mặc định 90 ngày cũ về 0 ngày (Không bảo hành)
+                self.env.cr.execute("""
+                    UPDATE product_template
+                    SET warranty_days = 0, warranty = 'Không bảo hành'
+                    WHERE warranty_days IS NULL OR warranty_days = 90;
+                """)
+
+                # 2. Chỉ dọn các dòng OE đã auto-migrate (create_uid = 1, không có ghi chú) rồi gom lại về 1 dòng duy nhất, không tách /, để trống Hãng
+                self.env.cr.execute("""
+                    DELETE FROM qba_product_oe_code
+                    WHERE create_uid = 1 AND (note IS NULL OR trim(note) = '')
+                    RETURNING product_tmpl_id;
+                """)
+                deleted_tmpl_ids = {r[0] for r in self.env.cr.fetchall()}
+                migrated_ids = self._migrate_missing_oe_codes_sql()
+                all_affected = list(deleted_tmpl_ids | set(migrated_ids))
+                if all_affected:
+                    self.env.invalidate_all()
+                    tmpls_v2 = self.browse(all_affected)
+                    tmpls_v2._compute_oe_codes_display()
+                    tmpls_v2._compute_oe_codes_list()
+                    tmpls_v2.flush_recordset(['oe_codes_display', 'oe_codes_list'])
+                icp.set_param('qba.oe_single_line_and_warranty_zero_v2', '1')
 
             if icp.get_param('qba.product_data_migrated_v1') == '1':
                 return
@@ -952,38 +998,14 @@ class ProductTemplate(models.Model):
                   AND trim(coalesce(description_sale->>'vi_VN', description_sale->>'en_US', '')) != '';
             """)
 
-            # Tự động chuyển mã trong ngoặc <...> ở Tên sản phẩm và brand_sku sang bảng qba_product_oe_code (tách dấu / thành nhiều dòng)
-            self.env.cr.execute("""
-                SELECT pt.id,
-                       coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') AS prod_name,
-                       coalesce(pt.brand_sku, '') AS brand_sku,
-                       pt.brand_id
-                FROM product_template pt
-                WHERE (coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') ~ '<[^>]+>'
-                       OR (pt.brand_sku IS NOT NULL AND trim(pt.brand_sku) != ''))
-                  AND NOT EXISTS (
-                      SELECT 1 FROM qba_product_oe_code oe WHERE oe.product_tmpl_id = pt.id
-                  );
-            """)
-            rows_to_migrate = self.env.cr.fetchall()
-            if rows_to_migrate:
-                oe_vals_to_insert = []
-                for tmpl_id, prod_name, b_sku, b_id in rows_to_migrate:
-                    codes = self._extract_oe_codes_from_name_and_sku(prod_name, b_sku)
-                    for idx, code in enumerate(codes):
-                        oe_vals_to_insert.append((tmpl_id, code, b_id, (idx + 1) * 10))
-                if oe_vals_to_insert:
-                    self.env.cr.executemany("""
-                        INSERT INTO qba_product_oe_code (product_tmpl_id, name, brand_id, sequence, create_date, write_date, create_uid, write_uid)
-                        VALUES (%s, %s, %s, %s, NOW(), NOW(), 1, 1)
-                        ON CONFLICT (name, product_tmpl_id) DO NOTHING
-                    """, oe_vals_to_insert)
-                    self.env.invalidate_all()
-                    affected_tmpl_ids = [r[0] for r in rows_to_migrate]
-                    tmpls = self.browse(affected_tmpl_ids)
-                    tmpls._compute_oe_codes_display()
-                    tmpls._compute_oe_codes_list()
-                    tmpls.flush_recordset(['oe_codes_display', 'oe_codes_list'])
+            # Tự động chuyển mã từ brand_sku hoặc <...> sang bảng qba_product_oe_code (1 dòng duy nhất, để trống Hãng)
+            migrated_v1_ids = self._migrate_missing_oe_codes_sql()
+            if migrated_v1_ids:
+                self.env.invalidate_all()
+                tmpls = self.browse(migrated_v1_ids)
+                tmpls._compute_oe_codes_display()
+                tmpls._compute_oe_codes_list()
+                tmpls.flush_recordset(['oe_codes_display', 'oe_codes_list'])
 
             # Chuẩn hóa bảo hành mặc định 0 ngày (Không bảo hành) nếu chưa thiết lập
             self.env.cr.execute("""
