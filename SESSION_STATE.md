@@ -8,7 +8,7 @@ Tài liệu này lưu trữ trạng thái làm việc và nhật ký bàn giao g
 ## 1. Thông Tin Môi Trường & Kiến Trúc Hiện Tại (Baseline)
 
 - **Dự án:** QBA Odoo 18 Community (Phụ tùng ô tô xe tải nặng Q.BA)
-- **Nhánh Git hiện tại:** `perf/web-load-and-query-optimization`
+- **Nhánh Git hiện tại:** `fix/oe-single-line-and-warranty-zero-v2`
 - **Môi trường Docker:**
   - `staging-qba-postgres-1`: PostgreSQL 15, Database chính: `qba`
   - `staging-qba-odoo-1`: Odoo 18.0 Community, Cổng Web: `http://localhost:8089` (Longpolling: `8092`)
@@ -68,27 +68,17 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-19 12:10 (GMT+7)
-- **Nhánh Git:** `perf/web-load-and-query-optimization` (tạo từ `main` commit `165e343`)
+- **Thời gian:** 2026-11-20 00:29 (GMT+7)
+- **Nhánh Git:** `fix/oe-single-line-and-warranty-zero-v2` (tạo từ `perf/web-load-and-query-optimization`)
 - **Công việc đã hoàn thành:**
-  1. **Tối ưu tải ảnh & payload Kanban Sản phẩm (#2 & #6):**
-     - Đổi `image_512` → `image_128` trong `product_template_qba_kanban_view` ([product_template_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/product_template_views.xml#L313-L328)) để giảm ~90% băng thông tải ảnh cho ô thumbnail 72×72px (từ 146 MB xuống 14 MB trên 2.047 sản phẩm).
-     - Gỡ bỏ 5 trường không sử dụng (`vehicle_ids`, `engine_ids`, `gearbox_ids`, `axle_ids`, `internal_notes`) khỏi `<kanban>` để cắt 4 truy vấn JOIN thừa mỗi lần tải trang.
-  2. **Khử N+1 Query trên danh sách Thương hiệu (#3):**
-     - Tách `_compute_product_count()` dùng 1 câu SQL `GROUP BY brand_id` duy nhất khỏi `_compute_related_products()` trong [brand.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/brand.py#L9-L56).
-  3. **Vá bảo mật & khử N+1 cho API ảnh sản phẩm (#4 & #9):**
-     - Đổi `/qba/product_images/<id>` từ `auth='public'` sang `auth='user'`, kiểm tra `product.check_access('read')`, và gom batch query `ir.attachment` cho `extra_image_ids` trong [controllers/main.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/controllers/main.py#L9-L64).
-  4. **Tối ưu trình duyệt JS: chống Layout Thrashing & giảm tải ảnh hover (#5 & #8):**
-     - Debounce `scheduleTechSpecsCheck` (120ms) và bỏ qua ngay nếu trang không có `.qba-product-kanban-view` trong [image_lightbox.js](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/static/src/js/image_lightbox.js#L580-L615).
-     - Đổi hover preview 420×420px từ `image_1920` sang `image_512` kèm delay 120ms; chỉ tải `image_1920` khi click mở Lightbox toàn màn hình.
-  5. **Tạo PostgreSQL `pg_trgm` GIN Index cho tìm kiếm `ILIKE` (#7):**
-     - Bổ sung one-shot migration (`qba.trgm_search_indexes_v1`) trong `_register_hook()` của [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L893-L907) tạo GIN trigram index trên `product_template(default_code)`, `product_template(oe_codes_display)` và `qba_product_oe_code(name)`.
+  1. **Gộp `OE. Code` về 1 dòng duy nhất (bỏ tách `/`) & để trống cột `Hãng` (`brand_id = False`)** trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L521-L580):
+     - Sửa `_extract_oe_codes_from_name_and_sku()`: ưu tiên lấy nguyên chuỗi `brand_sku` nếu có; chỉ khi `brand_sku` trống mới lấy nội dung `<...>` trên tên SP — không tách dấu `/` nữa (tránh tách `WG9731478037/1` thành `WG9731478037` và `1`, tránh đẻ 2 dòng trùng giữa tên SP và `brand_sku`).
+     - Sửa `_auto_populate_oe_codes()` đặt `brand_id = False` để trống cột `Hãng` theo đúng yêu cầu khách hàng tự nhập tay sau.
+  2. **Bổ sung One-shot Migration `v2` trong `_register_hook()` (`qba.oe_single_line_and_warranty_zero_v2`)** ([product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L888-L962)):
+     - Tự động reset toàn bộ sản phẩm đang dính `warranty_days = 90` (hoặc `NULL`) về **`0` (`Không bảo hành`)** ngay khi server pull code và restart.
+     - Rút gọn logic SQL migrate dùng chung qua helper `_migrate_missing_oe_codes_sql()` (`-15` dòng trùng lặp) và dùng `DELETE ... RETURNING product_tmpl_id` để recompute lại `oe_codes_display` / `oe_codes_list` cho **cả các sản phẩm bị xóa sạch OE** (tránh stale display trên Kanban).
 - **File đã thay đổi / tạo mới:**
-  - `odoo/custom_addons/qba/views/product_template_views.xml`
-  - `odoo/custom_addons/qba/models/brand.py`
   - `odoo/custom_addons/qba/models/product_template.py`
-  - `odoo/custom_addons/qba/controllers/main.py`
-  - `odoo/custom_addons/qba/static/src/js/image_lightbox.js`
   - `SESSION_STATE.md`
 
 ---
