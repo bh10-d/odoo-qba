@@ -3,9 +3,20 @@
         <field name="name">qba.axle.list</field>
         <field name="model">qba.axle</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Cầu xe">
                 <field name="display_name" string="Cầu xe"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_qba_axle_search" model="ir.ui.view">
+        <field name="name">qba.axle.search</field>
+        <field name="model">qba.axle</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Cầu xe">
+                <field name="complete_name" string="Cầu xe" filter_domain="['|', ('complete_name', 'ilike', self), ('name', 'ilike', self)]"/>
+                <field name="parent_id" string="Danh mục chính"/>
+            </search>
         </field>
     </record>
 

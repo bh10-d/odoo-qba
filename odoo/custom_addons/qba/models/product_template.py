@@ -537,7 +537,7 @@ class ProductTemplate(models.Model):
 
     @api.onchange("description_sale")
     def _onchange_description_sale_sync_specs(self):
-        if self.description_sale and self.description_sale.strip() and not (self.technical_specs and self.technical_specs.strip()):
+        if isinstance(self.description_sale, str) and self.description_sale.strip() and not (self.technical_specs and self.technical_specs.strip()):
             self.technical_specs = self.description_sale.strip()
 
     @api.model_create_multi
@@ -545,12 +545,10 @@ class ProductTemplate(models.Model):
         for vals in vals_list:
             if not vals.get('technical_specs'):
                 notes = []
-                if vals.get('internal_notes'):
-                    notes.append(vals['internal_notes'].strip())
-                if vals.get('description_sale') and vals['description_sale'].strip() not in notes:
-                    notes.append(vals['description_sale'].strip())
-                if vals.get('description_purchase') and vals['description_purchase'].strip() not in notes:
-                    notes.append(vals['description_purchase'].strip())
+                for field_name in ('internal_notes', 'description_sale', 'description_purchase'):
+                    raw = vals.get(field_name)
+                    if isinstance(raw, str) and raw.strip() and raw.strip() not in notes:
+                        notes.append(raw.strip())
                 if notes:
                     vals['technical_specs'] = "\n".join(notes)
             if not vals.get('internal_notes') and vals.get('technical_specs'):
@@ -796,18 +794,34 @@ class ProductTemplate(models.Model):
 
         # Đồng bộ Mô tả bán hàng (description_sale) sang Mô tả SP (technical_specs) cho các bản ghi đang trống Mô tả SP
         sync_desc_tmpls = self.browse()
-        if 'description_sale' in vals and vals.get('description_sale') and not vals.get('technical_specs'):
-            desc_val = vals['description_sale'].strip()
-            if desc_val:
-                sync_desc_tmpls = self.filtered(lambda t: not (t.technical_specs and t.technical_specs.strip()))
+        raw_desc = vals.get('description_sale')
+        if 'description_sale' in vals and isinstance(raw_desc, str) and raw_desc.strip() and not vals.get('technical_specs'):
+            desc_val = raw_desc.strip()
+            empty_specs = self.filtered(lambda t: not (t.technical_specs and t.technical_specs.strip()))
+            if len(empty_specs) == len(self):
+                vals['technical_specs'] = desc_val
+            elif empty_specs:
+                sync_desc_tmpls = empty_specs
+
+        # Chỉ trích xuất lại mã OE trong write() khi nội dung <...> hoặc brand_sku thực sự thay đổi (tránh đẻ lại mã OE khách đã cố ý xóa)
+        old_oe_sources = {}
+        if ('name' in vals or 'brand_sku' in vals) and 'oe_code_ids' not in vals:
+            old_oe_sources = {
+                t.id: self._extract_oe_codes_from_name_and_sku(t.name, t.brand_sku)
+                for t in self
+            }
 
         res = super().write(vals)
 
         if sync_desc_tmpls:
-            super(ProductTemplate, sync_desc_tmpls).write({'technical_specs': vals['description_sale'].strip()})
+            super(ProductTemplate, sync_desc_tmpls).write({'technical_specs': raw_desc.strip()})
 
-        if ('name' in vals or 'brand_sku' in vals) and 'oe_code_ids' not in vals:
-            self._auto_populate_oe_codes()
+        if old_oe_sources:
+            changed_oe_tmpls = self.filtered(
+                lambda t: not t.oe_code_ids and self._extract_oe_codes_from_name_and_sku(t.name, t.brand_sku) != old_oe_sources.get(t.id, [])
+            )
+            if changed_oe_tmpls:
+                changed_oe_tmpls._auto_populate_oe_codes()
 
         # Thông báo cập nhật trạng thái liên kết & hiển thị giá sang Backend Express nếu có thay đổi
         web_fields_changed = {'website_product_id', 'website_show_price', 'list_price'} & set(vals.keys())
@@ -877,9 +891,13 @@ class ProductTemplate(models.Model):
         return res
 
     def _register_hook(self):
-        """Tự động đồng bộ mô tả sang Mô tả SP, chuẩn hóa bảo hành, mã OE và migrate ảnh phụ sang ir.attachment"""
+        """Chạy 1 lần duy nhất (guarded by ir.config_parameter): đồng bộ mô tả, mã OE, bảo hành và ảnh phụ"""
         super()._register_hook()
         try:
+            icp = self.env['ir.config_parameter'].sudo()
+            if icp.get_param('qba.product_data_migrated_v1') == '1':
+                return
+
             # Chuẩn hóa dấu , thành | trong bảng product_template
             self.env.cr.execute("""
                 UPDATE product_template 
@@ -987,6 +1005,7 @@ class ProductTemplate(models.Model):
                             'mimetype': 'image/jpeg',
                             'description': img.name or '',
                         })
+            icp.set_param('qba.product_data_migrated_v1', '1')
         except Exception:
             pass
 

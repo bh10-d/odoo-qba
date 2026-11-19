@@ -3,9 +3,20 @@
         <field name="name">qba.vehicle.list</field>
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Xe">
                 <field name="display_name" string="Dòng xe"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_qba_vehicle_search" model="ir.ui.view">
+        <field name="name">qba.vehicle.search</field>
+        <field name="model">qba.vehicle</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Xe">
+                <field name="complete_name" string="Dòng xe" filter_domain="['|', ('complete_name', 'ilike', self), ('name', 'ilike', self)]"/>
+                <field name="parent_id" string="Danh mục chính"/>
+            </search>
         </field>
     </record>
 
