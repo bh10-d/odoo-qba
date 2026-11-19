@@ -59,6 +59,7 @@ class QbaGearbox(models.Model):
             else:
                 rec.complete_name = rec.name
 
+    @api.depends("complete_name")
     @api.depends_context('hierarchical_naming')
     def _compute_display_name(self):
         if self.env.context.get('hierarchical_naming', True):

@@ -3,14 +3,20 @@
         <field name="name">qba.gearbox.list</field>
         <field name="model">qba.gearbox</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name" string="Hộp số"/>
-                <field name="parent_id" string="Danh mục chính"/>
-                <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" string="Nhãn hiệu"/>
-                <field name="category" string="Chủng loại"/>
-                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
+            <list string="Hộp số">
+                <field name="display_name" string="Hộp số"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_qba_gearbox_search" model="ir.ui.view">
+        <field name="name">qba.gearbox.search</field>
+        <field name="model">qba.gearbox</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Hộp số">
+                <field name="complete_name" string="Hộp số" filter_domain="['|', ('complete_name', 'ilike', self), ('name', 'ilike', self)]"/>
+                <field name="parent_id" string="Danh mục chính"/>
+            </search>
         </field>
     </record>
 

@@ -3,15 +3,20 @@
         <field name="name">qba.engine.list</field>
         <field name="model">qba.engine</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name" string="Tên động cơ"/>
-                <field name="parent_id" string="Danh mục chính"/>
-                <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" string="Nhãn hiệu"/>
-                <field name="capacity" string="Dung tích xy lanh"/>
-                <field name="horsepower" string="Mã lực HP"/>
-                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
+            <list string="Động cơ">
+                <field name="display_name" string="Tên động cơ"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_qba_engine_search" model="ir.ui.view">
+        <field name="name">qba.engine.search</field>
+        <field name="model">qba.engine</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Động cơ">
+                <field name="complete_name" string="Tên động cơ" filter_domain="['|', ('complete_name', 'ilike', self), ('name', 'ilike', self)]"/>
+                <field name="parent_id" string="Danh mục chính"/>
+            </search>
         </field>
     </record>
 

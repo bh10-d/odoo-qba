@@ -3,14 +3,20 @@
         <field name="name">qba.vehicle.list</field>
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name" string="Dòng xe"/>
-                <field name="parent_id" string="Danh mục chính"/>
-                <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" string="Hãng xe"/>
-                <field name="category" string="Chủng loại"/>
-                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
+            <list string="Xe">
+                <field name="display_name" string="Dòng xe"/>
             </list>
+        </field>
+    </record>
+
+    <record id="view_qba_vehicle_search" model="ir.ui.view">
+        <field name="name">qba.vehicle.search</field>
+        <field name="model">qba.vehicle</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm Xe">
+                <field name="complete_name" string="Dòng xe" filter_domain="['|', ('complete_name', 'ilike', self), ('name', 'ilike', self)]"/>
+                <field name="parent_id" string="Danh mục chính"/>
+            </search>
         </field>
     </record>
 

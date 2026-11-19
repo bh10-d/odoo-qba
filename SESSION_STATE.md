@@ -8,7 +8,7 @@ Tài liệu này lưu trữ trạng thái làm việc và nhật ký bàn giao g
 ## 1. Thông Tin Môi Trường & Kiến Trúc Hiện Tại (Baseline)
 
 - **Dự án:** QBA Odoo 18 Community (Phụ tùng ô tô xe tải nặng Q.BA)
-- **Nhánh Git hiện tại:** `perf-optimize-qba-pos`
+- **Nhánh Git hiện tại:** `feature/oe-code-migration-and-hierarchy-list`
 - **Môi trường Docker:**
   - `staging-qba-postgres-1`: PostgreSQL 15, Database chính: `qba`
   - `staging-qba-odoo-1`: Odoo 18.0 Community, Cổng Web: `http://localhost:8089` (Longpolling: `8092`)
@@ -68,35 +68,39 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-18 17:26 (GMT+7)
-- **Nhánh Git:** `feature/stock-accounting-opening-balance` (tạo từ `main`)
+- **Thời gian:** 2026-11-19 10:48 (GMT+7)
+- **Nhánh Git:** `feature/oe-code-migration-and-hierarchy-list` (tạo mới từ `feature/stock-accounting-opening-balance`)
 - **Công việc đã hoàn thành:**
-  1. **Xóa hoàn toàn nút `Cập nhật số lượng` trên header form Sản phẩm & khóa chỉ đọc trên smart button `Hiện có`:**
-     - Gắn `invisible="1"` cho `<header>/button[@name='action_update_quantity_on_hand']` trong [product_template_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/product_template_views.xml) để không ai nhỡ tay chỉnh SL trên hồ sơ sản phẩm (kiểm kê định kỳ đi qua `Tồn kho → Hoạt động → Kiểm kê thực tế`).
-     - Ghi đè `action_update_quantity_on_hand()` trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py) luôn trả về danh sách tồn kho ở chế độ chỉ đọc (`create=False, edit=False, delete=False`).
-  2. **Gia cố logic kế toán cho Bút toán Tồn đầu kỳ (`_calculate_historical_stock_breakdown`):**
-     - Quy đổi toàn bộ số lượng PO, SO, POS và `stock.move` về **ĐVT gốc (`product_id.uom_id`)** qua `_compute_quantity()`.
-     - Khấu trừ chính xác **hàng trả lại NCC** (`internal -> supplier`) và **hàng khách trả lại** (`customer -> internal`).
-     - Tính riêng cho từng biến thể (`variant_ids=[variant.id]`) để không bị nhân bản tồn kho trên sản phẩm nhiều biến thể.
-     - **Giữ nguyên 67 mã** chưa bật theo dõi kho trong CSDL để người dùng tự test tay.
-  3. **Tài liệu giải thích nguyên lý kế toán:** Cập nhật [GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md).
-  5. **Audit Bảo Mật & Toàn Vẹn Dữ Liệu (`odoo-security`):**
-     - **Chặn ghi đè lặp lại:** Chỉ chạy `_auto_sync_stock_from_history()` cho `newly_storable` (chuyển thực sự từ `False → True`), tránh trường hợp Bulk Edit hoặc RPC ghi `is_storable=True` lên mã đang theo dõi kho làm đè số tồn thực tế.
-     - **Khóa cả biến thể (`product.product`):** Bổ sung override `action_update_quantity_on_hand()` trên `product.product` trả về danh sách tồn kho chỉ đọc (`create=False, edit=False, delete=False`).
-     - **Cô lập công ty (`company_id`):** Bổ sung `company_domain` vào các truy vấn `.sudo().search(...)` trong `_calculate_historical_stock_breakdown()`.
-     - **Kiểm thử bảo mật 4/4 đạt 100% (rollback sạch):** User `nhanvien` (`uid=34`) bị chặn `AccessError` khi sửa `is_storable`, nhận view chỉ đọc trên cả `product.template` & `product.product`; ghi lại `is_storable=True` không kích hoạt đồng bộ lại hay spam Chatter; HTTP 200.
+  1. **Xử lý Vấn đề 1 — Chuẩn hóa List View & Search View phân cấp `Xe`, `Động cơ`, `Hộp số`, `Cầu` giống hệt `Danh mục sản phẩm` (`product.category`):**
+     - Rút gọn thẻ `<list>` trong [vehicle_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/vehicle_views.xml#L2-L21), [engine_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/engine_views.xml#L2-L21), [gearbox_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/gearbox_views.xml#L2-L21), [axle_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/axle_views.xml#L2-L21) về duy nhất 1 cột `<field name="display_name"/>` và bổ sung `<search>` view cho phép tìm kiếm theo `complete_name`/`name` và `parent_id`.
+     - Gia cố `@api.depends("complete_name")` cho hàm `_compute_display_name()` trong [vehicle.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/vehicle.py#L67-L76), [engine.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/engine.py#L65-L74), [gearbox.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/gearbox.py#L62-L71), [axle.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/axle.py#L62-L71) để tự động cập nhật `display_name` từ gốc đến ngọn (`CHA / CON / CHÁU`) ngay khi đổi `parent_id` hoặc đổi tên cha.
+     - Chuẩn hóa lại cây phân cấp mẫu của `qba.vehicle` trên DB (`FAW`, `THACO`, `THACO / AUMAN`, `THACO / FORLAND`, `THACO / OLLIN`, `THACO / OLLIN / OLLIN 500B`).
+  2. **Xử lý Vấn đề 2a — Tự động trích xuất & chuyển đổi toàn bộ mã OE từ `<...>` và `brand_sku` sang bảng `OE. Code` (`qba.product.oe_code`):**
+     - Viết hàm `_extract_oe_codes_from_name_and_sku()` trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L521-L537): lấy chuỗi trong cặp dấu `<...>` trên tên sản phẩm và trường `brand_sku`, nếu có dấu `/` thì tách thành nhiều dòng riêng biệt, giữ nguyên các định dạng khác và khử trùng lặp.
+     - Tích hợp vào `_register_hook()`, `create()`, và `write()` trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L909-L942).
+     - Kết quả thực tế trên DB: Đã tự động chuyển đổi thành công **1.555 dòng mã OE** cho **1.270 sản phẩm** (ví dụ `XP.007` → `M6600-1003111` hãng `YUCHAI`; `BOMH.003` → tách 2 dòng `612600130777` và `612600130924`).
+  3. **Xử lý Vấn đề 2b & 2c — Mặc định `Bảo hành: 0` & Khôi phục đồng bộ `Mô tả bán hàng` → `Mô tả SP`:**
+     - Đổi `warranty_days` trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L122) về `default=0` (`Không bảo hành`) và gỡ bỏ lệnh SQL ép `0 → 90` ngày trong `_register_hook()`.
+     - Khôi phục đầy đủ đoạn SQL trong `_register_hook()` gom `description_sale` (`Mô tả bán hàng`) & `description_purchase` (`Mô tả mua hàng`) vào `internal_notes` rồi đẩy sang `technical_specs` (`Mô tả SP`), đồng thời bổ sung `@api.onchange("description_sale")` và xử lý trong `write()` để khi sửa `Mô tả bán hàng` thì `Mô tả SP` tự động cập nhật theo.
+  4. **Audit & Tinh gọn mã nguồn theo bộ Skills (`odoo-code-review`, `ponytail-review`, `odoo-database`, `odoo-security`, `odoo-testing`):**
+     - **Hợp nhất & Batching ORM (`_auto_populate_oe_codes`):** Gộp logic tạo `qba.product.oe_code` thành 1 hàm batch duy nhất.
+     - **Chống "hồi sinh" mã OE khi sửa tên SP & khi restart server:** Trong `write()`, chỉ gọi `_auto_populate_oe_codes()` khi phần `<...>` hoặc `brand_sku` thực sự thay đổi so với trước khi lưu; trong `_register_hook()`, gắn cờ one-shot `ir.config_parameter` (`qba.product_data_migrated_v1 = '1'`) để bỏ qua SQL migrate ở các lần restart sau (tránh lock/deadlock multi-worker và không bao giờ đẻ lại mã OE khách đã xóa).
+     - **Tối ưu single-query `write()` & type-safety cho `description_sale`:** Kiểm tra `isinstance(..., str)` trước `.strip()`; gán thẳng `vals['technical_specs']` trước `super().write(vals)` khi toàn bộ recordset đang trống `technical_specs`.
+     - **Rút gọn `_compute_display_name()` trên 4 model phân cấp** về dùng chuẩn `super()._compute_display_name()` (như `product.category`), giữ `@api.depends("complete_name")` (`-12` dòng lặp).
+     - **Kiểm thử tự động 6/6 PASS (`ALL_6_AUDIT_FIX_TESTS_PASSED`, rollback sạch):** Bao gồm test tạo mới, xóa OE rồi sửa chính tả tên không hồi sinh OE, đổi `<...>` tự cập nhật OE, `description_sale=False` không crash, cờ `qba.product_data_migrated_v1 == '1'`, và `qba.vehicle` phân cấp `ROOT_V / CHILD_V`.
 - **File đã thay đổi / tạo mới:**
-  - `odoo/custom_addons/qba/views/product_template_views.xml`
+  - `odoo/custom_addons/qba/views/vehicle_views.xml`
+  - `odoo/custom_addons/qba/views/engine_views.xml`
+  - `odoo/custom_addons/qba/views/gearbox_views.xml`
+  - `odoo/custom_addons/qba/views/axle_views.xml`
   - `odoo/custom_addons/qba/models/product_template.py`
-  - `docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md` (Mới)
   - `SESSION_STATE.md`
 
 ---
 
 ## 5. Việc Cần Làm Tiếp Theo (Backlog / Pending Tasks)
 
-- [x] Gỡ bỏ nút `Tính Tồn Kho Theo Mua/Bán` khỏi form sản phẩm ✅
-- [x] Ẩn/khóa nút `Cập nhật số lượng` với nhân viên thường & ghi log Chatter tồn đầu kỳ ✅
-- [x] Viết file giải thích nguyên lý kế toán tồn kho (`docs/GIAI_THICH_NGUYEN_LY_KE_TOAN_TON_KHO.md`) ✅
+- [x] Chuẩn hóa List View 1 cột phân cấp A–Z cho `Xe`, `Động cơ`, `Hộp số`, `Cầu` ✅
+- [x] Đưa `Bảo hành` mặc định về `0` ngày & tự động đồng bộ `Mô tả bán hàng` (`description_sale`) sang `Mô tả SP` (`technical_specs`) ✅
+- [x] Tự động chuyển mã OE từ `<...>` và `brand_sku` sang bảng `OE. Code` (tách dấu `/` thành nhiều dòng, tổng cộng 1.555 dòng trên 1.270 SP) ✅
 - [ ] Người dùng test tay trên nhóm 67 mã chưa bật theo dõi kho.
-- [ ] Xác định & sửa lỗi `"Thêm một dòng"` trên 4 tab Xe, Động cơ, Hộp số, Cầu (cần nội dung `"Xem thông tin kỹ thuật"` hoặc bật Chrome remote debugging).
