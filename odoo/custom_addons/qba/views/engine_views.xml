@@ -4,13 +4,7 @@
         <field name="model">qba.engine</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name" string="Tên động cơ"/>
-                <field name="parent_id" string="Danh mục chính"/>
-                <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" string="Nhãn hiệu"/>
-                <field name="capacity" string="Dung tích xy lanh"/>
-                <field name="horsepower" string="Mã lực HP"/>
-                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
+                <field name="display_name" string="Tên động cơ"/>
             </list>
         </field>
     </record>

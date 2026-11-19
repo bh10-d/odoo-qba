@@ -4,12 +4,7 @@
         <field name="model">qba.vehicle</field>
         <field name="arch" type="xml">
             <list>
-                <field name="name" string="Dòng xe"/>
-                <field name="parent_id" string="Danh mục chính"/>
-                <field name="product_count" string="Số sản phẩm"/>
-                <field name="brand" string="Hãng xe"/>
-                <field name="category" string="Chủng loại"/>
-                <field name="extra_image_count" string="Ảnh phụ" optional="show"/>
+                <field name="display_name" string="Dòng xe"/>
             </list>
         </field>
     </record>

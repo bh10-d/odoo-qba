@@ -119,7 +119,7 @@ class ProductTemplate(models.Model):
     )
 
     # 2. Thông số kỹ thuật & Bảo hành & Cầu & Mô tả SP
-    warranty_days = fields.Integer(string="Bảo hành (ngày)", default=90)
+    warranty_days = fields.Integer(string="Bảo hành (ngày)", default=0)
     warranty = fields.Char(string="Bảo hành", compute="_compute_warranty", store=True, readonly=False)
     technical_specs = fields.Text(string="Mô tả SP", help="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm")
     axle_info = fields.Char(string="Cầu xe", help="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T")
@@ -518,6 +518,28 @@ class ProductTemplate(models.Model):
                 p_slug = slug_match.group(1)
         return p_id, p_slug
 
+    @api.model
+    def _extract_oe_codes_from_name_and_sku(self, name="", brand_sku=""):
+        """Trích xuất danh sách mã OE từ cặp dấu <...> trên tên SP và brand_sku; nếu có dấu / thì tách xuống dòng riêng"""
+        import re
+        raw_parts = []
+        if name:
+            raw_parts.extend(re.findall(r'<([^>]+)>', str(name)))
+        if brand_sku:
+            raw_parts.append(str(brand_sku))
+        codes = []
+        for part in raw_parts:
+            for item in part.split('/'):
+                c = item.strip()
+                if c and c not in codes:
+                    codes.append(c)
+        return codes
+
+    @api.onchange("description_sale")
+    def _onchange_description_sale_sync_specs(self):
+        if self.description_sale and self.description_sale.strip() and not (self.technical_specs and self.technical_specs.strip()):
+            self.technical_specs = self.description_sale.strip()
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -543,7 +565,24 @@ class ProductTemplate(models.Model):
                     vals['website_product_slug'] = p_slug
                 if not vals.get('website_link_date'):
                     vals['website_link_date'] = fields.Datetime.now()
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        records._auto_populate_oe_codes()
+        return records
+
+    def _auto_populate_oe_codes(self):
+        """Tự động điền bảng OE. Code từ dấu <...> trên tên SP hoặc brand_sku nếu sản phẩm chưa có mã OE"""
+        oe_vals = []
+        for rec in self:
+            if not rec.oe_code_ids:
+                for idx, code in enumerate(self._extract_oe_codes_from_name_and_sku(rec.name, rec.brand_sku)):
+                    oe_vals.append({
+                        'product_tmpl_id': rec.id,
+                        'name': code,
+                        'brand_id': rec.brand_id.id or False,
+                        'sequence': (idx + 1) * 10,
+                    })
+        if oe_vals:
+            self.env['qba.product.oe_code'].create(oe_vals)
 
     def action_open_bulk_edit_wizard(self):
         """Mở wizard cập nhật thuộc tính hàng loạt (chỉ dành cho Admin)"""
@@ -755,7 +794,20 @@ class ProductTemplate(models.Model):
                 vals.setdefault('website_link_date', False)
                 vals.setdefault('website_show_price', False)
 
+        # Đồng bộ Mô tả bán hàng (description_sale) sang Mô tả SP (technical_specs) cho các bản ghi đang trống Mô tả SP
+        sync_desc_tmpls = self.browse()
+        if 'description_sale' in vals and vals.get('description_sale') and not vals.get('technical_specs'):
+            desc_val = vals['description_sale'].strip()
+            if desc_val:
+                sync_desc_tmpls = self.filtered(lambda t: not (t.technical_specs and t.technical_specs.strip()))
+
         res = super().write(vals)
+
+        if sync_desc_tmpls:
+            super(ProductTemplate, sync_desc_tmpls).write({'technical_specs': vals['description_sale'].strip()})
+
+        if ('name' in vals or 'brand_sku' in vals) and 'oe_code_ids' not in vals:
+            self._auto_populate_oe_codes()
 
         # Thông báo cập nhật trạng thái liên kết & hiển thị giá sang Backend Express nếu có thay đổi
         web_fields_changed = {'website_product_id', 'website_show_price', 'list_price'} & set(vals.keys())
@@ -835,37 +887,86 @@ class ProductTemplate(models.Model):
                 WHERE oe_codes_display LIKE '%,%';
             """)
 
-            # Gộp dữ liệu internal_notes vào technical_specs nếu technical_specs chưa có hoặc chưa chứa internal_notes
+            # Gộp dữ liệu internal_notes, description_sale và description_purchase vào technical_specs nếu technical_specs chưa có
             self.env.cr.execute("""
+                UPDATE product_template
+                SET internal_notes = trim(
+                    CASE
+                        WHEN coalesce(trim(description_sale->>'vi_VN'), trim(description_sale->>'en_US'), '') != ''
+                         AND coalesce(trim(description_purchase->>'vi_VN'), trim(description_purchase->>'en_US'), '') != ''
+                         AND coalesce(trim(description_sale->>'vi_VN'), trim(description_sale->>'en_US'), '') != coalesce(trim(description_purchase->>'vi_VN'), trim(description_purchase->>'en_US'), '')
+                        THEN coalesce(trim(description_sale->>'vi_VN'), trim(description_sale->>'en_US')) || E'\n' || coalesce(trim(description_purchase->>'vi_VN'), trim(description_purchase->>'en_US'))
+                        ELSE coalesce(
+                            NULLIF(trim(coalesce(description_sale->>'vi_VN', description_sale->>'en_US', '')), ''),
+                            NULLIF(trim(coalesce(description_purchase->>'vi_VN', description_purchase->>'en_US', '')), '')
+                        )
+                    END
+                )
+                WHERE (internal_notes IS NULL OR trim(internal_notes) = '')
+                  AND (
+                      trim(coalesce(description_sale->>'vi_VN', description_sale->>'en_US', '')) != ''
+                      OR trim(coalesce(description_purchase->>'vi_VN', description_purchase->>'en_US', '')) != ''
+                  );
+
                 UPDATE product_template
                 SET technical_specs = CASE
-                    WHEN (technical_specs IS NULL OR technical_specs = '') AND (internal_notes IS NOT NULL AND internal_notes != '') THEN internal_notes
-                    WHEN (technical_specs IS NOT NULL AND technical_specs != '') AND (internal_notes IS NOT NULL AND internal_notes != '') AND position(internal_notes in technical_specs) = 0 THEN technical_specs || E'\n' || internal_notes
+                    WHEN (technical_specs IS NULL OR trim(technical_specs) = '') AND (internal_notes IS NOT NULL AND trim(internal_notes) != '') THEN trim(internal_notes)
+                    WHEN (technical_specs IS NOT NULL AND trim(technical_specs) != '') AND (internal_notes IS NOT NULL AND trim(internal_notes) != '') AND position(trim(internal_notes) in technical_specs) = 0 THEN technical_specs || E'\n' || trim(internal_notes)
                     ELSE technical_specs
                 END
-                WHERE internal_notes IS NOT NULL AND internal_notes != '';
+                WHERE internal_notes IS NOT NULL AND trim(internal_notes) != '';
+
+                UPDATE product_template
+                SET technical_specs = trim(coalesce(description_sale->>'vi_VN', description_sale->>'en_US', ''))
+                WHERE (technical_specs IS NULL OR trim(technical_specs) = '')
+                  AND trim(coalesce(description_sale->>'vi_VN', description_sale->>'en_US', '')) != '';
             """)
 
-            # Chuẩn hóa số ngày bảo hành warranty_days từ warranty cũ nếu warranty_days chưa có giá trị
+            # Tự động chuyển mã trong ngoặc <...> ở Tên sản phẩm và brand_sku sang bảng qba_product_oe_code (tách dấu / thành nhiều dòng)
+            self.env.cr.execute("""
+                SELECT pt.id,
+                       coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') AS prod_name,
+                       coalesce(pt.brand_sku, '') AS brand_sku,
+                       pt.brand_id
+                FROM product_template pt
+                WHERE (coalesce(pt.name->>'vi_VN', pt.name->>'en_US', '') ~ '<[^>]+>'
+                       OR (pt.brand_sku IS NOT NULL AND trim(pt.brand_sku) != ''))
+                  AND NOT EXISTS (
+                      SELECT 1 FROM qba_product_oe_code oe WHERE oe.product_tmpl_id = pt.id
+                  );
+            """)
+            rows_to_migrate = self.env.cr.fetchall()
+            if rows_to_migrate:
+                oe_vals_to_insert = []
+                for tmpl_id, prod_name, b_sku, b_id in rows_to_migrate:
+                    codes = self._extract_oe_codes_from_name_and_sku(prod_name, b_sku)
+                    for idx, code in enumerate(codes):
+                        oe_vals_to_insert.append((tmpl_id, code, b_id, (idx + 1) * 10))
+                if oe_vals_to_insert:
+                    self.env.cr.executemany("""
+                        INSERT INTO qba_product_oe_code (product_tmpl_id, name, brand_id, sequence, create_date, write_date, create_uid, write_uid)
+                        VALUES (%s, %s, %s, %s, NOW(), NOW(), 1, 1)
+                        ON CONFLICT (name, product_tmpl_id) DO NOTHING
+                    """, oe_vals_to_insert)
+                    self.env.invalidate_all()
+                    affected_tmpl_ids = [r[0] for r in rows_to_migrate]
+                    tmpls = self.browse(affected_tmpl_ids)
+                    tmpls._compute_oe_codes_display()
+                    tmpls._compute_oe_codes_list()
+                    tmpls.flush_recordset(['oe_codes_display', 'oe_codes_list'])
+
+            # Chuẩn hóa bảo hành mặc định 0 ngày (Không bảo hành) nếu chưa thiết lập
             self.env.cr.execute("""
                 UPDATE product_template
-                SET warranty_days = CASE
-                    WHEN warranty ILIKE '%30 ngày%' OR warranty ILIKE '%1 tháng%' THEN 30
-                    WHEN warranty ILIKE '%60 ngày%' OR warranty ILIKE '%2 tháng%' THEN 60
-                    WHEN warranty ILIKE '%3 tháng%' OR warranty ILIKE '%90 ngày%' THEN 90
-                    WHEN warranty ILIKE '%6 tháng%' OR warranty ILIKE '%180 ngày%' THEN 180
-                    WHEN warranty ILIKE '%1 năm%' OR warranty ILIKE '%12 tháng%' OR warranty ILIKE '%365 ngày%' THEN 365
-                    WHEN warranty ILIKE '%không%' THEN 0
-                    ELSE 90
-                END
-                WHERE warranty_days IS NULL OR warranty_days = 0;
+                SET warranty_days = 0
+                WHERE warranty_days IS NULL;
 
                 UPDATE product_template
                 SET warranty = CASE
                     WHEN warranty_days > 0 THEN 'Bảo hành ' || warranty_days || ' ngày'
-                    WHEN warranty_days = 0 THEN 'Không bảo hành'
-                    ELSE 'Bảo hành 90 ngày'
-                END;
+                    ELSE 'Không bảo hành'
+                END
+                WHERE warranty IS NULL OR (warranty_days = 0 AND warranty != 'Không bảo hành');
             """)
 
             # Đồng bộ ảnh từ qba.product.image sang ir.attachment (đảm bảo không mất ảnh cũ)
