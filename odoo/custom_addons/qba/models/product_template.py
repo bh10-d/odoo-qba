@@ -891,10 +891,22 @@ class ProductTemplate(models.Model):
         return res
 
     def _register_hook(self):
-        """Chạy 1 lần duy nhất (guarded by ir.config_parameter): đồng bộ mô tả, mã OE, bảo hành và ảnh phụ"""
+        """Chạy 1 lần duy nhất (guarded by ir.config_parameter): tạo trigram index, đồng bộ mô tả, mã OE, bảo hành và ảnh phụ"""
         super()._register_hook()
         try:
             icp = self.env['ir.config_parameter'].sudo()
+            if icp.get_param('qba.trgm_search_indexes_v1') != '1':
+                self.env.cr.execute("""
+                    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+                    CREATE INDEX IF NOT EXISTS qba_pt_default_code_trgm_idx
+                        ON product_template USING gin (default_code gin_trgm_ops);
+                    CREATE INDEX IF NOT EXISTS qba_pt_oe_codes_display_trgm_idx
+                        ON product_template USING gin (oe_codes_display gin_trgm_ops);
+                    CREATE INDEX IF NOT EXISTS qba_oe_code_name_trgm_idx
+                        ON qba_product_oe_code USING gin (name gin_trgm_ops);
+                """)
+                icp.set_param('qba.trgm_search_indexes_v1', '1')
+
             if icp.get_param('qba.product_data_migrated_v1') == '1':
                 return
 

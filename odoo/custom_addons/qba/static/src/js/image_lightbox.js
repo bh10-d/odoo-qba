@@ -19,19 +19,13 @@
     let panX = 0;
     let panY = 0;
 
-    function getHighResUrl(src) {
+    function getPreviewUrl(src, size = 'image_1920') {
         if (!src) return '';
-        let highRes = src;
-        if (highRes.includes('/image_128')) {
-            highRes = highRes.replace('/image_128', '/image_1920');
-        } else if (highRes.includes('/image_256')) {
-            highRes = highRes.replace('/image_256', '/image_1920');
-        } else if (highRes.includes('/image_512')) {
-            highRes = highRes.replace('/image_512', '/image_1920');
-        } else if (highRes.includes('/image_1024')) {
-            highRes = highRes.replace('/image_1024', '/image_1920');
-        }
-        return highRes;
+        return src.replace(/\/image_(?:128|256|512|1024)(?=[/?#]|$)/, `/${size}`);
+    }
+
+    function getHighResUrl(src) {
+        return getPreviewUrl(src, 'image_1920');
     }
 
     function applyTransform() {
@@ -416,6 +410,7 @@
     let hoverPreview = null;
     let hoverPreviewImg = null;
     let currentHoverTarget = null;
+    let hoverShowTimer = null;
 
     function getOrCreateHoverPreview() {
         if (hoverPreview) return hoverPreview;
@@ -471,7 +466,7 @@
         currentHoverTarget = targetEl;
 
         getOrCreateHoverPreview();
-        hoverPreviewImg.src = getHighResUrl(src);
+        hoverPreviewImg.src = getPreviewUrl(src, 'image_512');
 
         const rect = targetEl.getBoundingClientRect();
         const previewSize = 420;
@@ -501,6 +496,10 @@
     }
 
     function hideHoverPreview() {
+        if (hoverShowTimer) {
+            clearTimeout(hoverShowTimer);
+            hoverShowTimer = null;
+        }
         if (!hoverPreview) return;
         currentHoverTarget = null;
         hoverPreview.style.opacity = '0';
@@ -581,14 +580,20 @@
     }
 
     function updateTechSpecsToggles() {
+        if (!document.querySelector('.qba-product-kanban-view')) return;
         const containers = document.querySelectorAll('.qba-tech-specs-container');
         containers.forEach(checkTechSpecsOverflow);
     }
 
+    let techSpecsTimer = null;
     let techSpecsRaf = null;
     function scheduleTechSpecsCheck() {
-        if (techSpecsRaf) cancelAnimationFrame(techSpecsRaf);
-        techSpecsRaf = requestAnimationFrame(updateTechSpecsToggles);
+        if (!document.querySelector('.qba-product-kanban-view')) return;
+        if (techSpecsTimer) clearTimeout(techSpecsTimer);
+        techSpecsTimer = setTimeout(() => {
+            if (techSpecsRaf) cancelAnimationFrame(techSpecsRaf);
+            techSpecsRaf = requestAnimationFrame(updateTechSpecsToggles);
+        }, 120);
     }
 
     // =========================================================================
@@ -605,7 +610,8 @@
             if (trigger.closest('.modal, .modal-dialog, .o_dialog')) {
                 return;
             }
-            showHoverPreview(trigger);
+            if (hoverShowTimer) clearTimeout(hoverShowTimer);
+            hoverShowTimer = setTimeout(() => showHoverPreview(trigger), 120);
             return;
         }
 

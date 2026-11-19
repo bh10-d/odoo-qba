@@ -14,7 +14,7 @@ class QbaBrand(models.Model):
     )
     product_count = fields.Integer(
         string="Số sản phẩm",
-        compute="_compute_related_products",
+        compute="_compute_product_count",
         compute_sudo=True
     )
 
@@ -36,16 +36,34 @@ class QbaBrand(models.Model):
         return ['|'] * (len(conds) - 1) + conds
 
     @api.depends("name")
+    def _compute_product_count(self):
+        real_ids = [rec.id for rec in self if isinstance(rec.id, int)]
+        counts_map = {}
+        if real_ids:
+            self.env.cr.execute("""
+                SELECT brand_id, count(id)
+                FROM product_template
+                WHERE brand_id IN %s AND active = TRUE
+                GROUP BY brand_id
+            """, [tuple(real_ids)])
+            counts_map = dict(self.env.cr.fetchall())
+        for rec in self:
+            if isinstance(rec.id, int):
+                rec.product_count = counts_map.get(rec.id, 0)
+            elif rec.name and rec.name.strip():
+                rec.product_count = self.env['product.template'].search_count(rec._get_search_domain(rec.name))
+            else:
+                rec.product_count = 0
+
+    @api.depends("name")
     def _compute_related_products(self):
         for rec in self:
             if rec.name and rec.name.strip():
                 domain = rec._get_search_domain(rec.name)
                 prods = self.env['product.template'].search(domain, order="id desc")
                 rec.product_ids = [(6, 0, prods.ids)]
-                rec.product_count = len(prods)
             else:
                 rec.product_ids = [(6, 0, [])]
-                rec.product_count = 0
 
     @api.onchange("name")
     def _onchange_name(self):

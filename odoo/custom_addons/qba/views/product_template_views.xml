@@ -312,14 +312,9 @@
                 <field name="last_quotation_code"/>
                 <field name="brand_id"/>
                 <field name="categ_id"/>
-                <field name="vehicle_ids"/>
-                <field name="engine_ids"/>
-                <field name="gearbox_ids"/>
-                <field name="axle_ids"/>
                 <field name="qty_available"/>
                 <field name="uom_id"/>
-                <field name="internal_notes"/>
-                <field name="image_512"/>
+                <field name="image_128"/>
                 <field name="is_website_linked"/>
                 <field name="website_product_url"/>
             </xpath>
@@ -329,7 +324,7 @@
                     <div class="qba-img-hover-box position-relative d-flex align-items-center justify-content-center me-3 flex-shrink-0 mt-1"
                          t-att-data-product-id="record.id.raw_value"
                          t-att-data-extra-count="record.extra_image_count.raw_value">
-                        <field name="image_512" widget="image" class="qba-img-hover-scale rounded border object-fit-contain bg-white w-100 h-100"/>
+                        <field name="image_128" widget="image" class="qba-img-hover-scale rounded border object-fit-contain bg-white w-100 h-100"/>
                         <span t-if="record.extra_image_count.value &gt; 0"
                               class="qba-extra-badge"
                               t-att-data-product-id="record.id.raw_value"

@@ -6,21 +6,23 @@ from odoo.http import request, Response
 
 class QbaProductImageController(http.Controller):
 
-    @http.route('/qba/product_images/<int:product_tmpl_id>', type='http', auth='public', methods=['GET'], csrf=False)
+    @http.route('/qba/product_images/<int:product_tmpl_id>', type='http', auth='user', methods=['GET'], csrf=False)
     def get_product_images(self, product_tmpl_id, **kwargs):
-        product = request.env['product.template'].sudo().browse(product_tmpl_id).exists()
+        product = request.env['product.template'].browse(product_tmpl_id).exists()
         if not product:
-            variant = request.env['product.product'].sudo().browse(product_tmpl_id).exists()
+            variant = request.env['product.product'].browse(product_tmpl_id).exists()
             if variant and variant.product_tmpl_id:
                 product = variant.product_tmpl_id
         if not product:
             return Response(json.dumps([]), content_type='application/json')
+        product.check_access('read')
 
         images = []
         seen_checksums = set()
+        Attachment = request.env['ir.attachment'].sudo()
 
         # 1. Thu thập checksum của ảnh đại diện chính (nếu có) để tránh trùng lặp
-        main_att = request.env['ir.attachment'].sudo().search([
+        main_att = Attachment.search([
             ('res_model', '=', 'product.template'),
             ('res_id', '=', product.id),
             ('res_field', '=', 'image_1920'),
@@ -37,23 +39,26 @@ class QbaProductImageController(http.Controller):
                 'title': f'{clean_name} (Ảnh chính)'
             })
 
-        # 3. Toàn bộ ảnh phụ từ bảng qba.product.image
-        for img in product.extra_image_ids:
-            att = request.env['ir.attachment'].sudo().search([
+        # 3. Toàn bộ ảnh phụ từ bảng qba.product.image (batch query 1 lần khử N+1)
+        extra_imgs = product.extra_image_ids
+        if extra_imgs:
+            extra_atts = Attachment.search([
                 ('res_model', '=', 'qba.product.image'),
-                ('res_id', '=', img.id),
+                ('res_id', 'in', extra_imgs.ids),
                 ('res_field', '=', 'image_1920'),
-            ], limit=1)
-            if att and att.checksum:
-                seen_checksums.add(att.checksum)
-            images.append({
-                'id': f'extra_{img.id}',
-                'src': f'/web/image/qba.product.image/{img.id}/image_1920',
-                'title': img.name or f'Ảnh phụ #{img.id}'
-            })
+            ])
+            for att in extra_atts:
+                if att.checksum:
+                    seen_checksums.add(att.checksum)
+            for img in extra_imgs:
+                images.append({
+                    'id': f'extra_{img.id}',
+                    'src': f'/web/image/qba.product.image/{img.id}/image_1920',
+                    'title': img.name or f'Ảnh phụ #{img.id}'
+                })
 
         # 4. Toàn bộ ảnh đính kèm từ ir.attachment (tải lên qua chatter, tài liệu đính kèm)
-        extra_attachments = request.env['ir.attachment'].sudo().search([
+        extra_attachments = Attachment.search([
             ('res_model', '=', 'product.template'),
             ('res_id', '=', product.id),
             ('res_field', '=', False),
