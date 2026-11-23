@@ -8,7 +8,7 @@ Tài liệu này lưu trữ trạng thái làm việc và nhật ký bàn giao g
 ## 1. Thông Tin Môi Trường & Kiến Trúc Hiện Tại (Baseline)
 
 - **Dự án:** QBA Odoo 18 Community (Phụ tùng ô tô xe tải nặng Q.BA)
-- **Nhánh Git hiện tại:** `fix/oe-single-line-and-warranty-zero-v2`
+- **Nhánh Git hiện tại:** `hotfix/non-admin-create-product-uom`
 - **Môi trường Docker:**
   - `staging-qba-postgres-1`: PostgreSQL 15, Database chính: `qba`
   - `staging-qba-odoo-1`: Odoo 18.0 Community, Cổng Web: `http://localhost:8089` (Longpolling: `8092`)
@@ -68,16 +68,16 @@ Khi bắt đầu một tác vụ mới, AI bắt buộc phải đối chiếu v�
 
 ## 4. Nhật Ký Phiên Vừa Thực Hiện
 
-- **Thời gian:** 2026-11-20 00:29 (GMT+7)
-- **Nhánh Git:** `fix/oe-single-line-and-warranty-zero-v2` (tạo từ `perf/web-load-and-query-optimization`)
+- **Thời gian:** 2026-11-23 08:46 (GMT+7)
+- **Nhánh Git:** `hotfix/non-admin-create-product-uom` (tạo từ `origin/main` commit `0f64abc`)
 - **Công việc đã hoàn thành:**
-  1. **Gộp `OE. Code` về 1 dòng duy nhất (bỏ tách `/`) & để trống cột `Hãng` (`brand_id = False`)** trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L521-L580):
-     - Sửa `_extract_oe_codes_from_name_and_sku()`: ưu tiên lấy nguyên chuỗi `brand_sku` nếu có; chỉ khi `brand_sku` trống mới lấy nội dung `<...>` trên tên SP — không tách dấu `/` nữa (tránh tách `WG9731478037/1` thành `WG9731478037` và `1`, tránh đẻ 2 dòng trùng giữa tên SP và `brand_sku`).
-     - Sửa `_auto_populate_oe_codes()` đặt `brand_id = False` để trống cột `Hãng` theo đúng yêu cầu khách hàng tự nhập tay sau.
-  2. **Bổ sung One-shot Migration `v2` trong `_register_hook()` (`qba.oe_single_line_and_warranty_zero_v2`)** ([product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L888-L962)):
-     - Tự động reset toàn bộ sản phẩm đang dính `warranty_days = 90` (hoặc `NULL`) về **`0` (`Không bảo hành`)** ngay khi server pull code và restart.
-     - Rút gọn logic SQL migrate dùng chung qua helper `_migrate_missing_oe_codes_sql()` (`-15` dòng trùng lặp) và dùng `DELETE ... RETURNING product_tmpl_id` để recompute lại `oe_codes_display` / `oe_codes_list` cho **cả các sản phẩm bị xóa sạch OE** (tránh stale display trên Kanban).
+  1. **Hotfix cho phép Acc phụ (không phải Admin) chọn Đơn vị tính (`uom_id` & `uom_po_id`) khi tạo mới sản phẩm (`create`), vẫn giữ khóa cứng khi sửa sản phẩm đã lưu (`write`):**
+     - Trong [product_template_views.xml](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/views/product_template_views.xml#L22-L28): đổi thuộc tính `readonly` của `uom_id` và `uom_po_id` từ `not is_system_admin` thành `id and not is_system_admin` (mở cho phép chọn khi `id` chưa có — bản ghi mới tạo, và tự động khóa lại chỉ đọc ngay sau khi lưu với acc không phải Admin).
+     - Trong [product_template.py](file:///e:/hoctap/Language/Python/qba-odoo/staging-qba-odoo/odoo/custom_addons/qba/models/product_template.py#L552-L561): tự động đồng bộ `uom_po_id` theo cùng nhóm `uom_id` trong `create()` để tránh lỗi ràng buộc nhóm ĐVT của Odoo khi nhân viên chọn ĐVT khác nhóm mặc định (VD: `Kg`, `Mét`, `Lít` thay vì `Cái`).
+     - Giữ nguyên khóa bảo vệ `AccessError` trong `write()` cho user không phải Admin khi sửa sản phẩm đã tồn tại.
+     - Đã kiểm tra cú pháp Python (`py_compile`) và cấu trúc XML (`xml.etree.ElementTree`) đạt 100% (`SYNTAX_AND_XML_VALIDATION_PASSED`).
 - **File đã thay đổi / tạo mới:**
+  - `odoo/custom_addons/qba/views/product_template_views.xml`
   - `odoo/custom_addons/qba/models/product_template.py`
   - `SESSION_STATE.md`
 

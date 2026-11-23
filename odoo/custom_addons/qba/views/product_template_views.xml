@@ -20,8 +20,11 @@
                 <attribute name="help">Đặc quyền Quản trị viên: Khi bật theo dõi tồn kho, hệ thống tự động tính toán Số lượng hiện có = Đã nhập - Đã bán từ toàn bộ lịch sử mua bán và đồng bộ ngay vào kho.</attribute>
             </xpath>
             <xpath expr="//field[@name='uom_id']" position="attributes">
-                <attribute name="readonly">not is_system_admin</attribute>
-                <attribute name="help">Đặc quyền Quản trị viên: Chỉ đổi Đơn vị tính khi kế toán tạo nhầm. Nếu đã có phiếu kho, bắt buộc kiểm kê lại số lượng theo đơn vị mới.</attribute>
+                <attribute name="readonly">id and not is_system_admin</attribute>
+                <attribute name="help">Chọn Đơn vị tính khi tạo mới sản phẩm. Sau khi đã lưu, chỉ Quản trị viên mới được phép thay đổi Đơn vị tính.</attribute>
+            </xpath>
+            <xpath expr="//field[@name='uom_po_id']" position="attributes">
+                <attribute name="readonly">id and not is_system_admin</attribute>
             </xpath>
             <xpath expr="//span[@name='uom_span']" position="attributes">
                 <attribute name="groups"></attribute>
