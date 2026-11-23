@@ -549,6 +549,16 @@ class ProductTemplate(models.Model):
             if not vals.get('internal_notes') and vals.get('technical_specs'):
                 vals['internal_notes'] = vals['technical_specs']
 
+            # Tự động đồng bộ uom_po_id cùng nhóm với uom_id khi tạo mới SP để tránh lỗi ràng buộc nhóm ĐVT với acc không bật nhóm đa ĐVT
+            if vals.get('uom_id'):
+                new_uom = self.env['uom.uom'].browse(vals['uom_id'])
+                if not vals.get('uom_po_id'):
+                    vals['uom_po_id'] = vals['uom_id']
+                else:
+                    po_uom = self.env['uom.uom'].browse(vals['uom_po_id'])
+                    if po_uom.category_id != new_uom.category_id:
+                        vals['uom_po_id'] = vals['uom_id']
+
             # Tự động trích xuất thông tin liên kết Web nếu có website_product_url
             if vals.get('website_product_url') and not vals.get('website_product_id'):
                 p_id, p_slug = self._parse_website_url_data(vals['website_product_url'])
