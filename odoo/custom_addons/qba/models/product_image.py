@@ -29,3 +29,19 @@ class QbaProductImage(models.Model):
                 else:
                     vals["name"] = "Ảnh chi tiết"
         return super().create(vals_list)
+
+    def action_set_as_main_image(self):
+        """Đặt ảnh phụ này làm ảnh đại diện chính của sản phẩm (đẩy ảnh chính cũ xuống danh sách ảnh phụ để không mất ảnh)"""
+        self.ensure_one()
+        tmpl = self.product_tmpl_id
+        if not tmpl or not self.image_1920:
+            return
+        tmpl.check_access('write')
+        old_main = tmpl.image_1920
+        new_main = self.image_1920
+        tmpl.image_1920 = new_main
+        if old_main:
+            self.write({'image_1920': old_main, 'name': self.name or 'Ảnh phụ'})
+        else:
+            self.unlink()
+        return {'type': 'ir.actions.client', 'tag': 'reload'}

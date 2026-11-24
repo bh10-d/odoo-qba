@@ -37,9 +37,15 @@ class ProductTemplate(models.Model):
     brand_id = fields.Many2one("qba.brand", string="Thương hiệu")
     brand_sku = fields.Char(string="SKU Thương hiệu")
 
+    # Mặc định đồng nhất trên mọi menu tạo mới SP (Kho, Mua hàng, Bán hàng, POS) - không fix cứng, user vẫn đổi được
+    sale_ok = fields.Boolean(default=True)
+    purchase_ok = fields.Boolean(default=True)
+    is_storable = fields.Boolean(default=True)
+    list_price = fields.Float(default=0.0)
+
     vehicle_ids = fields.Many2many(
         "qba.vehicle", "product_vehicle_rel", "product_id", "vehicle_id",
-        string="Các loại xe áp dụng", tracking=True
+        string="Loại xe", tracking=True
     )
 
     engine_ids = fields.Many2many(
@@ -54,7 +60,7 @@ class ProductTemplate(models.Model):
 
     axle_ids = fields.Many2many(
         "qba.axle", "product_axle_rel", "product_id", "axle_id",
-        string="Cầu xe áp dụng"
+        string="Loại cầu"
     )
 
     barcode = fields.Char(string="Mã vạch", related="default_code", readonly=True)
@@ -111,18 +117,22 @@ class ProductTemplate(models.Model):
         store=True
     )
 
-    # Cờ quyền Quản Trị Viên (System Admin)
+    # Cờ quyền Quản Trị Viên (System Admin) & kiểm tra đã phát sinh giao dịch kho hay chưa
     is_system_admin = fields.Boolean(
         string="Là Quản Trị Viên",
         compute="_compute_is_system_admin",
         default=lambda self: self.env.is_admin() or self.env.user.has_group('base.group_system'),
+    )
+    has_stock_moves = fields.Boolean(
+        string="Đã phát sinh nhập/xuất kho",
+        compute="_compute_has_stock_moves",
     )
 
     # 2. Thông số kỹ thuật & Bảo hành & Cầu & Mô tả SP
     warranty_days = fields.Integer(string="Bảo hành (ngày)", default=0)
     warranty = fields.Char(string="Bảo hành", compute="_compute_warranty", store=True, readonly=False)
     technical_specs = fields.Text(string="Mô tả SP", help="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm")
-    axle_info = fields.Char(string="Cầu xe", help="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T")
+    axle_info = fields.Char(string="Cầu xe (cũ)", help="Trường cũ - đã thay bằng tab Cầu (Loại cầu)")
     internal_notes = fields.Text(string="Mô tả hàng hóa nội bộ")
     attachment_images_preview = fields.Html(
         string="Hình ảnh đính kèm",
@@ -130,26 +140,26 @@ class ProductTemplate(models.Model):
         sanitize=False
     )
 
-    # Tương thích xe, động cơ, hộp số định dạng dấu ; cho Kanban
+    # Tương thích xe, động cơ, hộp số định dạng dấu ; cho Kanban (ẩn khỏi bộ lọc để không trùng với Loại xe / Loại cầu)
     vehicles_display = fields.Char(
-        string="Xe áp dụng",
+        string="Hiển thị xe (Kanban)",
         compute="_compute_compatibility_display",
-        store=True
+        store=True,
     )
     engines_display = fields.Char(
-        string="Động cơ áp dụng",
+        string="Hiển thị động cơ (Kanban)",
         compute="_compute_compatibility_display",
-        store=True
+        store=True,
     )
     gearboxes_display = fields.Char(
-        string="Hộp số áp dụng",
+        string="Hiển thị hộp số (Kanban)",
         compute="_compute_compatibility_display",
-        store=True
+        store=True,
     )
     axles_display = fields.Char(
-        string="Cầu xe áp dụng",
+        string="Hiển thị cầu (Kanban)",
         compute="_compute_compatibility_display",
-        store=True
+        store=True,
     )
 
     # 3. Quản lý Ảnh Phụ (Extra Images)
@@ -181,19 +191,30 @@ class ProductTemplate(models.Model):
         compute="_compute_dates"
     )
 
-    @api.depends("oe_code_ids.name")
+    @api.model
+    def fields_get(self, allfields=None, attributes=None):
+        """Ẩn các trường hiển thị Kanban và axle_info cũ khỏi danh sách Bộ lọc tùy chỉnh để không bị trùng với Loại xe / Loại cầu"""
+        res = super().fields_get(allfields=allfields, attributes=attributes)
+        for fname in ('axle_info', 'vehicles_display', 'engines_display', 'gearboxes_display', 'axles_display'):
+            if fname in res:
+                res[fname]['searchable'] = False
+                res[fname]['sortable'] = False
+        return res
+
+    @api.depends("oe_code_ids.name", "oe_code_ids.sequence")
     def _compute_oe_codes_display(self):
         for rec in self:
-            codes = [oe.name.strip() for oe in rec.oe_code_ids if oe.name and oe.name.strip()]
+            codes = [oe.name.strip() for oe in rec.oe_code_ids.sorted(key=lambda r: (r.sequence, r.id)) if oe.name and oe.name.strip()]
             rec.oe_codes_display = _chunk_and_balance(codes, 5)
 
-    @api.depends("oe_code_ids.name")
+    @api.depends("oe_code_ids.name", "oe_code_ids.sequence")
     def _compute_oe_codes_list(self):
         for rec in self:
             if not rec.oe_code_ids:
                 rec.oe_codes_list = ""
                 continue
-            lines = [f'<div class="text-nowrap">{oe.name}</div>' for oe in rec.oe_code_ids]
+            ordered = rec.oe_code_ids.sorted(key=lambda r: (r.sequence, r.id))
+            lines = [f'<div class="text-nowrap">{oe.name}</div>' for oe in ordered]
             rec.oe_codes_list = "".join(lines)
 
     @api.depends(
@@ -224,6 +245,22 @@ class ProductTemplate(models.Model):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
         for rec in self:
             rec.is_system_admin = is_admin
+
+    def _compute_has_stock_moves(self):
+        real_ids = [rec._origin.id or (isinstance(rec.id, int) and rec.id) for rec in self]
+        valid_ids = [i for i in real_ids if i]
+        moved_tmpl_ids = set()
+        if valid_ids:
+            self.env.cr.execute("""
+                SELECT DISTINCT pp.product_tmpl_id
+                FROM stock_move sm
+                JOIN product_product pp ON pp.id = sm.product_id
+                WHERE pp.product_tmpl_id IN %s
+            """, [tuple(valid_ids)])
+            moved_tmpl_ids = {r[0] for r in self.env.cr.fetchall()}
+        for rec in self:
+            real_id = rec._origin.id or (isinstance(rec.id, int) and rec.id)
+            rec.has_stock_moves = bool(real_id and real_id in moved_tmpl_ids)
 
     @api.depends("warranty_days")
     def _compute_warranty(self):
@@ -727,6 +764,21 @@ class ProductTemplate(models.Model):
             % (total_purchased, total_sold, total_target)
         )
 
+    def action_view_sales(self):
+        """Kiểm tra quyền xem lịch sử bán hàng trước khi mở; hiển thị thông báo thân thiện thay vì crash popup lỗi"""
+        if not self.env['sale.order.line'].has_access('read'):
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Không có quyền truy cập'),
+                    'message': _('Tài khoản của bạn chưa được cấp quyền xem chi tiết đơn bán hàng. Vui lòng liên hệ Quản trị viên nếu cần mở quyền.'),
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        return super().action_view_sales()
+
     def action_update_quantity_on_hand(self):
         """Khóa chỉnh tay tồn kho trên form sản phẩm (chỉ xem chỉ đọc; kiểm kê thực tế qua menu Tồn kho)."""
         action = self.action_open_quants()
@@ -735,11 +787,29 @@ class ProductTemplate(models.Model):
 
     def write(self, vals):
         is_admin = self.env.is_admin() or self.env.user.has_group('base.group_system')
-        # KHÓA BẢO VỆ 1: Chặn tuyệt đối người dùng không phải Admin can thiệp vào is_storable hoặc uom_id
+        # KHÓA BẢO VỆ 1: Chuẩn Odoo - chưa nhập/xuất kho thì acc phụ được đổi ĐVT bình thường; chỉ khóa khi đã có dịch chuyển kho
         if not is_admin:
-            for field_name in ('is_storable', 'uom_id', 'uom_po_id'):
-                if field_name in vals:
-                    raise AccessError(_("BẢO VỆ PHÂN QUYỀN HỆ THỐNG:\n\nChỉ Quản trị viên hệ thống (Admin) mới có đặc quyền thay đổi tính chất tồn kho hoặc đơn vị tính của sản phẩm!"))
+            if 'is_storable' in vals:
+                raise AccessError(_("BẢO VỆ PHÂN QUYỀN HỆ THỐNG:\n\nChỉ Quản trị viên hệ thống (Admin) mới có đặc quyền thay đổi 'Theo dõi hàng tồn kho' của sản phẩm đã lưu!"))
+            if 'uom_id' in vals or 'uom_po_id' in vals:
+                moved_tmpls = self.filtered('has_stock_moves')
+                if moved_tmpls:
+                    raise AccessError(_(
+                        "BẢO VỆ PHÂN QUYỀN HỆ THỐNG:\n\n"
+                        "Sản phẩm '%s' đã phát sinh lịch sử nhập/xuất kho. "
+                        "Chỉ Quản trị viên hệ thống (Admin) mới được phép thay đổi Đơn vị tính!"
+                    ) % moved_tmpls[0].display_name)
+                # Tự đồng bộ uom_po_id cùng nhóm với uom_id nếu acc phụ đổi ĐVT cho SP chưa nhập kho
+                if vals.get('uom_id'):
+                    vals = dict(vals)
+                    new_uom = self.env['uom.uom'].browse(vals['uom_id'])
+                    if not vals.get('uom_po_id'):
+                        if any(not t.uom_po_id or t.uom_po_id.category_id != new_uom.category_id for t in self):
+                            vals['uom_po_id'] = vals['uom_id']
+                    else:
+                        po_uom = self.env['uom.uom'].browse(vals['uom_po_id'])
+                        if po_uom.category_id != new_uom.category_id:
+                            vals['uom_po_id'] = vals['uom_id']
 
         target_storable = None
         target_uom_id = None
@@ -937,6 +1007,15 @@ class ProductTemplate(models.Model):
                         ON qba_product_oe_code USING gin (name gin_trgm_ops);
                 """)
                 icp.set_param('qba.trgm_search_indexes_v1', '1')
+
+            if icp.get_param('qba.fix_saigon_tz_v1') != '1':
+                self.env.cr.execute("""
+                    UPDATE res_partner
+                    SET tz = 'Asia/Ho_Chi_Minh'
+                    WHERE tz = 'Asia/Saigon';
+                """)
+                self.env.invalidate_all()
+                icp.set_param('qba.fix_saigon_tz_v1', '1')
 
             if icp.get_param('qba.oe_single_line_and_warranty_zero_v2') != '1':
                 # 1. Reset toàn bộ bảo hành mặc định 90 ngày cũ về 0 ngày (Không bảo hành)
@@ -1370,8 +1449,39 @@ class ProductTemplate(models.Model):
         }
 
 
+class ResPartnerTimezoneFix(models.Model):
+    _inherit = "res.partner"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('tz') == 'Asia/Saigon':
+                vals['tz'] = 'Asia/Ho_Chi_Minh'
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('tz') == 'Asia/Saigon':
+            vals = dict(vals, tz='Asia/Ho_Chi_Minh')
+        return super().write(vals)
+
+
 class ProductProduct(models.Model):
     _inherit = "product.product"
+
+    def action_view_sales(self):
+        """Kiểm tra quyền xem lịch sử bán hàng trước khi mở; hiển thị thông báo thân thiện thay vì crash popup lỗi"""
+        if not self.env['sale.order.line'].has_access('read'):
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Không có quyền truy cập'),
+                    'message': _('Tài khoản của bạn chưa được cấp quyền xem chi tiết đơn bán hàng. Vui lòng liên hệ Quản trị viên nếu cần mở quyền.'),
+                    'type': 'warning',
+                    'sticky': False,
+                },
+            }
+        return super().action_view_sales()
 
     def action_update_quantity_on_hand(self):
         """Khóa chỉnh tay tồn kho trên form biến thể sản phẩm (chỉ xem chỉ đọc)."""

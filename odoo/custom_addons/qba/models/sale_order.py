@@ -19,14 +19,14 @@ class SaleOrderLine(models.Model):
         for line in self:
             tmpl = line.product_template_id or (line.product_id.product_tmpl_id if line.product_id else False)
             if tmpl:
-                line.warranty_days = tmpl.warranty_days or 90
+                line.warranty_days = tmpl.warranty_days or 0
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             if "warranty_days" not in vals and vals.get("product_id"):
                 product = self.env["product.product"].browse(vals["product_id"])
-                vals["warranty_days"] = product.product_tmpl_id.warranty_days or 90
+                vals["warranty_days"] = product.product_tmpl_id.warranty_days or 0
         return super().create(vals_list)
 
     @api.depends("warranty_days", "order_id.date_order", "order_id.state")

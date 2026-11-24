@@ -1180,14 +1180,17 @@
     background: rgba(37, 99, 235, 0.85);
 }
 
-/* Nút sửa/xóa ảnh đại diện Odoo trong showcase card */
-.qba-product-showcase-card .o_field_image .opacity-trigger-hover > div.position-absolute {
+/* Nút sửa/xóa ảnh đại diện Odoo trong showcase card: luôn nổi trên ảnh và bấm được */
+.qba-product-showcase-card .o_field_image .opacity-trigger-hover > div.position-absolute,
+.qba-product-showcase-card .o_field_image .o_form_image_controls {
     top: 6px !important;
     right: 6px !important;
     bottom: auto !important;
     left: auto !important;
     width: auto !important;
     justify-content: flex-end !important;
+    z-index: 30 !important;
+    pointer-events: auto !important;
 }
 
 /* Dải thumbnail ảnh phụ trong product showcase */
