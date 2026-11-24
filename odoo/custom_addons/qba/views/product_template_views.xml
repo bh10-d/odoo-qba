@@ -9,22 +9,24 @@
         <field name="mode">extension</field>
         <field name="inherit_id" ref="product.product_template_only_form_view"/>
         <field name="arch" type="xml">
-            <!-- Cờ kiểm tra Admin ẩn để điều khiển quyền sửa -->
+            <!-- Cờ kiểm tra Admin & phát sinh kho ẩn để điều khiển quyền sửa -->
             <xpath expr="//sheet" position="before">
                 <field name="is_system_admin" invisible="1"/>
+                <field name="has_stock_moves" invisible="1"/>
             </xpath>
 
-            <!-- Mở khóa Theo dõi hàng tồn kho & Đơn vị tính cho Admin -->
+            <!-- Theo dõi hàng tồn kho: mặc định bật khi tạo mới (không fix cứng); sau khi lưu chỉ Admin mới đổi được -->
             <xpath expr="//field[@name='is_storable']" position="attributes">
-                <attribute name="readonly">not is_system_admin</attribute>
-                <attribute name="help">Đặc quyền Quản trị viên: Khi bật theo dõi tồn kho, hệ thống tự động tính toán Số lượng hiện có = Đã nhập - Đã bán từ toàn bộ lịch sử mua bán và đồng bộ ngay vào kho.</attribute>
-            </xpath>
-            <xpath expr="//field[@name='uom_id']" position="attributes">
                 <attribute name="readonly">id and not is_system_admin</attribute>
-                <attribute name="help">Chọn Đơn vị tính khi tạo mới sản phẩm. Sau khi đã lưu, chỉ Quản trị viên mới được phép thay đổi Đơn vị tính.</attribute>
+                <attribute name="help">Mặc định bật khi tạo mới sản phẩm. Sau khi lưu, chỉ Quản trị viên mới được bật/tắt theo dõi hàng tồn kho.</attribute>
+            </xpath>
+            <!-- Đơn vị tính: chuẩn Odoo - chưa phát sinh nhập/xuất kho thì đổi thoải mái; đã có phiếu kho chỉ Admin mới đổi được -->
+            <xpath expr="//field[@name='uom_id']" position="attributes">
+                <attribute name="readonly">has_stock_moves and not is_system_admin</attribute>
+                <attribute name="help">Có thể thay đổi Đơn vị tính khi sản phẩm chưa phát sinh nhập/xuất kho. Khi đã có phiếu kho, chỉ Quản trị viên mới được đổi.</attribute>
             </xpath>
             <xpath expr="//field[@name='uom_po_id']" position="attributes">
-                <attribute name="readonly">id and not is_system_admin</attribute>
+                <attribute name="readonly">has_stock_moves and not is_system_admin</attribute>
             </xpath>
             <xpath expr="//span[@name='uom_span']" position="attributes">
                 <attribute name="groups"></attribute>
@@ -116,6 +118,7 @@
                 <div class="oe_title">
                     <field name="oe_code_ids" widget="one2many" nolabel="1">
                         <list editable="bottom" string="Danh sách mã OE">
+                            <field name="sequence" widget="handle"/>
                             <field name="name" string="OE. Code" placeholder="Nhập mã OE..."/>
                             <field name="brand_id" optional="show" string="Hãng"/>
                             <field name="note" optional="show" string="Ghi chú"/>
@@ -129,7 +132,6 @@
                     <span invisible="not warranty" class="text-muted small ms-2">(<field name="warranty" class="oe_inline" readonly="1" nolabel="1"/>)</span>
                 </div>
                 <field name="technical_specs" string="Mô tả SP" placeholder="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm..."/>
-                <field name="axle_info" placeholder="Ví dụ: HOWO công nghệ MAN; Cầu láp 13T"/>
                 <label for="label_image" string="Tem sản phẩm"/>
                 <div class="d-flex align-items-start gap-3">
                     <field name="label_image" widget="image" style="max-width: 260px; max-height: 180px; object-fit: contain; border: 1px solid #dee2e6; border-radius: 6px; padding: 2px;"/>
@@ -144,6 +146,22 @@
             </xpath>
 
             <xpath expr="//notebook" position="inside">
+
+                <!-- Tab Quản Lý Ảnh Phụ (Sắp xếp kéo thả, đặt làm ảnh chính, xóa ảnh) -->
+                <page string="Hình ảnh" name="product_images">
+                    <field name="extra_image_ids" nolabel="1">
+                        <list editable="bottom" string="Danh sách ảnh phụ">
+                            <field name="sequence" widget="handle"/>
+                            <field name="image_1920" widget="image" options="{'size': [64, 64]}" string="Ảnh"/>
+                            <field name="name" string="Mô tả ảnh" placeholder="Ví dụ: Mặt nghiêng, Tem thông số..."/>
+                            <button name="action_set_as_main_image"
+                                    type="object"
+                                    string="Đặt ảnh chính"
+                                    icon="fa-star"
+                                    class="btn-link text-primary"/>
+                        </list>
+                    </field>
+                </page>
 
                 <!-- Tab Thông Tin Lịch Sử Kho & Giá -->
                 <page string="Lịch Sử Kho &amp; Giá">

@@ -636,6 +636,55 @@
         hideHoverPreview();
     }, true);
 
+    let confirmedDeleteBtn = null;
+    function showDeleteConfirmModal(title, message, onConfirm) {
+        const existing = document.getElementById('qba-confirm-delete-modal');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'qba-confirm-delete-modal';
+        overlay.className = 'modal d-block show';
+        overlay.style.cssText = 'background: rgba(15, 23, 42, 0.55); z-index: 2147483645;';
+        overlay.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content shadow-lg border-0">
+                    <div class="modal-header py-2 px-3 bg-light border-bottom">
+                        <h5 class="modal-title fw-bold text-dark fs-6 mb-0">
+                            <i class="fa fa-exclamation-triangle text-warning me-2"></i><span class="qba-modal-title-text"></span>
+                        </h5>
+                        <button type="button" class="btn-close qba-modal-cancel" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body py-3 px-3 text-dark qba-modal-message-text"></div>
+                    <div class="modal-footer py-2 px-3 border-top bg-light">
+                        <button type="button" class="btn btn-secondary btn-sm qba-modal-cancel">Hủy</button>
+                        <button type="button" class="btn btn-danger btn-sm qba-modal-confirm">
+                            <i class="fa fa-trash me-1"></i>Xác nhận xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        overlay.querySelector('.qba-modal-title-text').textContent = title;
+        overlay.querySelector('.qba-modal-message-text').textContent = message;
+        const close = () => {
+            document.removeEventListener('keydown', onKey);
+            overlay.remove();
+        };
+        const onKey = (ev) => {
+            if (ev.key === 'Escape') close();
+        };
+        document.addEventListener('keydown', onKey);
+        overlay.addEventListener('click', (ev) => {
+            if (ev.target === overlay || ev.target.closest('.qba-modal-cancel')) {
+                close();
+            } else if (ev.target.closest('.qba-modal-confirm')) {
+                close();
+                onConfirm();
+            }
+        });
+        document.body.appendChild(overlay);
+    }
+
     document.addEventListener('click', function (e) {
         hideHoverPreview();
 
@@ -709,8 +758,48 @@
         // =====================================================================
         // Click ảnh xem Lightbox & Toàn bộ ảnh sản phẩm / danh mục
         // =====================================================================
+        // Xác nhận bằng Odoo/Bootstrap Modal trước khi xóa ảnh đại diện hoặc xóa ảnh phụ trong tab Hình ảnh
+        const clearImgBtn = e.target.closest('.qba-product-showcase-card .o_clear_file_button, .qba-product-showcase-card [aria-label="Clear"], .qba-product-showcase-card [data-tooltip="Clear"]');
+        if (clearImgBtn) {
+            if (confirmedDeleteBtn === clearImgBtn) {
+                confirmedDeleteBtn = null;
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            showDeleteConfirmModal(
+                'Xác nhận xóa ảnh đại diện',
+                'Bạn có chắc chắn muốn xóa ảnh đại diện chính của sản phẩm này không?',
+                () => {
+                    confirmedDeleteBtn = clearImgBtn;
+                    clearImgBtn.click();
+                }
+            );
+            return;
+        }
+        const deleteExtraImgBtn = e.target.closest('[name="extra_image_ids"] .o_list_record_remove, [name="extra_image_ids"] button[name="delete"]');
+        if (deleteExtraImgBtn) {
+            if (confirmedDeleteBtn === deleteExtraImgBtn) {
+                confirmedDeleteBtn = null;
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            showDeleteConfirmModal(
+                'Xác nhận xóa ảnh phụ',
+                'Bạn có chắc chắn muốn xóa ảnh phụ này khỏi sản phẩm không?',
+                () => {
+                    confirmedDeleteBtn = deleteExtraImgBtn;
+                    deleteExtraImgBtn.click();
+                }
+            );
+            return;
+        }
+
         // Bỏ qua nếu người dùng click vào nút chỉnh sửa / tải lên / xóa ảnh của Odoo
-        if (e.target.closest('.o_select_file_button, .o_clear_file_button, button, input[type="file"], .note-popover, .o-we-toolbar')) {
+        if (e.target.closest('.o_select_file_button, .o_clear_file_button, .o_form_image_controls, [aria-label="Clear"], [aria-label="Edit"], [data-tooltip="Clear"], [data-tooltip="Edit"], button, input[type="file"], .note-popover, .o-we-toolbar')) {
             return;
         }
 
