@@ -44,5 +44,5 @@ class QbaProductImageWizard(models.TransientModel):
         # Xóa các attachment tạm vừa tải lên wizard
         self.attachment_ids.unlink()
 
-        return {"type": "ir.actions.act_window_close"}
+        return {"type": "ir.actions.client", "tag": "reload"}
 

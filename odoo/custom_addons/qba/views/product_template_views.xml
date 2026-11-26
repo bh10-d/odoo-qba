@@ -59,7 +59,34 @@
                                 <i class="fa fa-plus-circle me-1"/>Thêm ảnh
                             </button>
                         </div>
-                        <field name="attachment_images_preview" readonly="1" nolabel="1"/>
+                        <field name="extra_image_ids" mode="kanban" nolabel="1" class="qba-native-extra-gallery" invisible="not extra_image_ids" options="{'no_create': True}">
+                            <kanban create="0">
+                                <field name="id"/>
+                                <field name="name"/>
+                                <templates>
+                                    <t t-name="card" class="qba-thumb-box position-relative border rounded p-1 bg-white shadow-sm m-0">
+                                        <div class="qba-thumb-wrapper w-100 h-100 overflow-hidden">
+                                            <img t-attf-src="/web/image/qba.product.image/#{record.id.raw_value}/image_128" t-att-alt="record.name.value or 'Ảnh chi tiết'" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
+                                        </div>
+                                        <a type="delete" role="button" class="qba-thumb-delete-btn" title="Xóa ảnh này">×</a>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
+                        <field name="attachment_image_ids" mode="kanban" nolabel="1" class="qba-native-extra-gallery" invisible="not attachment_image_ids" options="{'no_create': True}">
+                            <kanban create="0">
+                                <field name="id"/>
+                                <field name="name"/>
+                                <templates>
+                                    <t t-name="card" class="qba-thumb-box position-relative border rounded p-1 bg-white shadow-sm m-0">
+                                        <div class="qba-thumb-wrapper w-100 h-100 overflow-hidden">
+                                            <img t-attf-src="/web/image/#{record.id.raw_value}/128x128" t-att-alt="record.name.value or 'Ảnh chi tiết'" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
+                                        </div>
+                                        <a type="delete" role="button" class="qba-thumb-delete-btn" title="Xóa ảnh này">×</a>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
                     </div>
                 </div>
             </field>
