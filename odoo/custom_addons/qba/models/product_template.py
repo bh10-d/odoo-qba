@@ -134,6 +134,17 @@ class ProductTemplate(models.Model):
     technical_specs = fields.Text(string="Mô tả SP", help="Kích thước, thông số kỹ thuật, mô tả chi tiết sản phẩm")
     axle_info = fields.Char(string="Cầu xe (cũ)", help="Trường cũ - đã thay bằng tab Cầu (Loại cầu)")
     internal_notes = fields.Text(string="Mô tả hàng hóa nội bộ")
+    attachment_image_ids = fields.One2many(
+        "ir.attachment",
+        "res_id",
+        string="Ảnh chi tiết đính kèm",
+        copy=False,
+        domain=[
+            ("res_model", "=", "product.template"),
+            ("res_field", "=", False),
+            ("mimetype", "=like", "image/%"),
+        ],
+    )
     attachment_images_preview = fields.Html(
         string="Hình ảnh đính kèm",
         compute="_compute_attachment_images_preview",
@@ -195,7 +206,7 @@ class ProductTemplate(models.Model):
     def fields_get(self, allfields=None, attributes=None):
         """Ẩn các trường hiển thị Kanban và axle_info cũ khỏi danh sách Bộ lọc tùy chỉnh để không bị trùng với Loại xe / Loại cầu"""
         res = super().fields_get(allfields=allfields, attributes=attributes)
-        for fname in ('axle_info', 'vehicles_display', 'engines_display', 'gearboxes_display', 'axles_display'):
+        for fname in ('axle_info', 'attachment_image_ids', 'vehicles_display', 'engines_display', 'gearboxes_display', 'axles_display'):
             if fname in res:
                 res[fname]['searchable'] = False
                 res[fname]['sortable'] = False
@@ -272,7 +283,7 @@ class ProductTemplate(models.Model):
             else:
                 rec.warranty = False
 
-    @api.depends("extra_image_ids")
+    @api.depends("extra_image_ids", "attachment_image_ids")
     def _compute_extra_image_count(self):
         real_ids = [rec._origin.id or (isinstance(rec.id, int) and rec.id) for rec in self]
         valid_ids = [i for i in real_ids if i]
@@ -325,7 +336,7 @@ class ProductTemplate(models.Model):
                 html_parts.append(f'''
                     <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 46px; height: 46px;" title="{desc} (Click xem ảnh lớn)">
                         <div class="qba-thumb-wrapper position-relative w-100 h-100 overflow-hidden">
-                            <img src="/web/image/{att.id}" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
+                            <img src="/web/image/{att.id}/128x128" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
                         </div>
                     </div>
                 ''')
@@ -335,7 +346,7 @@ class ProductTemplate(models.Model):
                 html_parts.append(f'''
                     <div class="qba-thumb-box position-relative text-center border rounded p-1 bg-white shadow-sm" style="width: 46px; height: 46px;" title="{name} (Click xem ảnh lớn)">
                         <div class="qba-thumb-wrapper position-relative w-100 h-100 overflow-hidden">
-                            <img src="/web/image/qba.product.image/{extra.id}/image_1920" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
+                            <img src="/web/image/qba.product.image/{extra.id}/image_128" alt="{name}" class="qba-img-hover-scale-4x qba-lightbox-trigger rounded w-100 h-100 object-fit-cover" style="cursor: pointer;"/>
                         </div>
                     </div>
                 ''')

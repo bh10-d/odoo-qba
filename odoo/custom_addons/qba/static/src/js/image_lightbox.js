@@ -758,41 +758,32 @@
         // =====================================================================
         // Click ảnh xem Lightbox & Toàn bộ ảnh sản phẩm / danh mục
         // =====================================================================
-        // Xác nhận bằng Odoo/Bootstrap Modal trước khi xóa ảnh đại diện hoặc xóa ảnh phụ trong tab Hình ảnh
-        const clearImgBtn = e.target.closest('.qba-product-showcase-card .o_clear_file_button, .qba-product-showcase-card [aria-label="Clear"], .qba-product-showcase-card [data-tooltip="Clear"]');
-        if (clearImgBtn) {
-            if (confirmedDeleteBtn === clearImgBtn) {
+        // Xác nhận bằng Odoo/Bootstrap Modal trước khi xóa ảnh đại diện hoặc ảnh phụ (100% native soft delete Save/Discard của Odoo)
+        const nativeImgDelBtn = e.target.closest(
+            '.qba-product-showcase-card .o_clear_file_button, ' +
+            '.qba-product-showcase-card [aria-label="Clear"], ' +
+            '.qba-product-showcase-card [data-tooltip="Clear"], ' +
+            '.qba-native-extra-gallery .qba-thumb-delete-btn, ' +
+            '[name="extra_image_ids"] .o_list_record_remove, ' +
+            '[name="extra_image_ids"] button[name="delete"]'
+        );
+        if (nativeImgDelBtn) {
+            if (confirmedDeleteBtn === nativeImgDelBtn) {
                 confirmedDeleteBtn = null;
                 return;
             }
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            const isMain = !!nativeImgDelBtn.closest('.qba-product-main-image-box');
             showDeleteConfirmModal(
-                'Xác nhận xóa ảnh đại diện',
-                'Bạn có chắc chắn muốn xóa ảnh đại diện chính của sản phẩm này không?',
+                isMain ? 'Xác nhận xóa ảnh đại diện' : 'Xác nhận xóa ảnh phụ',
+                isMain
+                    ? 'Bạn có chắc chắn muốn xóa ảnh đại diện chính của sản phẩm này không?'
+                    : 'Bạn có chắc chắn muốn xóa ảnh chi tiết này? (Chỉ xóa thật khi bạn bấm Lưu sản phẩm)',
                 () => {
-                    confirmedDeleteBtn = clearImgBtn;
-                    clearImgBtn.click();
-                }
-            );
-            return;
-        }
-        const deleteExtraImgBtn = e.target.closest('[name="extra_image_ids"] .o_list_record_remove, [name="extra_image_ids"] button[name="delete"]');
-        if (deleteExtraImgBtn) {
-            if (confirmedDeleteBtn === deleteExtraImgBtn) {
-                confirmedDeleteBtn = null;
-                return;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            showDeleteConfirmModal(
-                'Xác nhận xóa ảnh phụ',
-                'Bạn có chắc chắn muốn xóa ảnh phụ này khỏi sản phẩm không?',
-                () => {
-                    confirmedDeleteBtn = deleteExtraImgBtn;
-                    deleteExtraImgBtn.click();
+                    confirmedDeleteBtn = nativeImgDelBtn;
+                    nativeImgDelBtn.click();
                 }
             );
             return;
